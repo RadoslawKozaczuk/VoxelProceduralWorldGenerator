@@ -1,14 +1,18 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class CreateQuads : MonoBehaviour {
+public class Block {
 
 	enum Cubeside {BOTTOM, TOP, LEFT, RIGHT, FRONT, BACK};
 	public enum BlockType {GRASS, DIRT, STONE};
 
-	public Material cubeMaterial;
-	public BlockType bType;
+	readonly BlockType bType;
+	public bool isSolid;
+	readonly GameObject parent;
+	Vector3 position;
+	readonly Material cubeMaterial;
 
 	readonly Vector2[,] blockUVs = { 
 		/*GRASS TOP*/		{new Vector2( 0.125f, 0.375f ), new Vector2( 0.1875f, 0.375f),
@@ -20,6 +24,15 @@ public class CreateQuads : MonoBehaviour {
 		/*STONE*/			{new Vector2( 0, 0.875f ), new Vector2( 0.0625f, 0.875f),
 								new Vector2( 0, 0.9375f ),new Vector2( 0.0625f, 0.9375f )}
 						}; 
+
+	public Block(BlockType b, Vector3 pos, GameObject p, Material c)
+	{
+		bType = b;
+		parent = p;
+		position = pos;
+		cubeMaterial = c;
+		isSolid = true;
+	}
 
 	void CreateQuad(Cubeside side)
 	{
@@ -117,62 +130,46 @@ public class CreateQuads : MonoBehaviour {
 		mesh.RecalculateBounds();
 		
 		var quad = new GameObject("Quad");
-	    quad.transform.parent = this.gameObject.transform;
+		quad.transform.position = position;
+	    quad.transform.parent = parent.transform;
+
      	var meshFilter = (MeshFilter) quad.AddComponent(typeof(MeshFilter));
 		meshFilter.mesh = mesh;
+
 		var renderer = quad.AddComponent(typeof(MeshRenderer)) as MeshRenderer;
 		renderer.material = cubeMaterial;
 	}
 
-	void CombineQuads()
+	public bool HasSolidNeighbor(int x, int y, int z)
 	{
-		
-		//1. Combine all children meshes
-		var meshFilters = GetComponentsInChildren<MeshFilter>();
-        var combine = new CombineInstance[meshFilters.Length];
-        var i = 0;
-        while (i < meshFilters.Length) {
-            combine[i].mesh = meshFilters[i].sharedMesh;
-            combine[i].transform = meshFilters[i].transform.localToWorldMatrix;
-            i++;
-        }
+		Block[,,] chunks = parent.GetComponent<Chunk>().chunkData;
+		try
+		{
+			return chunks[x, y, z].isSolid; // in case of trying to access data for a non existing neighbor
+		}
+		catch (IndexOutOfRangeException) { }
 
-        //2. Create a new mesh on the parent object
-        var mf = (MeshFilter) this.gameObject.AddComponent(typeof(MeshFilter));
-        mf.mesh = new Mesh();
-
-        //3. Add combined meshes on children as the parent's mesh
-        mf.mesh.CombineMeshes(combine);
-
-        //4. Create a renderer for the parent
-		var renderer = this.gameObject.AddComponent(typeof(MeshRenderer)) as MeshRenderer;
-		renderer.material = cubeMaterial;
-
-		//5. Delete all uncombined children
-		foreach (Transform quad in this.transform) {
-     		Destroy(quad.gameObject);
- 		}
-
+		return false;
 	}
 
-	void CreateCube()
+	public void Draw()
 	{
-		CreateQuad(Cubeside.FRONT);
-		CreateQuad(Cubeside.BACK);
-		CreateQuad(Cubeside.TOP);
-		CreateQuad(Cubeside.BOTTOM);
-		CreateQuad(Cubeside.LEFT);
-		CreateQuad(Cubeside.RIGHT);
-		CombineQuads();
-	}
+		if(!HasSolidNeighbor((int)position.x, (int)position.y, (int)position.z + 1))
+			CreateQuad(Cubeside.FRONT);
 
-	// Use this for initialization
-	void Start () {
-		CreateCube();
-	}
-	
-	// Update is called once per frame
-	void Update () {
-		
+		if (!HasSolidNeighbor((int)position.x, (int)position.y, (int)position.z - 1))
+			CreateQuad(Cubeside.BACK);
+
+		if (!HasSolidNeighbor((int)position.x, (int)position.y + 1, (int)position.z))
+			CreateQuad(Cubeside.TOP);
+
+		if (!HasSolidNeighbor((int)position.x, (int)position.y - 1, (int)position.z))
+			CreateQuad(Cubeside.BOTTOM);
+
+		if (!HasSolidNeighbor((int)position.x + 1, (int)position.y, (int)position.z))
+			CreateQuad(Cubeside.LEFT);
+
+		if (!HasSolidNeighbor((int)position.x - 1, (int)position.y, (int)position.z))
+			CreateQuad(Cubeside.RIGHT);
 	}
 }
