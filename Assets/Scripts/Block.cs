@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class Block {
@@ -10,9 +8,9 @@ public class Block {
 
 	readonly BlockType bType;
 	public bool isSolid;
-	readonly GameObject parent;
 	Vector3 position;
 	readonly Material cubeMaterial;
+	private Chunk owner;
 
 	readonly Vector2[,] blockUVs = { 
 		/*GRASS TOP*/		{new Vector2( 0.125f, 0.375f ), new Vector2( 0.1875f, 0.375f),
@@ -25,12 +23,12 @@ public class Block {
 								new Vector2( 0, 0.9375f ),new Vector2( 0.0625f, 0.9375f )}
 						}; 
 
-	public Block(BlockType b, Vector3 pos, GameObject p, Material c)
+	public Block(BlockType b, Vector3 pos, Chunk c)
 	{
 		bType = b;
-		parent = p;
 		position = pos;
-		cubeMaterial = c;
+		owner = c;
+		cubeMaterial = c.cubeMaterial;
 
 		isSolid = b != BlockType.AIR;
 	}
@@ -132,7 +130,6 @@ public class Block {
 		
 		var quad = new GameObject("Quad");
 		quad.transform.position = position;
-	    quad.transform.parent = parent.transform;
 
      	var meshFilter = (MeshFilter) quad.AddComponent(typeof(MeshFilter));
 		meshFilter.mesh = mesh;
@@ -143,7 +140,7 @@ public class Block {
 
 	public bool HasSolidNeighbor(int x, int y, int z)
 	{
-		Block[,,] chunks = parent.GetComponent<Chunk>().chunkData;
+		Block[,,] chunks = owner.chunkData;
 		try
 		{
 			return chunks[x, y, z].isSolid; // in case of trying to access data for a non existing neighbor
