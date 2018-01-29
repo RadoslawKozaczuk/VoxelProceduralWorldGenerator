@@ -6,7 +6,7 @@ using UnityEngine;
 public class Block {
 
 	enum Cubeside {BOTTOM, TOP, LEFT, RIGHT, FRONT, BACK};
-	public enum BlockType {GRASS, DIRT, STONE};
+	public enum BlockType {GRASS, DIRT, STONE, AIR};
 
 	readonly BlockType bType;
 	public bool isSolid;
@@ -31,13 +31,14 @@ public class Block {
 		parent = p;
 		position = pos;
 		cubeMaterial = c;
-		isSolid = true;
+
+		isSolid = b != BlockType.AIR;
 	}
 
 	void CreateQuad(Cubeside side)
 	{
 		var mesh = new Mesh();
-	    mesh.name = "ScriptedMesh" + side.ToString(); 
+	    mesh.name = "ScriptedMesh" + side; 
 
 		var vertices = new Vector3[4];
 		var normals = new Vector3[4];
@@ -154,6 +155,8 @@ public class Block {
 
 	public void Draw()
 	{
+		if (bType == BlockType.AIR) return;
+
 		if(!HasSolidNeighbor((int)position.x, (int)position.y, (int)position.z + 1))
 			CreateQuad(Cubeside.FRONT);
 
@@ -166,10 +169,10 @@ public class Block {
 		if (!HasSolidNeighbor((int)position.x, (int)position.y - 1, (int)position.z))
 			CreateQuad(Cubeside.BOTTOM);
 
-		if (!HasSolidNeighbor((int)position.x + 1, (int)position.y, (int)position.z))
+		if (!HasSolidNeighbor((int)position.x - 1, (int)position.y, (int)position.z))
 			CreateQuad(Cubeside.LEFT);
 
-		if (!HasSolidNeighbor((int)position.x - 1, (int)position.y, (int)position.z))
+		if (!HasSolidNeighbor((int)position.x + 1, (int)position.y, (int)position.z))
 			CreateQuad(Cubeside.RIGHT);
 	}
 }
