@@ -2,12 +2,12 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class World : MonoBehaviour {
-
-	public Material textureAtlas;
-	public static int columnHeight = 6; // number of chunks
-	public static int chunkSize = 6;
-	public static Dictionary<string, Chunk> chunks;
+public class World : MonoBehaviour
+{
+	public Material TextureAtlas;
+	public static int ColumnHeight = 6; // number of chunks
+	public static int ChunkSize = 6;
+	public static Dictionary<string, Chunk> Chunks;
 
 	public static string BuildChunkName(Vector3 v)
 	{
@@ -16,15 +16,15 @@ public class World : MonoBehaviour {
 
 	IEnumerator BuildChunkColumn()
 	{
-		for(var i = 0; i < columnHeight; i++)
+		for (var i = 0; i < ColumnHeight; i++)
 		{
-			var chunkPosition = new Vector3(transform.position.x, i*chunkSize, transform.position.z);
-			var c = new Chunk(chunkPosition, textureAtlas);
-			c.chunk.transform.parent = transform;
-			chunks.Add(c.chunk.name, c);
+			var chunkPosition = new Vector3(transform.position.x, i * ChunkSize, transform.position.z);
+			var c = new Chunk(chunkPosition, TextureAtlas);
+			c.ChunkObject.transform.parent = transform;
+			Chunks.Add(c.ChunkObject.name, c);
 		}
 
-		foreach(var c in chunks)
+		foreach (var c in Chunks)
 		{
 			c.Value.DrawChunk();
 			yield return null;
@@ -32,8 +32,9 @@ public class World : MonoBehaviour {
 	}
 
 	// Use this for initialization
-	void Start () {
-		chunks = new Dictionary<string, Chunk>();
+	void Start()
+	{
+		Chunks = new Dictionary<string, Chunk>();
 		transform.position = Vector3.zero;
 		transform.rotation = Quaternion.identity;
 		StartCoroutine(BuildChunkColumn());
