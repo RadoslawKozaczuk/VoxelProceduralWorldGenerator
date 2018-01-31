@@ -7,8 +7,9 @@ namespace Assets.Scripts
 	public class World : MonoBehaviour
 	{
 		public Material TextureAtlas;
-		public static int ColumnHeight = 6; // number of chunks
-		public static int ChunkSize = 6;
+		public static int ColumnHeight = 2; // number of chunks in column
+		public static int ChunkSize = 8;
+		public static int WorldSize = 2; // number of columns in x and y
 		public static Dictionary<string, Chunk> Chunks;
 
 		public static string BuildChunkName(Vector3 v)
@@ -16,15 +17,17 @@ namespace Assets.Scripts
 			return (int)v.x + "_" + (int)v.y + "_" + (int)v.z;
 		}
 
-		IEnumerator BuildChunkColumn()
+		IEnumerator BuildWorld()
 		{
-			for (var i = 0; i < ColumnHeight; i++)
-			{
-				var chunkPosition = new Vector3(transform.position.x, i * ChunkSize, transform.position.z);
-				var c = new Chunk(chunkPosition, TextureAtlas);
-				c.ChunkGameObject.transform.parent = transform;
-				Chunks.Add(c.ChunkGameObject.name, c);
-			}
+			for (var z = 0; z < WorldSize; z++)
+				for (var x = 0; x < WorldSize; x++)
+					for (var y = 0; y < ColumnHeight; y++)
+					{
+						var chunkPosition = new Vector3(x * ChunkSize, y * ChunkSize, z * ChunkSize);
+						var c = new Chunk(chunkPosition, TextureAtlas);
+						c.ChunkGameObject.transform.parent = transform;
+						Chunks.Add(c.ChunkGameObject.name, c);
+					}
 
 			foreach (var c in Chunks)
 			{
@@ -39,7 +42,7 @@ namespace Assets.Scripts
 			Chunks = new Dictionary<string, Chunk>();
 			transform.position = Vector3.zero;
 			transform.rotation = Quaternion.identity;
-			StartCoroutine(BuildChunkColumn());
+			StartCoroutine(BuildWorld());
 		}
 	}
 }

@@ -8,11 +8,11 @@ namespace Assets.Scripts
 		public Block[,,] Blocks;
 		public GameObject ChunkGameObject;
 
-		public Chunk(Vector3 position, Material material)
+		public Chunk(Vector3 position, Material c)
 		{
 			ChunkGameObject = new GameObject(World.BuildChunkName(position));
 			ChunkGameObject.transform.position = position;
-			CubeMaterial = material;
+			CubeMaterial = c;
 			BuildChunk();
 		}
 
@@ -24,15 +24,9 @@ namespace Assets.Scripts
 				for (var y = 0; y < World.ChunkSize; y++)
 					for (var x = 0; x < World.ChunkSize; x++)
 					{
-						var pos = new Vector3(ChunkGameObject.transform.position.x + x,
-							ChunkGameObject.transform.position.y + y,
-							ChunkGameObject.transform.position.z + z);
-
-						var type = Random.Range(0, 100) < 50
-							? Block.BlockType.Air
-							: Block.BlockType.Dirt;
-
-						Blocks[x, y, z] = new Block(type, pos, this);
+						var pos = new Vector3(x, y, z);
+						var type = Random.Range(0, 100) < 50 ? Block.BlockType.Dirt : Block.BlockType.Air;
+						Blocks[x, y, z] = new Block(type, pos, ChunkGameObject.gameObject, this);
 					}
 		}
 
@@ -41,11 +35,12 @@ namespace Assets.Scripts
 			for (var z = 0; z < World.ChunkSize; z++)
 				for (var y = 0; y < World.ChunkSize; y++)
 					for (var x = 0; x < World.ChunkSize; x++)
+					{
 						Blocks[x, y, z].Draw();
-
+					}
 			CombineQuads();
 		}
-
+		
 		void CombineQuads()
 		{
 			//1. Combine all children meshes
@@ -60,7 +55,7 @@ namespace Assets.Scripts
 			}
 
 			//2. Create a new mesh on the parent object
-			var mf = (MeshFilter)ChunkGameObject.AddComponent(typeof(MeshFilter));
+			var mf = (MeshFilter)ChunkGameObject.gameObject.AddComponent(typeof(MeshFilter));
 			mf.mesh = new Mesh();
 
 			//3. Add combined meshes on children as the parent's mesh
@@ -72,9 +67,7 @@ namespace Assets.Scripts
 
 			//5. Delete all uncombined children
 			foreach (Transform quad in ChunkGameObject.transform)
-			{
 				Object.Destroy(quad.gameObject);
-			}
 		}
 	}
 }
