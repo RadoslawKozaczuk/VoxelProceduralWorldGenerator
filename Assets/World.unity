@@ -337,4 +337,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0515154f6f47b8d46a28b22689f7979c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  textureAtlas: {fileID: 2100000, guid: aff136597edc3614b8939f06ff910d44, type: 2}
+  TextureAtlas: {fileID: 2100000, guid: aff136597edc3614b8939f06ff910d44, type: 2}
