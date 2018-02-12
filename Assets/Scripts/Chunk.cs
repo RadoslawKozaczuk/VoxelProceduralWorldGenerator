@@ -8,6 +8,8 @@ namespace Assets.Scripts
 		public Block[,,] Blocks;
 		public GameObject ChunkGameObject;
 
+		private float CaveProbability = 0.43f;
+
 		public Chunk(Vector3 position, Material c)
 		{
 			ChunkGameObject = new GameObject(World.BuildChunkName(position));
@@ -36,7 +38,12 @@ namespace Assets.Scripts
 
 						// generate height
 						Block.BlockType type;
-						if (worldY <= Utils.GenerateStoneHeight(worldX, worldZ))
+
+						if (Utils.FractalBrownianMotion3D(worldX, worldY, worldZ) < CaveProbability)
+						{
+							type = Block.BlockType.Air;
+						}
+						else if (worldY <= Utils.GenerateStoneHeight(worldX, worldZ))
 						{
 							type = Block.BlockType.Stone;
 						}
