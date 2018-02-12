@@ -34,8 +34,24 @@ namespace Assets.Scripts
 						// old random way
 						//var type = Random.Range(0, 100) < 50 ? Block.BlockType.Dirt : Block.BlockType.Air;
 
-						// new super way
-						var type = worldY <= Utils.GenerateHeight(worldX, worldZ) ? Block.BlockType.Dirt : Block.BlockType.Air;
+						// generate height
+						Block.BlockType type;
+						if (worldY <= Utils.GenerateStoneHeight(worldX, worldZ))
+						{
+							type = Block.BlockType.Stone;
+						}
+						else if (worldY == Utils.GenerateHeight(worldX, worldZ))
+						{
+							type = Block.BlockType.Grass;
+						}
+						else if (worldY <= Utils.GenerateHeight(worldX, worldZ))
+						{
+							type = Block.BlockType.Dirt;
+						}
+						else
+						{
+							type = Block.BlockType.Air;
+						}
 						
 						Blocks[x, y, z] = new Block(type, pos, ChunkGameObject.gameObject, this);
 					}

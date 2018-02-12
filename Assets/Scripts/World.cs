@@ -9,7 +9,7 @@ namespace Assets.Scripts
 		public Material TextureAtlas;
 		public static int ColumnHeight = 16; // number of chunks in column
 		public static int ChunkSize = 8;
-		public static int WorldSize = 2; // number of columns in x and y
+		public static int WorldSize = 4; // number of columns in x and y
 		public static Dictionary<string, Chunk> Chunks;
 
 		public static string BuildChunkName(Vector3 v)

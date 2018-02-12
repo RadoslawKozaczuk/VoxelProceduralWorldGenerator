@@ -1,14 +1,23 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 
 public class Utils
 {
 
-	static int maxHeight = 150;
-	static float smooth = 0.01f;
-	static int octaves = 4;
-	static float persistence = 0.5f;
+	static readonly int maxHeight = 150;
+	static readonly float smooth = 0.01f;
+	static readonly int octaves = 4;
+	static readonly float persistence = 0.5f;
+
+	static readonly int maxHeightStone = 145;
+	static readonly float smoothStone = 0.02f;
+	static readonly int octavesStone = 5;
+	static readonly float persistenceStone = 0.75f;
+
+	public static int GenerateStoneHeight(float x, float z)
+	{
+		float height = Map(0, maxHeightStone, 0, 1, FractalBrownianMotion(x * smoothStone, z * smoothStone, octavesStone, persistenceStone));
+		return (int)height;
+	}
 
 	public static int GenerateHeight(float x, float z)
 	{
