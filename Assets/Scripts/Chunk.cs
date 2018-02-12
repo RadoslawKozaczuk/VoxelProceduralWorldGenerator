@@ -8,7 +8,16 @@ namespace Assets.Scripts
 		public Block[,,] Blocks;
 		public GameObject ChunkGameObject;
 
-		private float CaveProbability = 0.43f;
+		// caves should be more erratic so has to be a higher number
+		private const float CaveProbability = 0.43f;
+		private const float SmoothCaves = 0.09f;
+		private const int OctavesCaves = 3; // reduced a bit to lower workload but not to much to maintain randomness
+
+		// shiny diamonds!
+		private const float DiamondProbability = 0.38f; // this is not percentage chance because we are using perlin function
+		private const float SmoothDiamond = 0.06f;
+		private const int OctavesDiamond = 4; // reduced a bit to lower workload but not to much to maintain randomness
+		private const int MaxHeightDiamond = 50;
 
 		public Chunk(Vector3 position, Material c)
 		{
@@ -39,13 +48,16 @@ namespace Assets.Scripts
 						// generate height
 						Block.BlockType type;
 
-						if (Utils.FractalBrownianMotion3D(worldX, worldY, worldZ) < CaveProbability)
+						if (Utils.FractalBrownianMotion3D(worldX, worldY, worldZ, SmoothCaves, OctavesCaves) < CaveProbability)
 						{
 							type = Block.BlockType.Air;
 						}
 						else if (worldY <= Utils.GenerateStoneHeight(worldX, worldZ))
 						{
-							type = Block.BlockType.Stone;
+							type = Utils.FractalBrownianMotion3D(worldX, worldY, worldZ, SmoothDiamond, OctavesDiamond) < DiamondProbability 
+								&& worldY <= MaxHeightDiamond
+								? Block.BlockType.Diamond 
+								: Block.BlockType.Stone;
 						}
 						else if (worldY == Utils.GenerateHeight(worldX, worldZ))
 						{

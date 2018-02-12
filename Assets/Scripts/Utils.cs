@@ -12,10 +12,6 @@ public class Utils
 	private const int OctavesStone = 5;
 	private const float PersistenceStone = 0.75f;
 
-	// caves should be more erratic so has to be a higher number
-	private const float SmoothCaves = 0.09f;
-	private const int OctavesCaves = 3; // reduced a bit to lower workload but not to much to maintain randomness
-
 	public static int GenerateStoneHeight(float x, float z)
 	{
 		float height = Map(0, MaxHeightStone, 0, 1, FractalBrownianMotion(x * SmoothStone, z * SmoothStone, OctavesStone, PersistenceStone));
@@ -55,16 +51,16 @@ public class Utils
 		return total / maxValue;
 	}
 
-	public static float FractalBrownianMotion3D(float x, float y, int z)
+	public static float FractalBrownianMotion3D(float x, float y, int z, float smooth, int octaves)
 	{
 		// this is obviously more computational heavy
-		float xy = FractalBrownianMotion(x * SmoothCaves, y * SmoothCaves, OctavesCaves, 0.5f);
-		float yz = FractalBrownianMotion(y * SmoothCaves, z * SmoothCaves, OctavesCaves, 0.5f);
-		float xz = FractalBrownianMotion(x * SmoothCaves, z * SmoothCaves, OctavesCaves, 0.5f);
+		float xy = FractalBrownianMotion(x * smooth, y * smooth, octaves, 0.5f);
+		float yz = FractalBrownianMotion(y * smooth, z * smooth, octaves, 0.5f);
+		float xz = FractalBrownianMotion(x * smooth, z * smooth, octaves, 0.5f);
 
-		float yx = FractalBrownianMotion(y * SmoothCaves, x * SmoothCaves, OctavesCaves, 0.5f);
-		float zy = FractalBrownianMotion(z * SmoothCaves, y * SmoothCaves, OctavesCaves, 0.5f);
-		float zx = FractalBrownianMotion(z * SmoothCaves, x * SmoothCaves, OctavesCaves, 0.5f);
+		float yx = FractalBrownianMotion(y * smooth, x * smooth, octaves, 0.5f);
+		float zy = FractalBrownianMotion(z * smooth, y * smooth, octaves, 0.5f);
+		float zx = FractalBrownianMotion(z * smooth, x * smooth, octaves, 0.5f);
 
 		return (xy + yz + xz + yx + zy + zx) / 6.0f;
 	}
