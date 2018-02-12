@@ -25,7 +25,18 @@ namespace Assets.Scripts
 					for (var x = 0; x < World.ChunkSize; x++)
 					{
 						var pos = new Vector3(x, y, z);
-						var type = Random.Range(0, 100) < 50 ? Block.BlockType.Dirt : Block.BlockType.Air;
+
+						// taking into consideration the noise generator
+						int worldX = (int) (x + ChunkGameObject.transform.position.x);
+						int worldY = (int) (y + ChunkGameObject.transform.position.y);
+						int worldZ = (int) (z + ChunkGameObject.transform.position.z);
+
+						// old random way
+						//var type = Random.Range(0, 100) < 50 ? Block.BlockType.Dirt : Block.BlockType.Air;
+
+						// new super way
+						var type = worldY <= Utils.GenerateHeight(worldX, worldZ) ? Block.BlockType.Dirt : Block.BlockType.Air;
+						
 						Blocks[x, y, z] = new Block(type, pos, ChunkGameObject.gameObject, this);
 					}
 		}

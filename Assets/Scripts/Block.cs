@@ -40,7 +40,13 @@ namespace Assets.Scripts
 			mesh.name = "ScriptedMesh" + side;
 
 			var vertices = new Vector3[4];
+
+			// Normals are vectors projected from the polygon (triangle) at the angle of 90 degrees,
+			// they the engine which side it should treat as the side on which textures and shaders should be rendered.
+			// Verticies also can have their own normal and this is the case here so each vertex has its own normal vector.
 			var normals = new Vector3[4];
+
+			// Uvs maps the texture over the surface
 			var uvs = new Vector2[4];
 			var triangles = new int[6];
 
