@@ -4,7 +4,7 @@ namespace Assets.Scripts
 {
 	public class Block
 	{
-		public enum BlockType { Grass, Dirt, Stone, Diamond, Air };
+		public enum BlockType { Grass, Dirt, Stone, Diamond, Bedrock, Redstone, Air };
 		enum Cubeside { Bottom, Top, Left, Right, Front, Back };
 
 		public bool IsSolid;
@@ -24,7 +24,11 @@ namespace Assets.Scripts
 			/*STONE*/			{new Vector2( 0, 0.875f ), new Vector2( 0.0625f, 0.875f),
 									new Vector2( 0, 0.9375f ), new Vector2( 0.0625f, 0.9375f )},
 			/*DIAMOND*/			{new Vector2( 0.125f, 0.75f ), new Vector2( 0.1875f, 0.75f),
-									new Vector2( 0.125f, 0.8125f ), new Vector2( 0.1875f, 0.81f )}
+									new Vector2( 0.125f, 0.8125f ), new Vector2( 0.1875f, 0.81f )},
+			/*BEDROCK*/			{new Vector2( 0.3125f, 0.8125f ), new Vector2( 0.375f, 0.8125f),
+									new Vector2( 0.3125f, 0.875f ),new Vector2( 0.375f, 0.875f )},
+			/*REDSTONE*/		{new Vector2( 0.1875f, 0.75f ), new Vector2( 0.25f, 0.75f),
+									new Vector2( 0.1875f, 0.8125f ),new Vector2( 0.25f, 0.8125f )},
 		};
 
 		public Block(BlockType block, Vector3 pos, GameObject p, Chunk o)

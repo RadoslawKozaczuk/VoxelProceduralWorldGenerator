@@ -12,6 +12,17 @@ public class Utils
 	private const int OctavesStone = 5;
 	private const float PersistenceStone = 0.75f;
 
+	private const int MaxHeightBedrock = 20;
+	private const float SmoothBedrock = 0.01f;
+	private const int OctavesBedrock = 2;
+	private const float PersistenceBedrock = 0.5f;
+
+	public static int GenerateBedrockHeight(float x, float z)
+	{
+		float height = Map(0, MaxHeightBedrock, 0, 1, FractalBrownianMotion(x * SmoothBedrock, z * SmoothBedrock, OctavesBedrock, PersistenceBedrock));
+		return (int)height;
+	}
+
 	public static int GenerateStoneHeight(float x, float z)
 	{
 		float height = Map(0, MaxHeightStone, 0, 1, FractalBrownianMotion(x * SmoothStone, z * SmoothStone, OctavesStone, PersistenceStone));

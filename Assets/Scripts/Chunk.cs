@@ -10,15 +10,21 @@ namespace Assets.Scripts
 
 		// caves should be more erratic so has to be a higher number
 		private const float CaveProbability = 0.43f;
-		private const float SmoothCaves = 0.09f;
-		private const int OctavesCaves = 3; // reduced a bit to lower workload but not to much to maintain randomness
+		private const float CaveSmooth = 0.09f;
+		private const int CaveOctaves = 3; // reduced a bit to lower workload but not to much to maintain randomness
 
 		// shiny diamonds!
 		private const float DiamondProbability = 0.38f; // this is not percentage chance because we are using perlin function
-		private const float SmoothDiamond = 0.06f;
-		private const int OctavesDiamond = 4; // reduced a bit to lower workload but not to much to maintain randomness
-		private const int MaxHeightDiamond = 50;
+		private const float DiamondSmooth = 0.06f;
+		private const int DiamondOctaves = 3;
+		private const int DiamondMaxHeight = 50;
 
+		// red stones
+		private const float RedstoneProbability = 0.41f;
+		private const float RedstoneSmooth = 0.06f;
+		private const int RedstoneOctaves = 3;
+		private const int RedstoneMaxHeight = 30;
+		
 		public Chunk(Vector3 position, Material c)
 		{
 			ChunkGameObject = new GameObject(World.BuildChunkName(position));
@@ -48,16 +54,30 @@ namespace Assets.Scripts
 						// generate height
 						Block.BlockType type;
 
-						if (Utils.FractalBrownianMotion3D(worldX, worldY, worldZ, SmoothCaves, OctavesCaves) < CaveProbability)
+						if (Utils.FractalBrownianMotion3D(worldX, worldY, worldZ, CaveSmooth, CaveOctaves) < CaveProbability)
 						{
 							type = Block.BlockType.Air;
 						}
+						else if (worldY <= Utils.GenerateBedrockHeight(worldX, worldZ))
+						{
+							type = Block.BlockType.Bedrock;
+						}
 						else if (worldY <= Utils.GenerateStoneHeight(worldX, worldZ))
 						{
-							type = Utils.FractalBrownianMotion3D(worldX, worldY, worldZ, SmoothDiamond, OctavesDiamond) < DiamondProbability 
-								&& worldY <= MaxHeightDiamond
-								? Block.BlockType.Diamond 
-								: Block.BlockType.Stone;
+							if (Utils.FractalBrownianMotion3D(worldX, worldY, worldZ, DiamondSmooth, DiamondOctaves) < DiamondProbability 
+								&& worldY < DiamondMaxHeight)
+							{
+								type = Block.BlockType.Diamond;
+							}
+							else if (Utils.FractalBrownianMotion3D(worldX, worldY, worldZ, RedstoneSmooth, RedstoneOctaves) < RedstoneProbability
+								&& worldY < RedstoneMaxHeight)
+							{
+								type = Block.BlockType.Redstone;
+							}
+							else
+							{
+								type = Block.BlockType.Stone;
+							}
 						}
 						else if (worldY == Utils.GenerateHeight(worldX, worldZ))
 						{
