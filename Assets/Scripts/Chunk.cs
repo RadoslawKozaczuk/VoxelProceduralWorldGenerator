@@ -14,7 +14,7 @@ namespace Assets.Scripts
 		private const int CaveOctaves = 3; // reduced a bit to lower workload but not to much to maintain randomness
 
 		// shiny diamonds!
-		private const float DiamondProbability = 0.38f; // this is not percentage chance because we are using perlin function
+		private const float DiamondProbability = 0.38f; // this is not percentage chance because we are using Perlin function
 		private const float DiamondSmooth = 0.06f;
 		private const int DiamondOctaves = 3;
 		private const int DiamondMaxHeight = 50;
@@ -105,6 +105,10 @@ namespace Assets.Scripts
 						Blocks[x, y, z].Draw();
 					}
 			CombineQuads();
+
+			// adding collision
+			var collider = ChunkGameObject.gameObject.AddComponent(typeof(MeshCollider)) as MeshCollider;
+			collider.sharedMesh = ChunkGameObject.transform.GetComponent<MeshFilter>().mesh;
 		}
 		
 		void CombineQuads()
