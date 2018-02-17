@@ -24,10 +24,14 @@ namespace Assets.Scripts
 		private const float RedstoneSmooth = 0.06f;
 		private const int RedstoneOctaves = 3;
 		private const int RedstoneMaxHeight = 30;
-		
-		public Chunk(Vector3 position, Material c)
+
+		public enum ChunkStatus { Draw, Done, Keep }
+
+		public ChunkStatus Status; // status of the current chunk
+
+		public Chunk(Vector3 position, Material c, string chunkName)
 		{
-			ChunkGameObject = new GameObject(World.BuildChunkName(position));
+			ChunkGameObject = new GameObject(chunkName);
 			ChunkGameObject.transform.position = position;
 			CubeMaterial = c;
 			BuildChunk();
@@ -94,6 +98,9 @@ namespace Assets.Scripts
 						
 						Blocks[x, y, z] = new Block(type, pos, ChunkGameObject.gameObject, this);
 					}
+
+			// chunk just has been created and it is ready to be drawn
+			Status = ChunkStatus.Draw;
 		}
 
 		public void DrawChunk()

@@ -22,6 +22,9 @@ namespace Assets.Scripts
 		public int posx;
 		public int posz;
 
+		private bool firstBuild = true; // true if the first world hasn't been built is yet
+		private bool building = false; // true when the building method is running
+
 		public static string BuildChunkName(Vector3 v)
 		{
 			return (int)v.x + "_" + (int)v.y + "_" + (int)v.z;
@@ -29,12 +32,11 @@ namespace Assets.Scripts
 
 		IEnumerator BuildWorld()
 		{
+			building = true;
 			posx = (int)Mathf.Floor(Player.transform.position.x / ChunkSize);
 			posz = (int)Mathf.Floor(Player.transform.position.z / ChunkSize);
-
-
-			float totalChunks = (Mathf.Pow(Radius * 2 + 1, 2) * ColumnHeight) * 2;
 			
+			float totalChunks = (Mathf.Pow(Radius * 2 + 1, 2) * ColumnHeight) * 2;
 			int processedChunks = 0;
 
 			for (var z = -Radius; z <= Radius; z++)
@@ -46,32 +48,65 @@ namespace Assets.Scripts
 														y * ChunkSize,
 														(posz + z) * ChunkSize);
 
-						var c = new Chunk(chunkPosition, TextureAtlas);
-						c.ChunkGameObject.transform.parent = transform;
-						Chunks.Add(c.ChunkGameObject.name, c);
-
+						Chunk c;
+						var chunkName = BuildChunkName(chunkPosition);
+						if (Chunks.TryGetValue(chunkName, out c))
+						{
+							// we iterate inside the radius so whatever is found has to be set to KEEP
+							c.Status = Chunk.ChunkStatus.Keep;
+							break; // if this block is in the dictionary then the rest of the column has to be in the dictionary
+						}
+						else
+						{
+							c = new Chunk(chunkPosition, TextureAtlas, chunkName);
+							c.ChunkGameObject.transform.parent = transform;
+							Chunks.Add(c.ChunkGameObject.name, c); // whatever is new is set to DRAW
+						}
+						
 						// loading bar update
-						processedChunks++;
-						loadingAmount.value = processedChunks / totalChunks * 100;
+						if (firstBuild)
+						{
+							processedChunks++;
+							loadingAmount.value = processedChunks / totalChunks * 100;
+						}
 					}
 
-			foreach (var c in Chunks)
+			foreach (KeyValuePair<string, Chunk> c in Chunks)
 			{
-				c.Value.DrawChunk();
-				processedChunks++;
-				loadingAmount.value = processedChunks / totalChunks * 100;
+				if(c.Value.Status == Chunk.ChunkStatus.Draw)
+				{
+					c.Value.DrawChunk();
+					c.Value.Status = Chunk.ChunkStatus.Keep;
+				}
+
+
+				// after drawing whatever is left should be set to DONE
+				c.Value.Status = Chunk.ChunkStatus.Done;
+
+				if (firstBuild)
+				{
+					processedChunks++;
+					loadingAmount.value = processedChunks / totalChunks * 100;
+				}
 
 				// drawing one by one was cool for testing but it is not in a real game
 				// yield return null;
 			}
 
 			yield return null;
-			Player.SetActive(true);
 
-			// disable UI
-			loadingAmount.gameObject.SetActive(false);
-			MainCamera.gameObject.SetActive(false);
-			PlayButton.gameObject.SetActive(false);
+			if (firstBuild)
+			{
+				Player.SetActive(true);
+
+				// disable UI
+				loadingAmount.gameObject.SetActive(false);
+				MainCamera.gameObject.SetActive(false);
+				PlayButton.gameObject.SetActive(false);
+				firstBuild = false;
+			}
+
+			building = false;
 		}
 
 		// need to be public so PlayButton can access it
@@ -89,7 +124,12 @@ namespace Assets.Scripts
 			Chunks = new Dictionary<string, Chunk>();
 			transform.position = Vector3.zero;
 			transform.rotation = Quaternion.identity;
-			
+		}
+
+		private void Update()
+		{
+			if(!building && !firstBuild)
+				StartCoroutine(BuildWorld());
 		}
 	}
 }
