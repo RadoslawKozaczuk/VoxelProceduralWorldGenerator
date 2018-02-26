@@ -116,6 +116,7 @@ namespace Assets.Scripts
 			// adding collision
 			var collider = ChunkGameObject.gameObject.AddComponent(typeof(MeshCollider)) as MeshCollider;
 			collider.sharedMesh = ChunkGameObject.transform.GetComponent<MeshFilter>().mesh;
+			Status = ChunkStatus.Done;
 		}
 		
 		void CombineQuads()

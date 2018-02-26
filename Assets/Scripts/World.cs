@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using Realtime.Messaging.Internal;
 
 namespace Assets.Scripts
 {
@@ -12,18 +13,23 @@ namespace Assets.Scripts
 		public static int ColumnHeight = 16; // number of chunks in column
 		public static int ChunkSize = 8; // number of blocks in x and y
 		public static int WorldSize = 8; // number of columns in x and y
-		public static int Radius = 2; // radius tell us how many blocks around the layer needs to be generated
-		public static Dictionary<string, Chunk> Chunks;
+		public static int Radius = 5; // radius tell us how many chunks around the layer needs to be generated
 
-		public Slider loadingAmount;
+		// this is equivalent to Microsoft's concurrent dictionary - Unity simply does not support high enough .Net Framework
+		public static ConcurrentDictionary<string, Chunk> Chunks;
+		
+		public Slider LoadingAmount;
 		public Camera MainCamera;
 		public Button PlayButton;
 
 		public int posx;
 		public int posz;
 
-		private bool firstBuild = true; // true if the first world hasn't been built is yet
-		private bool building = false; // true when the building method is running
+		private bool _firstBuild = true; // true if the first world hasn't been built is yet
+		private bool _building = false; // true when the building method is running
+
+		// this is necessary to avoid building world when the player does not move
+		public Vector3 lastBuildPos;
 
 		public static string BuildChunkName(Vector3 v)
 		{
@@ -32,11 +38,11 @@ namespace Assets.Scripts
 
 		IEnumerator BuildWorld()
 		{
-			building = true;
+			_building = true;
 			posx = (int)Mathf.Floor(Player.transform.position.x / ChunkSize);
 			posz = (int)Mathf.Floor(Player.transform.position.z / ChunkSize);
 			
-			float totalChunks = (Mathf.Pow(Radius * 2 + 1, 2) * ColumnHeight) * 2;
+			float totalChunks = Mathf.Pow(Radius * 2 + 1, 2) * ColumnHeight * 2;
 			int processedChunks = 0;
 
 			for (var z = -Radius; z <= Radius; z++)
@@ -60,14 +66,14 @@ namespace Assets.Scripts
 						{
 							c = new Chunk(chunkPosition, TextureAtlas, chunkName);
 							c.ChunkGameObject.transform.parent = transform;
-							Chunks.Add(c.ChunkGameObject.name, c); // whatever is new is set to DRAW
+							Chunks.TryAdd(c.ChunkGameObject.name, c); // whatever is new is set to DRAW
 						}
 						
 						// loading bar update
-						if (firstBuild)
+						if (_firstBuild)
 						{
 							processedChunks++;
-							loadingAmount.value = processedChunks / totalChunks * 100;
+							LoadingAmount.value = processedChunks / totalChunks * 100;
 						}
 					}
 
@@ -83,10 +89,10 @@ namespace Assets.Scripts
 				// after drawing whatever is left should be set to DONE
 				c.Value.Status = Chunk.ChunkStatus.Done;
 
-				if (firstBuild)
+				if (_firstBuild)
 				{
 					processedChunks++;
-					loadingAmount.value = processedChunks / totalChunks * 100;
+					LoadingAmount.value = processedChunks / totalChunks * 100;
 				}
 
 				// drawing one by one was cool for testing but it is not in a real game
@@ -95,18 +101,91 @@ namespace Assets.Scripts
 
 			yield return null;
 
-			if (firstBuild)
+			if (_firstBuild)
 			{
 				Player.SetActive(true);
 
 				// disable UI
-				loadingAmount.gameObject.SetActive(false);
+				LoadingAmount.gameObject.SetActive(false);
 				MainCamera.gameObject.SetActive(false);
 				PlayButton.gameObject.SetActive(false);
-				firstBuild = false;
+				_firstBuild = false;
 			}
 
-			building = false;
+			_building = false;
+		}
+
+		void BuildChunkAt(int x, int y, int z)
+		{
+			Vector3 chunkPosition = new Vector3(x * ChunkSize,
+				y * ChunkSize,
+				z * ChunkSize);
+
+			string chunkName = BuildChunkName(chunkPosition);
+			Chunk c;
+
+			if (!Chunks.TryGetValue(chunkName, out c))
+			{
+				c = new Chunk(chunkPosition, TextureAtlas, chunkName);
+				c.ChunkGameObject.transform.parent = transform;
+				Chunks.TryAdd(c.ChunkGameObject.name, c);
+			}
+		}
+
+		IEnumerator BuildRecursiveWorld(int x, int y, int z, int rad)
+		{
+			rad--;
+			if (rad <= 0) yield break;
+
+			// build chunk front
+			BuildChunkAt(x, y, z + 1);
+			StartCoroutine(BuildRecursiveWorld(x, y, z + 1, rad));
+			yield return null;
+
+			// build chunk back
+			BuildChunkAt(x, y, z - 1);
+			StartCoroutine(BuildRecursiveWorld(x, y, z - 1, rad));
+			yield return null;
+
+			// build chunk left
+			BuildChunkAt(x - 1, y, z);
+			StartCoroutine(BuildRecursiveWorld(x - 1, y, z, rad));
+			yield return null;
+
+			// build chunk right
+			BuildChunkAt(x + 1, y, z);
+			StartCoroutine(BuildRecursiveWorld(x + 1, y, z, rad));
+			yield return null;
+
+			// build chunk up
+			BuildChunkAt(x, y + 1, z);
+			StartCoroutine(BuildRecursiveWorld(x, y + 1, z, rad));
+			yield return null;
+
+			// build chunk down
+			BuildChunkAt(x, y - 1, z);
+			StartCoroutine(BuildRecursiveWorld(x, y - 1, z, rad));
+			yield return null;
+		}
+
+		IEnumerator DrawChunks()
+		{
+			foreach (KeyValuePair<string, Chunk> c in Chunks)
+			{
+				if (c.Value.Status == Chunk.ChunkStatus.Draw)
+				{
+					c.Value.DrawChunk();
+				}
+
+				yield return null;
+			}
+		}
+
+		private void DisableUI()
+		{
+			LoadingAmount.gameObject.SetActive(false);
+			//MainCamera.gameObject.SetActive(false);
+			PlayButton.gameObject.SetActive(false);
 		}
 
 		// need to be public so PlayButton can access it
@@ -115,21 +194,74 @@ namespace Assets.Scripts
 			StartCoroutine(BuildWorld());
 		}
 
-		// Use this for initialization
+		public void BuildNearPlayer()
+		{
+			// we stop any existing build that is going on - this will stop all the recursive calls as well
+			StopCoroutine("BuildRecursiveWorld");
+			StartCoroutine(BuildRecursiveWorld(
+				(int)(Player.transform.position.x/ChunkSize),
+				(int)(Player.transform.position.y/ChunkSize),
+				(int)(Player.transform.position.z/ChunkSize),
+				Radius));
+		}
+
 		void Start()
 		{
+			// temporary solution to avoid pointless clicking
+			DisableUI();
+
+			Vector3 ppos = Player.transform.position;
+			Player.transform.position = new Vector3(ppos.x, 
+				Utils.GenerateHeight(ppos.x, ppos.z) + 1,
+				ppos.z);
+
+			lastBuildPos = Player.transform.position;
+
 			// to be sure player won't fall through the world that hasn't been build yet
 			Player.SetActive(false);
 
-			Chunks = new Dictionary<string, Chunk>();
+			_firstBuild = true;
+			Chunks = new ConcurrentDictionary<string, Chunk>();
 			transform.position = Vector3.zero;
 			transform.rotation = Quaternion.identity;
+
+			//build starting chunk
+			BuildChunkAt((int)(Player.transform.position.x / ChunkSize),
+				(int)(Player.transform.position.y / ChunkSize),
+				(int)(Player.transform.position.z / ChunkSize));
+			//draw it
+			StartCoroutine(DrawChunks());
+
+			//create a bigger world
+			StartCoroutine(BuildRecursiveWorld((int)(Player.transform.position.x / ChunkSize),
+				(int)(Player.transform.position.y / ChunkSize),
+				(int)(Player.transform.position.z / ChunkSize), Radius));
 		}
 
-		private void Update()
+		// previous one
+		//private void Update()
+		//{
+		//	if(!_building && !_firstBuild)
+		//		StartCoroutine(BuildWorld());
+		//}
+
+		void Update()
 		{
-			if(!building && !firstBuild)
-				StartCoroutine(BuildWorld());
+			// test how far the player has moved
+			Vector3 movement = lastBuildPos - Player.transform.position;
+			if (movement.magnitude > ChunkSize)
+			{
+				lastBuildPos = Player.transform.position;
+				BuildNearPlayer();
+			}
+
+			if (!Player.activeSelf)
+			{
+				Player.SetActive(true);
+				_firstBuild = false;
+			}
+
+			StartCoroutine(DrawChunks());
 		}
 	}
 }
