@@ -461,6 +461,10 @@ Prefab:
       propertyPath: m_RootOrder
       value: 3
       objectReference: {fileID: 0}
+    - target: {fileID: 2000000, guid: 5e9e851c0e142814dac026a256ba2ac0, type: 2}
+      propertyPath: m_OcclusionCulling
+      value: 1
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_ParentPrefab: {fileID: 100100000, guid: 5e9e851c0e142814dac026a256ba2ac0, type: 2}
   m_IsPrefabParent: 0
@@ -785,8 +789,9 @@ MonoBehaviour:
   LoadingAmount: {fileID: 71627770}
   MainCamera: {fileID: 1698775129}
   PlayButton: {fileID: 2135880542}
-  posx: 0
-  posz: 0
+  Posx: 0
+  Posz: 0
+  LastBuildPos: {x: 0, y: 0, z: 0}
 --- !u!1 &2135880540
 GameObject:
   m_ObjectHideFlags: 0

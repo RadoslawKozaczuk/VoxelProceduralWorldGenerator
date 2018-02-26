@@ -15,6 +15,8 @@ namespace Assets.Scripts
 		public static int WorldSize = 8; // number of columns in x and y
 		public static int Radius = 6; // radius tell us how many chunks around the layer needs to be generated
 
+		public static List<string> ToRemove = new List<string>();
+
 		// this is equivalent to Microsoft's concurrent dictionary - Unity simply does not support high enough .Net Framework
 		public static ConcurrentDictionary<string, Chunk> Chunks;
 		
@@ -135,39 +137,39 @@ namespace Assets.Scripts
 			}
 		}
 
-		IEnumerator BuildRecursiveWorld(int x, int y, int z, int rad)
+		IEnumerator BuildRecursiveWorld(int x, int y, int z, int radius)
 		{
-			rad--;
-			if (rad <= 0) yield break;
+			radius--;
+			if (radius <= 0) yield break;
 
 			// build chunk front
 			BuildChunkAt(x, y, z + 1);
-			StartCoroutine(BuildRecursiveWorld(x, y, z + 1, rad));
+			StartCoroutine(BuildRecursiveWorld(x, y, z + 1, radius));
 			yield return null;
 
 			// build chunk back
 			BuildChunkAt(x, y, z - 1);
-			StartCoroutine(BuildRecursiveWorld(x, y, z - 1, rad));
+			StartCoroutine(BuildRecursiveWorld(x, y, z - 1, radius));
 			yield return null;
 
 			// build chunk left
 			BuildChunkAt(x - 1, y, z);
-			StartCoroutine(BuildRecursiveWorld(x - 1, y, z, rad));
+			StartCoroutine(BuildRecursiveWorld(x - 1, y, z, radius));
 			yield return null;
 
 			// build chunk right
 			BuildChunkAt(x + 1, y, z);
-			StartCoroutine(BuildRecursiveWorld(x + 1, y, z, rad));
+			StartCoroutine(BuildRecursiveWorld(x + 1, y, z, radius));
 			yield return null;
 
 			// build chunk up
 			BuildChunkAt(x, y + 1, z);
-			StartCoroutine(BuildRecursiveWorld(x, y + 1, z, rad));
+			StartCoroutine(BuildRecursiveWorld(x, y + 1, z, radius));
 			yield return null;
 
 			// build chunk down
 			BuildChunkAt(x, y - 1, z);
-			StartCoroutine(BuildRecursiveWorld(x, y - 1, z, rad));
+			StartCoroutine(BuildRecursiveWorld(x, y - 1, z, radius));
 			yield return null;
 		}
 
@@ -180,7 +182,23 @@ namespace Assets.Scripts
 					c.Value.DrawChunk();
 				}
 
+				if(c.Value.ChunkGameObject 
+				   && Vector3.Distance(Player.transform.position, c.Value.ChunkGameObject.transform.position) > Radius * ChunkSize)
+					ToRemove.Add(c.Key);
+
 				yield return null;
+			}
+		}
+
+		void RemoveOldChunks()
+		{
+			foreach (var chunkName in ToRemove)
+			{
+				Chunk c;
+				if (!Chunks.TryGetValue(chunkName, out c)) continue;
+				Destroy(c.ChunkGameObject);
+				Chunks.TryRemove(chunkName, out c);
+				//yield return null;
 			}
 		}
 
@@ -202,9 +220,9 @@ namespace Assets.Scripts
 			// we stop any existing build that is going on - this will stop all the recursive calls as well
 			StopCoroutine("BuildRecursiveWorld");
 			_queue.Run(BuildRecursiveWorld(
-				(int)(Player.transform.position.x/ChunkSize),
-				(int)(Player.transform.position.y/ChunkSize),
-				(int)(Player.transform.position.z/ChunkSize),
+				(int)(Player.transform.position.x / ChunkSize),
+				(int)(Player.transform.position.y / ChunkSize),
+				(int)(Player.transform.position.z / ChunkSize),
 				Radius));
 		}
 
@@ -213,10 +231,10 @@ namespace Assets.Scripts
 			// temporary solution to avoid pointless clicking
 			DisableUI();
 
-			Vector3 ppos = Player.transform.position;
-			Player.transform.position = new Vector3(ppos.x, 
-				Utils.GenerateHeight(ppos.x, ppos.z) + 1,
-				ppos.z);
+			Vector3 playerPos = Player.transform.position;
+			Player.transform.position = new Vector3(playerPos.x, 
+				Utils.GenerateHeight(playerPos.x, playerPos.z) + 1,
+				playerPos.z);
 
 			LastBuildPos = Player.transform.position;
 
@@ -234,6 +252,7 @@ namespace Assets.Scripts
 			BuildChunkAt((int)(Player.transform.position.x / ChunkSize),
 				(int)(Player.transform.position.y / ChunkSize),
 				(int)(Player.transform.position.z / ChunkSize));
+
 			//draw it
 			_queue.Run(DrawChunks());
 
@@ -267,6 +286,7 @@ namespace Assets.Scripts
 			}
 
 			_queue.Run(DrawChunks());
+			RemoveOldChunks();
 		}
 	}
 }
