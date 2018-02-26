@@ -41,6 +41,13 @@ namespace Assets.Scripts
 			return (int)v.x + "_" + (int)v.y + "_" + (int)v.z;
 		}
 
+		public static string BuildChunkFileName(Vector3 v)
+		{
+			return Application.persistentDataPath + "/savedata/Chunk_" 
+			                                      + (int) v.x + "_" + (int) v.y + "_" + (int) v.z + "_" 
+			                                      + ChunkSize + "_" + Radius + ".dat";
+		}
+
 		IEnumerator BuildWorld()
 		{
 			_building = true;

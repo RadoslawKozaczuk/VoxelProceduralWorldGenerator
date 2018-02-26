@@ -1,7 +1,37 @@
 using UnityEngine;
+using System;
+using System.Runtime.Serialization.Formatters.Binary;
+using System.IO;
+using System.Collections;
+using System.Collections.Generic;
 
 namespace Assets.Scripts
 {
+	[Serializable]
+	class BlockData
+	{
+		// we store only block type
+		public Block.BlockType[,,] Matrix;
+
+		public BlockData() { }
+
+		public BlockData(Block[,,] b)
+		{
+			Matrix = new Block.BlockType[World.ChunkSize, World.ChunkSize, World.ChunkSize];
+			for (int z = 0; z < World.ChunkSize; z++)
+			{
+				for (int y = 0; y < World.ChunkSize; y++)
+				{
+					for (int x = 0; x < World.ChunkSize; x++)
+					{
+						Matrix[x, y, z] = b[x, y, z].bType;
+					}
+				}
+			}
+		}
+	}
+
+
 	public class Chunk
 	{
 		public Material CubeMaterial;
@@ -28,6 +58,7 @@ namespace Assets.Scripts
 		public enum ChunkStatus { Draw, Done, Keep }
 
 		public ChunkStatus Status; // status of the current chunk
+		private BlockData _bd;
 
 		public Chunk(Vector3 position, Material c, string chunkName)
 		{
@@ -39,6 +70,9 @@ namespace Assets.Scripts
 
 		void BuildChunk()
 		{
+			bool dataFromFile = false;
+			dataFromFile = Load();
+
 			Blocks = new Block[World.ChunkSize, World.ChunkSize, World.ChunkSize];
 
 			for (var z = 0; z < World.ChunkSize; z++)
@@ -51,6 +85,12 @@ namespace Assets.Scripts
 						int worldX = (int) (x + ChunkGameObject.transform.position.x);
 						int worldY = (int) (y + ChunkGameObject.transform.position.y);
 						int worldZ = (int) (z + ChunkGameObject.transform.position.z);
+
+						if (dataFromFile)
+						{
+							Blocks[x, y, z] = new Block(_bd.Matrix[x, y, z], pos, ChunkGameObject.gameObject, this);
+							continue;
+						}
 
 						// old random way
 						//var type = Random.Range(0, 100) < 50 ? Block.BlockType.Dirt : Block.BlockType.Air;
@@ -145,7 +185,42 @@ namespace Assets.Scripts
 
 			//5. Delete all uncombined children
 			foreach (Transform quad in ChunkGameObject.transform)
-				Object.Destroy(quad.gameObject);
+				UnityEngine.Object.Destroy(quad.gameObject);
+		}
+
+		bool Load()
+		{
+			string chunkFile = World.BuildChunkFileName(ChunkGameObject.transform.position);
+			if (File.Exists(chunkFile))
+			{
+				var bf = new BinaryFormatter();
+				FileStream file = File.Open(chunkFile, FileMode.Open);
+				_bd = new BlockData();
+				_bd = (BlockData) bf.Deserialize(file);
+				file.Close();
+
+				// Debug.Log("Loading chunk from file: " + chunkFile);
+				return true;
+			}
+
+			return false;
+		}
+
+		public void Save()
+		{
+			string chunkFile = World.BuildChunkFileName(ChunkGameObject.transform.position);
+
+			if (!File.Exists(chunkFile))
+			{
+				Directory.CreateDirectory(Path.GetDirectoryName(chunkFile));
+			}
+
+			var bf = new BinaryFormatter();
+			FileStream file = File.Open(chunkFile, FileMode.OpenOrCreate);
+			_bd = new BlockData(Blocks);
+			bf.Serialize(file, _bd);
+			file.Close();
+			//Debug.Log("Saving chunk from file: " + chunkFile);
 		}
 	}
 }
