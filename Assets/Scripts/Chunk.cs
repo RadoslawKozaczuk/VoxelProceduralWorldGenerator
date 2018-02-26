@@ -24,7 +24,7 @@ namespace Assets.Scripts
 				{
 					for (int x = 0; x < World.ChunkSize; x++)
 					{
-						Matrix[x, y, z] = b[x, y, z].bType;
+						Matrix[x, y, z] = b[x, y, z].Type;
 					}
 				}
 			}

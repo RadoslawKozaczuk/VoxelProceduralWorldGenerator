@@ -9,7 +9,7 @@ namespace Assets.Scripts
 
 		public bool IsSolid;
 
-		readonly BlockType _blockType;
+		public readonly BlockType Type;
 		readonly Chunk _owner;
 		readonly GameObject _parent;
 		Vector3 _position;
@@ -33,11 +33,11 @@ namespace Assets.Scripts
 
 		public Block(BlockType block, Vector3 pos, GameObject p, Chunk o)
 		{
-			_blockType = block;
+			Type = block;
 			_owner = o;
 			_parent = p;
 			_position = pos;
-			IsSolid = _blockType != BlockType.Air;
+			IsSolid = Type != BlockType.Air;
 		}
 
 		void CreateQuad(Cubeside side)
@@ -62,14 +62,14 @@ namespace Assets.Scripts
 			Vector2 uv01;
 			Vector2 uv11;
 
-			if (_blockType == BlockType.Grass && side == Cubeside.Top)
+			if (Type == BlockType.Grass && side == Cubeside.Top)
 			{
 				uv00 = _blockUVs[0, 0];
 				uv10 = _blockUVs[0, 1];
 				uv01 = _blockUVs[0, 2];
 				uv11 = _blockUVs[0, 3];
 			}
-			else if (_blockType == BlockType.Grass && side == Cubeside.Bottom)
+			else if (Type == BlockType.Grass && side == Cubeside.Bottom)
 			{
 				uv00 = _blockUVs[(int)(BlockType.Dirt + 1), 0];
 				uv10 = _blockUVs[(int)(BlockType.Dirt + 1), 1];
@@ -78,10 +78,10 @@ namespace Assets.Scripts
 			}
 			else
 			{
-				uv00 = _blockUVs[(int)(_blockType + 1), 0];
-				uv10 = _blockUVs[(int)(_blockType + 1), 1];
-				uv01 = _blockUVs[(int)(_blockType + 1), 2];
-				uv11 = _blockUVs[(int)(_blockType + 1), 3];
+				uv00 = _blockUVs[(int)(Type + 1), 0];
+				uv10 = _blockUVs[(int)(Type + 1), 1];
+				uv01 = _blockUVs[(int)(Type + 1), 2];
+				uv11 = _blockUVs[(int)(Type + 1), 3];
 			}
 
 			//all possible vertices 
@@ -204,7 +204,7 @@ namespace Assets.Scripts
 
 		public void Draw()
 		{
-			if (_blockType == BlockType.Air) return;
+			if (Type == BlockType.Air) return;
 
 			if (!HasSolidNeighbor((int)_position.x, (int)_position.y, (int)_position.z + 1))
 				CreateQuad(Cubeside.Front);
