@@ -13,7 +13,7 @@ namespace Assets.Scripts
 		public static int ColumnHeight = 16; // number of chunks in column
 		public static int ChunkSize = 8; // number of blocks in x and y
 		public static int WorldSize = 8; // number of columns in x and y
-		public static int Radius = 5; // radius tell us how many chunks around the layer needs to be generated
+		public static int Radius = 6; // radius tell us how many chunks around the layer needs to be generated
 
 		// this is equivalent to Microsoft's concurrent dictionary - Unity simply does not support high enough .Net Framework
 		public static ConcurrentDictionary<string, Chunk> Chunks;
@@ -22,14 +22,17 @@ namespace Assets.Scripts
 		public Camera MainCamera;
 		public Button PlayButton;
 
-		public int posx;
-		public int posz;
+		public int Posx;
+		public int Posz;
 
 		private bool _firstBuild = true; // true if the first world hasn't been built is yet
 		private bool _building = false; // true when the building method is running
 
 		// this is necessary to avoid building world when the player does not move
-		public Vector3 lastBuildPos;
+		public Vector3 LastBuildPos;
+
+		private CoroutineQueue _queue;
+		public static uint MaxCoroutines = 1000;
 
 		public static string BuildChunkName(Vector3 v)
 		{
@@ -39,8 +42,8 @@ namespace Assets.Scripts
 		IEnumerator BuildWorld()
 		{
 			_building = true;
-			posx = (int)Mathf.Floor(Player.transform.position.x / ChunkSize);
-			posz = (int)Mathf.Floor(Player.transform.position.z / ChunkSize);
+			Posx = (int)Mathf.Floor(Player.transform.position.x / ChunkSize);
+			Posz = (int)Mathf.Floor(Player.transform.position.z / ChunkSize);
 			
 			float totalChunks = Mathf.Pow(Radius * 2 + 1, 2) * ColumnHeight * 2;
 			int processedChunks = 0;
@@ -50,9 +53,9 @@ namespace Assets.Scripts
 					for (var y = 0; y < ColumnHeight; y++)
 					{
 						// player position needs to be converted into chunk position
-						var chunkPosition = new Vector3((x + posx) * ChunkSize,
+						var chunkPosition = new Vector3((x + Posx) * ChunkSize,
 														y * ChunkSize,
-														(posz + z) * ChunkSize);
+														(Posz + z) * ChunkSize);
 
 						Chunk c;
 						var chunkName = BuildChunkName(chunkPosition);
@@ -191,14 +194,14 @@ namespace Assets.Scripts
 		// need to be public so PlayButton can access it
 		public void StartBuild()
 		{
-			StartCoroutine(BuildWorld());
+			_queue.Run(BuildWorld());
 		}
 
 		public void BuildNearPlayer()
 		{
 			// we stop any existing build that is going on - this will stop all the recursive calls as well
 			StopCoroutine("BuildRecursiveWorld");
-			StartCoroutine(BuildRecursiveWorld(
+			_queue.Run(BuildRecursiveWorld(
 				(int)(Player.transform.position.x/ChunkSize),
 				(int)(Player.transform.position.y/ChunkSize),
 				(int)(Player.transform.position.z/ChunkSize),
@@ -215,7 +218,7 @@ namespace Assets.Scripts
 				Utils.GenerateHeight(ppos.x, ppos.z) + 1,
 				ppos.z);
 
-			lastBuildPos = Player.transform.position;
+			LastBuildPos = Player.transform.position;
 
 			// to be sure player won't fall through the world that hasn't been build yet
 			Player.SetActive(false);
@@ -225,15 +228,17 @@ namespace Assets.Scripts
 			transform.position = Vector3.zero;
 			transform.rotation = Quaternion.identity;
 
+			_queue = new CoroutineQueue(MaxCoroutines, StartCoroutine);
+
 			//build starting chunk
 			BuildChunkAt((int)(Player.transform.position.x / ChunkSize),
 				(int)(Player.transform.position.y / ChunkSize),
 				(int)(Player.transform.position.z / ChunkSize));
 			//draw it
-			StartCoroutine(DrawChunks());
+			_queue.Run(DrawChunks());
 
 			//create a bigger world
-			StartCoroutine(BuildRecursiveWorld((int)(Player.transform.position.x / ChunkSize),
+			_queue.Run(BuildRecursiveWorld((int)(Player.transform.position.x / ChunkSize),
 				(int)(Player.transform.position.y / ChunkSize),
 				(int)(Player.transform.position.z / ChunkSize), Radius));
 		}
@@ -248,10 +253,10 @@ namespace Assets.Scripts
 		void Update()
 		{
 			// test how far the player has moved
-			Vector3 movement = lastBuildPos - Player.transform.position;
+			Vector3 movement = LastBuildPos - Player.transform.position;
 			if (movement.magnitude > ChunkSize)
 			{
-				lastBuildPos = Player.transform.position;
+				LastBuildPos = Player.transform.position;
 				BuildNearPlayer();
 			}
 
@@ -261,7 +266,7 @@ namespace Assets.Scripts
 				_firstBuild = false;
 			}
 
-			StartCoroutine(DrawChunks());
+			_queue.Run(DrawChunks());
 		}
 	}
 }
