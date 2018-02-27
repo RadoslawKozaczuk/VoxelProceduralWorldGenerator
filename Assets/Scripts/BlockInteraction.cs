@@ -42,6 +42,7 @@ namespace Assets.Scripts
 
 					updates.Add(hit.collider.gameObject.name);
 
+					// if the block is on the edge of the chunk we need to inform neighbor chunk
 					//update neighbors?
 					if (x == 0)
 						updates.Add(World.BuildChunkName(new Vector3(thisChunkx - World.ChunkSize, thisChunky, thisChunkz)));
