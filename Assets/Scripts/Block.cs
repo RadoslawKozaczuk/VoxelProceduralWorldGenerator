@@ -9,7 +9,17 @@ namespace Assets.Scripts
 
 		public bool IsSolid;
 
-		public readonly BlockType Type;
+		private BlockType _type;
+		public BlockType Type
+		{
+			get { return _type; }
+			set
+			{
+				_type = value;
+				IsSolid = _type != BlockType.Air;
+			}
+		}
+
 		readonly Chunk _owner;
 		readonly GameObject _parent;
 		Vector3 _position;
