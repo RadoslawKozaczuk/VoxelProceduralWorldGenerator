@@ -165,9 +165,7 @@ namespace Assets.Scripts
 			foreach (KeyValuePair<string, Chunk> c in Chunks)
 			{
 				if (c.Value.Status == Chunk.ChunkStatus.Draw)
-				{
 					c.Value.DrawChunk();
-				}
 
 				if(c.Value.ChunkGameObject 
 				   && Vector3.Distance(Player.transform.position, c.Value.ChunkGameObject.transform.position) > Radius * ChunkSize)

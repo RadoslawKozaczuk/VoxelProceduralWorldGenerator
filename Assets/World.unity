@@ -882,7 +882,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Player: {fileID: 1746416011}
-  TextureAtlas: {fileID: 2100000, guid: aff136597edc3614b8939f06ff910d44, type: 2}
+  TextureAtlas: {fileID: 2100000, guid: 0beff685461bd4744bc433ab1599a347, type: 2}
   LoadingAmount: {fileID: 71627770}
   MainCamera: {fileID: 1698775129}
   PlayButton: {fileID: 2135880542}

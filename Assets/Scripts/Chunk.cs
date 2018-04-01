@@ -2,8 +2,6 @@ using UnityEngine;
 using System;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.IO;
-using System.Collections;
-using System.Collections.Generic;
 
 namespace Assets.Scripts
 {
@@ -31,7 +29,6 @@ namespace Assets.Scripts
 		}
 	}
 
-
 	public class Chunk
 	{
 		public Material CubeMaterial;
@@ -58,7 +55,7 @@ namespace Assets.Scripts
 		public enum ChunkStatus { Draw, Done, Keep }
 
 		public ChunkStatus Status; // status of the current chunk
-		private BlockData _bd;
+		private BlockData _blockData;
 
 		public Chunk(Vector3 position, Material c, string chunkName)
 		{
@@ -88,7 +85,7 @@ namespace Assets.Scripts
 
 						if (dataFromFile)
 						{
-							Blocks[x, y, z] = new Block(_bd.Matrix[x, y, z], pos, ChunkGameObject.gameObject, this);
+							Blocks[x, y, z] = new Block(_blockData.Matrix[x, y, z], pos, ChunkGameObject.gameObject, this);
 							continue;
 						}
 
@@ -143,6 +140,15 @@ namespace Assets.Scripts
 			Status = ChunkStatus.Draw;
 		}
 
+		public void Redraw()
+		{
+			// we cannot use normal destroy because it may wait to the next update loop or something which will break the code
+			UnityEngine.Object.DestroyImmediate(ChunkGameObject.GetComponent<MeshFilter>());
+			UnityEngine.Object.DestroyImmediate(ChunkGameObject.GetComponent<MeshRenderer>());
+			UnityEngine.Object.DestroyImmediate(ChunkGameObject.GetComponent<Collider>());
+			DrawChunk();
+		}
+
 		public void DrawChunk()
 		{
 			for (var z = 0; z < World.ChunkSize; z++)
@@ -195,8 +201,8 @@ namespace Assets.Scripts
 			{
 				var bf = new BinaryFormatter();
 				FileStream file = File.Open(chunkFile, FileMode.Open);
-				_bd = new BlockData();
-				_bd = (BlockData) bf.Deserialize(file);
+				_blockData = new BlockData();
+				_blockData = (BlockData) bf.Deserialize(file);
 				file.Close();
 
 				// Debug.Log("Loading chunk from file: " + chunkFile);
@@ -217,8 +223,8 @@ namespace Assets.Scripts
 
 			var bf = new BinaryFormatter();
 			FileStream file = File.Open(chunkFile, FileMode.OpenOrCreate);
-			_bd = new BlockData(Blocks);
-			bf.Serialize(file, _bd);
+			_blockData = new BlockData(Blocks);
+			bf.Serialize(file, _blockData);
 			file.Close();
 			//Debug.Log("Saving chunk from file: " + chunkFile);
 		}
