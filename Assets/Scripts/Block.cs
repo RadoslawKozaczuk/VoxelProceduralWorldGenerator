@@ -87,6 +87,13 @@ namespace Assets.Scripts
 			_position = pos;
 		}
 
+		public void Reset()
+		{
+			HealthType = BlockType.NoCrack;
+			_currentHealth = _blockHealthMax[(int)Type];
+			_owner.Redraw();
+		}
+
 		/// <summary>
 		/// returns true if the block has been destroyed and false if it has not
 		/// </summary>
@@ -95,6 +102,10 @@ namespace Assets.Scripts
 			if (_currentHealth == -1) return false;
 			_currentHealth--;
 			HealthType++;
+
+			// if the block was hit for the first time start the coroutine
+			if (_currentHealth == (_blockHealthMax[(int)Type] - 1))
+				_owner.monoBehavior.StartCoroutine(_owner.monoBehavior.HealBlock(_position));
 
 			if (_currentHealth <= 0)
 			{

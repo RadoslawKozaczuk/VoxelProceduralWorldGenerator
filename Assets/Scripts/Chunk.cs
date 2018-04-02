@@ -34,6 +34,7 @@ namespace Assets.Scripts
 		public Material CubeMaterial;
 		public Block[,,] Blocks;
 		public GameObject ChunkGameObject;
+		public ChunkMB monoBehavior;
 
 		// caves should be more erratic so has to be a higher number
 		private const float CaveProbability = 0.43f;
@@ -61,6 +62,8 @@ namespace Assets.Scripts
 		{
 			ChunkGameObject = new GameObject(chunkName);
 			ChunkGameObject.transform.position = position;
+			monoBehavior = ChunkGameObject.AddComponent<ChunkMB>();
+			monoBehavior.SetOwner(this);
 			CubeMaterial = c;
 			BuildChunk();
 		}
