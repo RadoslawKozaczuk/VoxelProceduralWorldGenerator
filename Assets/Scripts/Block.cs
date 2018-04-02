@@ -63,8 +63,8 @@ namespace Assets.Scripts
 			/*REDSTONE*/		{new Vector2( 0.1875f, 0.75f ), new Vector2( 0.25f, 0.75f),
 									new Vector2( 0.1875f, 0.8125f ), new Vector2( 0.25f, 0.8125f )},
 
-			/*NOCRACK*/			{new Vector2(0.625f,0f),  new Vector2(0.6875f,0f),
-									new Vector2(0.625f,0.0625f), new Vector2(0.6875f,0.0625f)},
+			/*NOCRACK*/			{new Vector2(0.6875f,0f), new Vector2(0.75f,0f),
+									new Vector2(0.6875f,0.0625f), new Vector2(0.75f,0.0625f)},
 			/*CRACK1*/			{new Vector2(0.0625f,0f), new Vector2(0.125f,0f),
 									new Vector2(0.0625f,0.0625f), new Vector2(0.125f,0.0625f)},
  			/*CRACK2*/			{new Vector2(0.1875f,0f), new Vector2(0.25f,0f),
@@ -73,6 +73,8 @@ namespace Assets.Scripts
 									new Vector2(0.3125f,0.0625f), new Vector2(0.375f,0.0625f)},
  			/*CRACK4*/			{new Vector2(0.4375f,0f), new Vector2(0.5f,0f),
 									new Vector2(0.4375f,0.0625f), new Vector2(0.5f,0.0625f)}
+
+			// BUG FOUND - tile sheet provided is broken and some tiles overlaps each other
 		};
 
 		public Block(BlockType type, Vector3 pos, GameObject p, Chunk o)

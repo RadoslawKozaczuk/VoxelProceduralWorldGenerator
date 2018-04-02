@@ -7,7 +7,7 @@ namespace Assets.Scripts
 	{
 		public GameObject Cam;
 
-		private const float AttackRange = 5.0f;
+		private const float AttackRange = 4.0f;
 
 		// Use this for initialization
 		void Start()
@@ -29,7 +29,7 @@ namespace Assets.Scripts
 			//{
 
 			// DEBUG - visible ray
-			Debug.DrawRay(Cam.transform.position, Cam.transform.forward, Color.red, 1000, true);
+			//Debug.DrawRay(Cam.transform.position, Cam.transform.forward, Color.red, 1000, true);
 
 			//for cross hairs
 			if (!Physics.Raycast(Cam.transform.position, Cam.transform.forward, out hit, AttackRange))
@@ -44,10 +44,15 @@ namespace Assets.Scripts
 			float thisChunky = hit.collider.gameObject.transform.position.y;
 			float thisChunkz = hit.collider.gameObject.transform.position.z;
 
+			// DEBUG - calculated coordinates
+			//Debug.Log("block hit x" + x + " y" + y + " z" + z 
+			//	+ " chunk x" + thisChunkx + " y" + thisChunky + " z" + thisChunkz 
+			//	+ "HitColliderName: " + hit.collider.gameObject.name);
+
 			// we keep performing check if the block is completely gone
 			Chunk hitc;
 			if (!World.Chunks.TryGetValue(hit.collider.gameObject.name, out hitc) // if we hit something
-			    || !hitc.Blocks[z, y, z].HitBlock()) // perform the hit and check if it destroyed the block
+			    || !hitc.Blocks[x, y, z].HitBlock()) // perform the hit and check if it destroyed the block
 				return;
 				
 			var updates = new List<string>();
