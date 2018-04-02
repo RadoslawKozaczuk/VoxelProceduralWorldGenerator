@@ -114,7 +114,7 @@ namespace Assets.Scripts
 
 			// if the block was hit for the first time start the coroutine
 			if (_currentHealth == (_blockHealthMax[(int)Type] - 1))
-				Owner.monoBehavior.StartCoroutine(Owner.monoBehavior.HealBlock(Position));
+				Owner.MonoBehavior.StartCoroutine(Owner.MonoBehavior.HealBlock(Position));
 
 			if (_currentHealth <= 0)
 			{

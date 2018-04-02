@@ -105,6 +105,7 @@ namespace Assets.Scripts
 			// with chuck we are talking about
 			// for example if we are in block 4 we round it down to 0 which means we are in chunk 0
 			int chunkX = pos.x < 0
+				// this plus one is here to avoid problem with rounding which occurs around the value -16
 				? (int)((Mathf.Round(pos.x - ChunkSize) + 1) / ChunkSize) * ChunkSize
 				: (int)(Mathf.Round(pos.x) / ChunkSize) * ChunkSize;
 

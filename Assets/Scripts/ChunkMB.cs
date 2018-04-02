@@ -11,6 +11,7 @@ namespace Assets.Scripts
 		public void SetOwner(Chunk o)
 		{
 			owner = o;
+			InvokeRepeating("SaveProgress", 10, 100); // repeats every 100 seconds
 		}
 
 		// I have been hit please heal me after 3 seconds
@@ -24,6 +25,15 @@ namespace Assets.Scripts
 			// if it hasn't been already destroy reset it
 			if (owner.Blocks[x, y, z].Type != Block.BlockType.Air)
 				owner.Blocks[x, y, z].Reset();
+		}
+
+		public void SaveProgress()
+		{
+			if(owner.Changed)
+			{
+				owner.Save();
+				owner.Changed = false;
+			}
 		}
 	}
 }

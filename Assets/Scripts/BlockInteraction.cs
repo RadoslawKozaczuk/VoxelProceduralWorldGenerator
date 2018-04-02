@@ -64,7 +64,8 @@ namespace Assets.Scripts
 				: b.BuildBlock(Block.BlockType.Stone); // always returns true
 
 			if (!update) return;
-			
+
+			hitc.Changed = true;
 			RedrawNeighbours(b.Position, thisChunkx, thisChunky, thisChunkz);
 		}
 
@@ -91,7 +92,7 @@ namespace Assets.Scripts
 				Chunk c;
 				if (!World.Chunks.TryGetValue(cname, out c))
 					continue;
-
+				
 				c.Redraw();
 			}
 		}
