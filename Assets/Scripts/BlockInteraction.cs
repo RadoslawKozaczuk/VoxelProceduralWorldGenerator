@@ -40,48 +40,51 @@ namespace Assets.Scripts
 				? hit.point - hit.normal / 2.0f // central point
 				: hit.point + hit.normal / 2.0f; // next to the one that we are pointing at
 
-			int x = (int)(Mathf.Round(hitBlock.x) - hit.collider.gameObject.transform.position.x);
-			int y = (int)(Mathf.Round(hitBlock.y) - hit.collider.gameObject.transform.position.y);
-			int z = (int)(Mathf.Round(hitBlock.z) - hit.collider.gameObject.transform.position.z);
+			// the absolute value of the block we are after
+			Block b = World.GetWorldBlock(hitBlock);
 			
 			float thisChunkx = hit.collider.gameObject.transform.position.x;
 			float thisChunky = hit.collider.gameObject.transform.position.y;
 			float thisChunkz = hit.collider.gameObject.transform.position.z;
 
+			// we keep performing check if the block is completely gone
+			Chunk hitc;
+			if (!World.Chunks.TryGetValue(hit.collider.gameObject.name, out hitc)) // if we hit something
+				return;
+			
 			// DEBUG - calculated coordinates
 			//Debug.Log("block hit x" + x + " y" + y + " z" + z 
 			//	+ " chunk x" + thisChunkx + " y" + thisChunky + " z" + thisChunkz 
 			//	+ "HitColliderName: " + hit.collider.gameObject.name);
 
-			// we keep performing check if the block is completely gone
-			Chunk hitc;
-			if (!World.Chunks.TryGetValue(hit.collider.gameObject.name, out hitc)) return; // if we hit something
+			hitc = b.Owner;
 
 			bool update = Input.GetMouseButtonDown(0) 
-				? hitc.Blocks[x, y, z].HitBlock() // if destroyed
-				: hitc.Blocks[x,y,z].BuildBlock(Block.BlockType.Stone); // always return true
+				? b.HitBlock() // if destroyed
+				: b.BuildBlock(Block.BlockType.Stone); // always returns true
 
 			if (!update) return;
-
-			var updates = new List<string>();
 			
-			// the collider will be destroyed at this moment
-			//updates.Add(hit.collider.gameObject.name);
+			RedrawNeighbours(b.Position, thisChunkx, thisChunky, thisChunkz);
+		}
+
+		private void RedrawNeighbours(Vector3 position, float chunkX, float chunkY, float chunkZ)
+		{
+			var updates = new List<string>();
 
 			// if the block is on the edge of the chunk we need to inform neighbor chunk
-			//update neighbors?
-			if (x == 0)
-				updates.Add(World.BuildChunkName(new Vector3(thisChunkx - World.ChunkSize, thisChunky, thisChunkz)));
-			if (x == World.ChunkSize - 1)
-				updates.Add(World.BuildChunkName(new Vector3(thisChunkx + World.ChunkSize, thisChunky, thisChunkz)));
-			if (y == 0)
-				updates.Add(World.BuildChunkName(new Vector3(thisChunkx, thisChunky - World.ChunkSize, thisChunkz)));
-			if (y == World.ChunkSize - 1)
-				updates.Add(World.BuildChunkName(new Vector3(thisChunkx, thisChunky + World.ChunkSize, thisChunkz)));
-			if (z == 0)
-				updates.Add(World.BuildChunkName(new Vector3(thisChunkx, thisChunky, thisChunkz - World.ChunkSize)));
-			if (z == World.ChunkSize - 1)
-				updates.Add(World.BuildChunkName(new Vector3(thisChunkx, thisChunky, thisChunkz + World.ChunkSize)));
+			if (position.x == 0)
+				updates.Add(World.BuildChunkName(new Vector3(chunkX - World.ChunkSize, chunkY, chunkZ)));
+			if (position.x == World.ChunkSize - 1)
+				updates.Add(World.BuildChunkName(new Vector3(chunkX + World.ChunkSize, chunkY, chunkZ)));
+			if (position.y == 0)
+				updates.Add(World.BuildChunkName(new Vector3(chunkX, chunkY - World.ChunkSize, chunkZ)));
+			if (position.y == World.ChunkSize - 1)
+				updates.Add(World.BuildChunkName(new Vector3(chunkX, chunkY + World.ChunkSize, chunkZ)));
+			if (position.z == 0)
+				updates.Add(World.BuildChunkName(new Vector3(chunkX, chunkY, chunkZ - World.ChunkSize)));
+			if (position.z == World.ChunkSize - 1)
+				updates.Add(World.BuildChunkName(new Vector3(chunkX, chunkY, chunkZ + World.ChunkSize)));
 
 			foreach (string cname in updates)
 			{

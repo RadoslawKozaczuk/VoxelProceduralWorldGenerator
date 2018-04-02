@@ -40,9 +40,9 @@ namespace Assets.Scripts
 			0
 		}; // -1 means the block cannot be destroyed
 
-		readonly Chunk _owner;
+		public readonly Chunk Owner;
 		readonly GameObject _parent;
-		Vector3 _position;
+		public Vector3 Position;
 
 		// assumptions used:
 		// coordination start left down corner
@@ -82,16 +82,16 @@ namespace Assets.Scripts
 			Type = type;
 			HealthType = BlockType.NoCrack;
 			_currentHealth = _blockHealthMax[(int)_type]; // maximum health
-			_owner = o;
+			Owner = o;
 			_parent = p;
-			_position = pos;
+			Position = pos;
 		}
 
 		public void Reset()
 		{
 			HealthType = BlockType.NoCrack;
 			_currentHealth = _blockHealthMax[(int)Type];
-			_owner.Redraw();
+			Owner.Redraw();
 		}
 
 		// KNOWN BUG - if we build where we stand player falls into the block
@@ -99,7 +99,7 @@ namespace Assets.Scripts
 		{
 			Type = type;
 			_currentHealth = _blockHealthMax[(int)_type]; // maximum health
-			_owner.Redraw();
+			Owner.Redraw();
 			return true;
 		}
 
@@ -114,18 +114,18 @@ namespace Assets.Scripts
 
 			// if the block was hit for the first time start the coroutine
 			if (_currentHealth == (_blockHealthMax[(int)Type] - 1))
-				_owner.monoBehavior.StartCoroutine(_owner.monoBehavior.HealBlock(_position));
+				Owner.monoBehavior.StartCoroutine(Owner.monoBehavior.HealBlock(Position));
 
 			if (_currentHealth <= 0)
 			{
 				_type = BlockType.Air;
 				IsSolid = false;
 				HealthType = BlockType.NoCrack; // we change it to NoCrack because we don't want cracks to appear on air
-				_owner.Redraw();
+				Owner.Redraw();
 				return true;
 			}
 
-			_owner.Redraw();
+			Owner.Redraw();
 			return false;
 		}
 
@@ -245,7 +245,7 @@ namespace Assets.Scripts
 			mesh.RecalculateBounds();
 
 			var quad = new GameObject("Quad");
-			quad.transform.position = _position;
+			quad.transform.position = Position;
 			quad.transform.parent = _parent.transform;
 
 			var meshFilter = (MeshFilter)quad.AddComponent(typeof(MeshFilter));
@@ -272,9 +272,9 @@ namespace Assets.Scripts
 				// block in a neighboring ChunkGameObject
 
 				var neighborChunkPos = _parent.transform.position +
-									   new Vector3((x - (int)_position.x) * World.ChunkSize,
-										   (y - (int)_position.y) * World.ChunkSize,
-										   (z - (int)_position.z) * World.ChunkSize);
+									   new Vector3((x - (int)Position.x) * World.ChunkSize,
+										   (y - (int)Position.y) * World.ChunkSize,
+										   (z - (int)Position.z) * World.ChunkSize);
 				var nName = World.BuildChunkName(neighborChunkPos);
 
 				x = ConvertBlockIndexToLocal(x);
@@ -293,7 +293,7 @@ namespace Assets.Scripts
 			} // block in this ChunkGameObject
 			else
 			{
-				chunks = _owner.Blocks;
+				chunks = Owner.Blocks;
 			}
 
 			try
@@ -309,17 +309,17 @@ namespace Assets.Scripts
 		{
 			if (Type == BlockType.Air) return;
 
-			if (!HasSolidNeighbor((int)_position.x, (int)_position.y, (int)_position.z + 1))
+			if (!HasSolidNeighbor((int)Position.x, (int)Position.y, (int)Position.z + 1))
 				CreateQuad(Cubeside.Front);
-			if (!HasSolidNeighbor((int)_position.x, (int)_position.y, (int)_position.z - 1))
+			if (!HasSolidNeighbor((int)Position.x, (int)Position.y, (int)Position.z - 1))
 				CreateQuad(Cubeside.Back);
-			if (!HasSolidNeighbor((int)_position.x, (int)_position.y + 1, (int)_position.z))
+			if (!HasSolidNeighbor((int)Position.x, (int)Position.y + 1, (int)Position.z))
 				CreateQuad(Cubeside.Top);
-			if (!HasSolidNeighbor((int)_position.x, (int)_position.y - 1, (int)_position.z))
+			if (!HasSolidNeighbor((int)Position.x, (int)Position.y - 1, (int)Position.z))
 				CreateQuad(Cubeside.Bottom);
-			if (!HasSolidNeighbor((int)_position.x - 1, (int)_position.y, (int)_position.z))
+			if (!HasSolidNeighbor((int)Position.x - 1, (int)Position.y, (int)Position.z))
 				CreateQuad(Cubeside.Left);
-			if (!HasSolidNeighbor((int)_position.x + 1, (int)_position.y, (int)_position.z))
+			if (!HasSolidNeighbor((int)Position.x + 1, (int)Position.y, (int)Position.z))
 				CreateQuad(Cubeside.Right);
 		}
 	}

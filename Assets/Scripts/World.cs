@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using Realtime.Messaging.Internal;
+using System;
 
 namespace Assets.Scripts
 {
@@ -93,6 +94,38 @@ namespace Assets.Scripts
 
 			_queue.Run(DrawChunks());
 			RemoveOldChunks();
+		}
+
+		public static Block GetWorldBlock(Vector3 pos)
+		{
+			// with chuck we are talking about
+			int chunkX, chunkY, chunkZ;
+
+			// for example if we are in block 4 we round it down to 0 which means we are in chunk 0
+			chunkX = pos.x < 0
+				? (int)(Mathf.Round(pos.x - ChunkSize) / ChunkSize) * ChunkSize
+				: (int)(Mathf.Round(pos.x) / ChunkSize) * ChunkSize;
+
+			chunkY = pos.y < 0 
+				? (int)(Mathf.Round(pos.y - ChunkSize) / ChunkSize) * ChunkSize 
+				: (int)(Mathf.Round(pos.y) / ChunkSize) * ChunkSize;
+			
+			chunkZ = pos.z < 0 
+				? (int)(Mathf.Round(pos.z - ChunkSize) / ChunkSize) * ChunkSize 
+				: (int)(Mathf.Round(pos.z) / ChunkSize) * ChunkSize;
+			
+			string chunkName = BuildChunkName(new Vector3(chunkX, chunkY, chunkZ));
+			Chunk c;
+			if (Chunks.TryGetValue(chunkName, out c))
+			{
+				// we need to make absolute for all of these because there is no chunk with negative index
+				int blx = (int)Mathf.Abs((float)Math.Round(pos.x) - chunkX);
+				int bly = (int)Mathf.Abs((float)Math.Round(pos.y) - chunkY);
+				int blz = (int)Mathf.Abs((float)Math.Round(pos.z) - chunkZ);
+
+				return c.Blocks[blx, bly, blz];
+			}
+			else return null;
 		}
 
 		public static string BuildChunkName(Vector3 v)
