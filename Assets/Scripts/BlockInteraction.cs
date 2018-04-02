@@ -18,7 +18,8 @@ namespace Assets.Scripts
 		// Update is called once per frame
 		void Update()
 		{
-			if (!Input.GetMouseButtonDown(0))
+			// left mouse click is going to destroy block and the right mouse click will add a block
+			if (!(Input.GetMouseButtonDown(0) || Input.GetMouseButtonDown(1)))
 				return;
 
 			RaycastHit hit;
@@ -34,8 +35,11 @@ namespace Assets.Scripts
 			//for cross hairs
 			if (!Physics.Raycast(Cam.transform.position, Cam.transform.forward, out hit, AttackRange))
 				return;
-				
-			Vector3 hitBlock = hit.point - hit.normal / 2.0f;
+
+			Vector3 hitBlock = Input.GetMouseButtonDown(0)
+				? hit.point - hit.normal / 2.0f // central point
+				: hit.point + hit.normal / 2.0f; // next to the one that we are pointing at
+
 			int x = (int)(Mathf.Round(hitBlock.x) - hit.collider.gameObject.transform.position.x);
 			int y = (int)(Mathf.Round(hitBlock.y) - hit.collider.gameObject.transform.position.y);
 			int z = (int)(Mathf.Round(hitBlock.z) - hit.collider.gameObject.transform.position.z);
@@ -51,10 +55,14 @@ namespace Assets.Scripts
 
 			// we keep performing check if the block is completely gone
 			Chunk hitc;
-			if (!World.Chunks.TryGetValue(hit.collider.gameObject.name, out hitc) // if we hit something
-			    || !hitc.Blocks[x, y, z].HitBlock()) // perform the hit and check if it destroyed the block
-				return;
-				
+			if (!World.Chunks.TryGetValue(hit.collider.gameObject.name, out hitc)) return; // if we hit something
+
+			bool update = Input.GetMouseButtonDown(0) 
+				? hitc.Blocks[x, y, z].HitBlock() // if destroyed
+				: hitc.Blocks[x,y,z].BuildBlock(Block.BlockType.Stone); // always return true
+
+			if (!update) return;
+
 			var updates = new List<string>();
 			
 			// the collider will be destroyed at this moment

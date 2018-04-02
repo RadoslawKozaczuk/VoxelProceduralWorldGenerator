@@ -94,6 +94,15 @@ namespace Assets.Scripts
 			_owner.Redraw();
 		}
 
+		// KNOWN BUG - if we build where we stand player falls into the block
+		public bool BuildBlock(BlockType type)
+		{
+			Type = type;
+			_currentHealth = _blockHealthMax[(int)_type]; // maximum health
+			_owner.Redraw();
+			return true;
+		}
+
 		/// <summary>
 		/// returns true if the block has been destroyed and false if it has not
 		/// </summary>
