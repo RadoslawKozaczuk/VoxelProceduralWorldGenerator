@@ -8,9 +8,14 @@ namespace Assets.Scripts
 		public enum BlockType
 		{
 			Grass, Dirt, Stone, Diamond, Bedrock, Redstone,
-			NoCrack, Crack1, Crack2, Crack3, Crack4,
+			//Water,
 			Air
 		};
+
+		public enum HealthLevel
+		{
+			NoCrack, Crack1, Crack2, Crack3, Crack4
+		}
 
 		enum Cubeside { Bottom, Top, Left, Right, Front, Back };
 
@@ -28,16 +33,16 @@ namespace Assets.Scripts
 		}
 
 		// crack texture
-		public BlockType HealthType;
+		public HealthLevel HealthType;
 
 		// current health as a number of hit points
 		private int _currentHealth; // start set to maximum health the block can be
 
 		// this corresponds to the BlockType enum, so for example Grass can be hit 3 times
 		private readonly int[] _blockHealthMax = {
-			3, 3, 4, -1, 4, 4,
-			0, 0, 0, 0, 0,
-			0
+			3, 3, 4, 4, -1, 4,
+			//8, // water
+			0 // air
 		}; // -1 means the block cannot be destroyed
 
 		public readonly Chunk Owner;
@@ -61,8 +66,16 @@ namespace Assets.Scripts
 			/*BEDROCK*/			{new Vector2( 0.3125f, 0.8125f ), new Vector2( 0.375f, 0.8125f),
 									new Vector2( 0.3125f, 0.875f ), new Vector2( 0.375f, 0.875f )},
 			/*REDSTONE*/		{new Vector2( 0.1875f, 0.75f ), new Vector2( 0.25f, 0.75f),
-									new Vector2( 0.1875f, 0.8125f ), new Vector2( 0.25f, 0.8125f )},
+									new Vector2( 0.1875f, 0.8125f ), new Vector2( 0.25f, 0.8125f )}//,
 
+			/*WATER*/			//{new Vector2(0.875f,0.125f), new Vector2(0.9375f,0.125f),
+									//new Vector2(0.875f,0.1875f), new Vector2(0.9375f,0.1875f)},
+			
+			// BUG - tile sheet provided is broken and some tiles overlaps each other
+		};
+
+		readonly Vector2[,] _crackUVs = { 
+								// left-bottom, right-bottom, left-top, right-top
 			/*NOCRACK*/			{new Vector2(0.6875f,0f), new Vector2(0.75f,0f),
 									new Vector2(0.6875f,0.0625f), new Vector2(0.75f,0.0625f)},
 			/*CRACK1*/			{new Vector2(0.0625f,0f), new Vector2(0.125f,0f),
@@ -73,14 +86,12 @@ namespace Assets.Scripts
 									new Vector2(0.3125f,0.0625f), new Vector2(0.375f,0.0625f)},
  			/*CRACK4*/			{new Vector2(0.4375f,0f), new Vector2(0.5f,0f),
 									new Vector2(0.4375f,0.0625f), new Vector2(0.5f,0.0625f)}
-
-			// BUG FOUND - tile sheet provided is broken and some tiles overlaps each other
 		};
-
+		
 		public Block(BlockType type, Vector3 pos, GameObject p, Chunk o)
 		{
 			Type = type;
-			HealthType = BlockType.NoCrack;
+			HealthType = HealthLevel.NoCrack;
 			_currentHealth = _blockHealthMax[(int)_type]; // maximum health
 			Owner = o;
 			_parent = p;
@@ -89,12 +100,12 @@ namespace Assets.Scripts
 
 		public void Reset()
 		{
-			HealthType = BlockType.NoCrack;
+			HealthType = HealthLevel.NoCrack;
 			_currentHealth = _blockHealthMax[(int)Type];
 			Owner.Redraw();
 		}
 
-		// KNOWN BUG - if we build where we stand player falls into the block
+		// BUG - if we build where we stand player falls into the block
 		public bool BuildBlock(BlockType type)
 		{
 			Type = type;
@@ -113,14 +124,14 @@ namespace Assets.Scripts
 			HealthType++;
 
 			// if the block was hit for the first time start the coroutine
-			if (_currentHealth == (_blockHealthMax[(int)Type] - 1))
+			if (_currentHealth == _blockHealthMax[(int)Type] - 1)
 				Owner.MonoBehavior.StartCoroutine(Owner.MonoBehavior.HealBlock(Position));
 
 			if (_currentHealth <= 0)
 			{
 				_type = BlockType.Air;
 				IsSolid = false;
-				HealthType = BlockType.NoCrack; // we change it to NoCrack because we don't want cracks to appear on air
+				HealthType = HealthLevel.NoCrack; // we change it to NoCrack because we don't want cracks to appear on air
 				Owner.Redraw();
 				return true;
 			}
@@ -140,7 +151,7 @@ namespace Assets.Scripts
 			// they the engine which side it should treat as the side on which textures and shaders should be rendered.
 			// Verticies also can have their own normal and this is the case here so each vertex has its own normal vector.
 			var normals = new Vector3[4];
-
+			              
 			// Uvs maps the texture over the surface
 			var uvs = new Vector2[4];
 			var triangles = new int[6];
@@ -179,10 +190,10 @@ namespace Assets.Scripts
 			}
 
 			// set cracks - this need to be add with the correct order - why this order is different than above, I don't know
-			suvs.Add(_blockUVs[(int)(HealthType + 1), 3]); // top right corner
-			suvs.Add(_blockUVs[(int)(HealthType + 1), 2]); // top left corner
-			suvs.Add(_blockUVs[(int)(HealthType + 1), 0]); // bottom left corner
-			suvs.Add(_blockUVs[(int)(HealthType + 1), 1]); // bottom right corner
+			suvs.Add(_crackUVs[(int)HealthType, 3]); // top right corner
+			suvs.Add(_crackUVs[(int)HealthType, 2]); // top left corner
+			suvs.Add(_crackUVs[(int)HealthType, 0]); // bottom left corner
+			suvs.Add(_crackUVs[(int)HealthType, 1]); // bottom right corner
 
 			//all possible vertices
 			var p0 = new Vector3(-0.5f, -0.5f, 0.5f);
@@ -261,44 +272,49 @@ namespace Assets.Scripts
 			return i;
 		}
 
-		bool HasSolidNeighbor(int x, int y, int z)
+		/// <summary>
+		/// Returns the neighboring block
+		/// </summary>
+		Block GetBlock(int x, int y, int z)
 		{
-			Block[,,] chunks;
+			Block[,,] blocks;
 
 			if (x < 0 || x >= World.ChunkSize ||
 				y < 0 || y >= World.ChunkSize ||
 				z < 0 || z >= World.ChunkSize)
 			{
-				// block in a neighboring ChunkGameObject
-
+				// block in a neighboring chunk
 				var neighborChunkPos = _parent.transform.position +
 									   new Vector3((x - (int)Position.x) * World.ChunkSize,
 										   (y - (int)Position.y) * World.ChunkSize,
 										   (z - (int)Position.z) * World.ChunkSize);
-				var nName = World.BuildChunkName(neighborChunkPos);
+				var chunkName = World.BuildChunkName(neighborChunkPos);
 
 				x = ConvertBlockIndexToLocal(x);
 				y = ConvertBlockIndexToLocal(y);
 				z = ConvertBlockIndexToLocal(z);
 
-				Chunk nChunk;
-				if (World.Chunks.TryGetValue(nName, out nChunk))
-				{
-					chunks = nChunk.Blocks;
-				}
-				else
-				{
-					return false; // block is outside of the world
-				}
-			} // block in this ChunkGameObject
+				Chunk chunk;
+				if (World.Chunks.TryGetValue(chunkName, out chunk))
+					blocks = chunk.Blocks;
+				else return null; // block is outside of the world
+			} // block is in this chunk
 			else
-			{
-				chunks = Owner.Blocks;
-			}
+				blocks = Owner.Blocks;
 
+			return blocks[x, y, z];
+		}
+
+		bool HasSolidNeighbor(int x, int y, int z)
+		{
 			try
 			{
-				return chunks[x, y, z].IsSolid;
+				Block b = GetBlock(x, y, z);
+				if (b != null)
+					return b.IsSolid 
+						/*|| b.Type != Type*/; // here we test if this block type and neighboring block's type are different
+				// and if they are we draw the quad
+				// this is not efficient because we need that check because of the water
 			}
 			catch (System.IndexOutOfRangeException) { }
 

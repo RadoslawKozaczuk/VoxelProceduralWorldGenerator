@@ -6,7 +6,7 @@ using System.IO;
 namespace Assets.Scripts
 {
 	[Serializable]
-	class BlockData
+	internal class BlockData
 	{
 		// we store only block type
 		public Block.BlockType[,,] Matrix;
@@ -32,8 +32,10 @@ namespace Assets.Scripts
 	public class Chunk
 	{
 		public Material CubeMaterial;
+		public Material FluidMaterial;
+		public GameObject ChunkObject;
+		//public GameObject FluidObject;
 		public Block[,,] Blocks;
-		public GameObject ChunkGameObject;
 		public ChunkMB MonoBehavior;
 		public bool Changed = false;
 
@@ -41,6 +43,7 @@ namespace Assets.Scripts
 		private const float CaveProbability = 0.43f;
 		private const float CaveSmooth = 0.09f;
 		private const int CaveOctaves = 3; // reduced a bit to lower workload but not to much to maintain randomness
+		private const int WaterLeverl = 65; // inclusive
 
 		// shiny diamonds!
 		private const float DiamondProbability = 0.38f; // this is not percentage chance because we are using Perlin function
@@ -59,20 +62,24 @@ namespace Assets.Scripts
 		public ChunkStatus Status; // status of the current chunk
 		private BlockData _blockData;
 
-		public Chunk(Vector3 position, Material c, string chunkName)
+		public Chunk(Vector3 position, Material chunkMaterial, Material transparentMaterial, string chunkName)
 		{
-			ChunkGameObject = new GameObject(chunkName);
-			ChunkGameObject.transform.position = position;
-			MonoBehavior = ChunkGameObject.AddComponent<ChunkMB>();
+			ChunkObject = new GameObject(chunkName);
+			ChunkObject.transform.position = position;
+			CubeMaterial = chunkMaterial;
+
+			//FluidObject = new GameObject(chunkName + "_fluid");
+			//FluidObject.transform.position = position;
+			FluidMaterial = transparentMaterial;
+
+			MonoBehavior = ChunkObject.AddComponent<ChunkMB>();
 			MonoBehavior.SetOwner(this);
-			CubeMaterial = c;
 			BuildChunk();
 		}
 
 		void BuildChunk()
 		{
-			bool dataFromFile = false;
-			dataFromFile = Load();
+			bool dataFromFile = Load();
 
 			Blocks = new Block[World.ChunkSize, World.ChunkSize, World.ChunkSize];
 
@@ -83,13 +90,13 @@ namespace Assets.Scripts
 						var pos = new Vector3(x, y, z);
 
 						// taking into consideration the noise generator
-						int worldX = (int) (x + ChunkGameObject.transform.position.x);
-						int worldY = (int) (y + ChunkGameObject.transform.position.y);
-						int worldZ = (int) (z + ChunkGameObject.transform.position.z);
+						int worldX = (int) (x + ChunkObject.transform.position.x);
+						int worldY = (int) (y + ChunkObject.transform.position.y);
+						int worldZ = (int) (z + ChunkObject.transform.position.z);
 
 						if (dataFromFile)
 						{
-							Blocks[x, y, z] = new Block(_blockData.Matrix[x, y, z], pos, ChunkGameObject.gameObject, this);
+							Blocks[x, y, z] = new Block(_blockData.Matrix[x, y, z], pos, ChunkObject.gameObject, this);
 							continue;
 						}
 
@@ -97,47 +104,41 @@ namespace Assets.Scripts
 						//var type = Random.Range(0, 100) < 50 ? Block.BlockType.Dirt : Block.BlockType.Air;
 
 						// generate height
-						Block.BlockType type;
-
-						if (Utils.FractalBrownianMotion3D(worldX, worldY, worldZ, CaveSmooth, CaveOctaves) < CaveProbability)
-						{
-							type = Block.BlockType.Air;
-						}
-						else if (worldY <= Utils.GenerateBedrockHeight(worldX, worldZ))
-						{
-							type = Block.BlockType.Bedrock;
-						}
+						//Block.BlockType type;
+						if (worldY <= Utils.GenerateBedrockHeight(worldX, worldZ))
+							Blocks[x, y, z] = new Block(Block.BlockType.Bedrock, pos, ChunkObject.gameObject, this);
 						else if (worldY <= Utils.GenerateStoneHeight(worldX, worldZ))
 						{
 							if (Utils.FractalBrownianMotion3D(worldX, worldY, worldZ, DiamondSmooth, DiamondOctaves) < DiamondProbability 
 								&& worldY < DiamondMaxHeight)
 							{
-								type = Block.BlockType.Diamond;
+								Blocks[x, y, z] = new Block(Block.BlockType.Diamond, pos, ChunkObject.gameObject, this);
 							}
 							else if (Utils.FractalBrownianMotion3D(worldX, worldY, worldZ, RedstoneSmooth, RedstoneOctaves) < RedstoneProbability
 								&& worldY < RedstoneMaxHeight)
 							{
-								type = Block.BlockType.Redstone;
+								Blocks[x, y, z] = new Block(Block.BlockType.Redstone, pos, ChunkObject.gameObject, this);
 							}
 							else
-							{
-								type = Block.BlockType.Stone;
-							}
+								Blocks[x, y, z] = new Block(Block.BlockType.Stone, pos, ChunkObject.gameObject, this);
 						}
 						else if (worldY == Utils.GenerateHeight(worldX, worldZ))
-						{
-							type = Block.BlockType.Grass;
-						}
+							Blocks[x, y, z] = new Block(Block.BlockType.Grass, pos, ChunkObject.gameObject, this);
 						else if (worldY <= Utils.GenerateHeight(worldX, worldZ))
-						{
-							type = Block.BlockType.Dirt;
-						}
+							Blocks[x, y, z] = new Block(Block.BlockType.Dirt, pos, ChunkObject.gameObject, this);
+						//else if(worldY <= WaterLeverl)
+						//	Blocks[x, y, z] = new Block(Block.BlockType.Water, pos, FluidObject.gameObject, this);
 						else
+							Blocks[x, y, z] = new Block(Block.BlockType.Air, pos, ChunkObject.gameObject, this);
+
+						// generate caves
+						if (/*Blocks[x, y, z].Type != Block.BlockType.Water 
+							&&*/ Utils.FractalBrownianMotion3D(worldX, worldY, worldZ, CaveSmooth, CaveOctaves) < CaveProbability)
 						{
-							type = Block.BlockType.Air;
+							Blocks[x, y, z] = new Block(Block.BlockType.Air, pos, ChunkObject.gameObject, this);
 						}
-						
-						Blocks[x, y, z] = new Block(type, pos, ChunkGameObject.gameObject, this);
+
+						//Blocks[x, y, z] = new Block(type, pos, ChunkObject.gameObject, this);
 					}
 
 			// chunk just has been created and it is ready to be drawn
@@ -147,9 +148,11 @@ namespace Assets.Scripts
 		public void Redraw()
 		{
 			// we cannot use normal destroy because it may wait to the next update loop or something which will break the code
-			UnityEngine.Object.DestroyImmediate(ChunkGameObject.GetComponent<MeshFilter>());
-			UnityEngine.Object.DestroyImmediate(ChunkGameObject.GetComponent<MeshRenderer>());
-			UnityEngine.Object.DestroyImmediate(ChunkGameObject.GetComponent<Collider>());
+			UnityEngine.Object.DestroyImmediate(ChunkObject.GetComponent<MeshFilter>());
+			UnityEngine.Object.DestroyImmediate(ChunkObject.GetComponent<MeshRenderer>());
+			UnityEngine.Object.DestroyImmediate(ChunkObject.GetComponent<Collider>());
+			//UnityEngine.Object.DestroyImmediate(FluidObject.GetComponent<MeshFilter>());
+			//UnityEngine.Object.DestroyImmediate(FluidObject.GetComponent<MeshRenderer>());
 			DrawChunk();
 		}
 
@@ -161,18 +164,25 @@ namespace Assets.Scripts
 					{
 						Blocks[x, y, z].Draw();
 					}
-			CombineQuads();
+			CombineQuads(ChunkObject.gameObject, CubeMaterial);
 
 			// adding collision
-			var collider = ChunkGameObject.gameObject.AddComponent(typeof(MeshCollider)) as MeshCollider;
-			collider.sharedMesh = ChunkGameObject.transform.GetComponent<MeshFilter>().mesh;
+			var collider = ChunkObject.gameObject.AddComponent(typeof(MeshCollider)) as MeshCollider;
+			collider.sharedMesh = ChunkObject.transform.GetComponent<MeshFilter>().mesh;
+
+			//CombineQuads(FluidObject.gameObject, FluidMaterial);
 			Status = ChunkStatus.Done;
 		}
 		
-		void CombineQuads()
+		/// <summary>
+		/// 
+		/// </summary>
+		/// <param name="obj">Any game object that have all of the quads attached to it</param>
+		/// <param name="mat"></param>
+		void CombineQuads(GameObject obj, Material mat)
 		{
 			//1. Combine all children meshes
-			var meshFilters = ChunkGameObject.GetComponentsInChildren<MeshFilter>();
+			var meshFilters = obj.GetComponentsInChildren<MeshFilter>();
 			var combine = new CombineInstance[meshFilters.Length];
 			var i = 0;
 			while (i < meshFilters.Length)
@@ -183,42 +193,39 @@ namespace Assets.Scripts
 			}
 
 			//2. Create a new mesh on the parent object
-			var mf = (MeshFilter)ChunkGameObject.gameObject.AddComponent(typeof(MeshFilter));
+			var mf = (MeshFilter)obj.gameObject.AddComponent(typeof(MeshFilter));
 			mf.mesh = new Mesh();
 
 			//3. Add combined meshes on children as the parent's mesh
 			mf.mesh.CombineMeshes(combine);
 
 			//4. Create a renderer for the parent
-			var renderer = ChunkGameObject.gameObject.AddComponent(typeof(MeshRenderer)) as MeshRenderer;
-			renderer.material = CubeMaterial;
+			var renderer = obj.gameObject.AddComponent(typeof(MeshRenderer)) as MeshRenderer;
+			renderer.material = mat;
 
 			//5. Delete all uncombined children
-			foreach (Transform quad in ChunkGameObject.transform)
+			foreach (Transform quad in ChunkObject.transform)
 				UnityEngine.Object.Destroy(quad.gameObject);
 		}
 
 		bool Load()
 		{
-			string chunkFile = World.BuildChunkFileName(ChunkGameObject.transform.position);
-			if (File.Exists(chunkFile))
-			{
-				var bf = new BinaryFormatter();
-				FileStream file = File.Open(chunkFile, FileMode.Open);
-				_blockData = new BlockData();
-				_blockData = (BlockData) bf.Deserialize(file);
-				file.Close();
+			string chunkFile = World.BuildChunkFileName(ChunkObject.transform.position);
+			if (!File.Exists(chunkFile)) return false;
 
-				// Debug.Log("Loading chunk from file: " + chunkFile);
-				return true;
-			}
+			var bf = new BinaryFormatter();
+			FileStream file = File.Open(chunkFile, FileMode.Open);
+			_blockData = new BlockData();
+			_blockData = (BlockData) bf.Deserialize(file);
+			file.Close();
 
-			return false;
+			// Debug.Log("Loading chunk from file: " + chunkFile);
+			return true;
 		}
 
 		public void Save()
 		{
-			string chunkFile = World.BuildChunkFileName(ChunkGameObject.transform.position);
+			string chunkFile = World.BuildChunkFileName(ChunkObject.transform.position);
 
 			if (!File.Exists(chunkFile))
 			{

@@ -11,6 +11,7 @@ namespace Assets.Scripts
 	{
 		public GameObject Player;
 		public Material TextureAtlas;
+		public Material FluidTexture;
 		public static int ColumnHeight = 16; // number of chunks in column
 		public static int ChunkSize = 8; // number of blocks in x and y
 		public static int WorldSize = 8; // number of columns in x and y
@@ -36,6 +37,7 @@ namespace Assets.Scripts
 
 		private CoroutineQueue _queue;
 		public static uint MaxCoroutines = 1000;
+		
 
 		void Start()
 		{
@@ -85,13 +87,13 @@ namespace Assets.Scripts
 				LastBuildPos = Player.transform.position;
 				BuildNearPlayer();
 			}
-
+			
 			if (!Player.activeSelf)
 			{
 				Player.SetActive(true);
 				_firstBuild = false;
 			}
-
+			
 			_queue.Run(DrawChunks());
 			RemoveOldChunks();
 		}
@@ -154,9 +156,9 @@ namespace Assets.Scripts
 
 			if (!Chunks.TryGetValue(chunkName, out c))
 			{
-				c = new Chunk(chunkPosition, TextureAtlas, chunkName);
-				c.ChunkGameObject.transform.parent = transform;
-				Chunks.TryAdd(c.ChunkGameObject.name, c);
+				c = new Chunk(chunkPosition, TextureAtlas, FluidTexture, chunkName);
+				c.ChunkObject.transform.parent = transform;
+				Chunks.TryAdd(c.ChunkObject.name, c);
 			}
 		}
 
@@ -203,8 +205,8 @@ namespace Assets.Scripts
 				if (c.Value.Status == Chunk.ChunkStatus.Draw)
 					c.Value.DrawChunk();
 
-				if(c.Value.ChunkGameObject 
-				   && Vector3.Distance(Player.transform.position, c.Value.ChunkGameObject.transform.position) > Radius * ChunkSize)
+				if(c.Value.ChunkObject 
+				   && Vector3.Distance(Player.transform.position, c.Value.ChunkObject.transform.position) > Radius * ChunkSize)
 					ToRemove.Add(c.Key);
 
 				yield return null;
@@ -217,7 +219,7 @@ namespace Assets.Scripts
 			{
 				Chunk c;
 				if (!Chunks.TryGetValue(chunkName, out c)) continue;
-				Destroy(c.ChunkGameObject);
+				Destroy(c.ChunkObject);
 				Chunks.TryRemove(chunkName, out c);
 				//yield return null;
 			}
@@ -262,6 +264,5 @@ namespace Assets.Scripts
 			_stillLoading = false;
 		}
 		#endregion
-
 	}
 }
