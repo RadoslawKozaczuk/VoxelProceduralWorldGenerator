@@ -126,8 +126,8 @@ namespace Assets.Scripts
 							Blocks[x, y, z] = new Block(Block.BlockType.Grass, pos, ChunkObject.gameObject, this);
 						else if (worldY <= Utils.GenerateHeight(worldX, worldZ))
 							Blocks[x, y, z] = new Block(Block.BlockType.Dirt, pos, ChunkObject.gameObject, this);
-						//else if(worldY <= WaterLeverl)
-						//	Blocks[x, y, z] = new Block(Block.BlockType.Water, pos, FluidObject.gameObject, this);
+						else if (worldY <= WaterLeverl)
+							Blocks[x, y, z] = new Block(Block.BlockType.Water, pos, FluidObject.gameObject, this);
 						else
 							Blocks[x, y, z] = new Block(Block.BlockType.Air, pos, ChunkObject.gameObject, this);
 

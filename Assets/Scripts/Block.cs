@@ -9,10 +9,10 @@ namespace Assets.Scripts
 		public enum BlockType
 		{
 			Grass, Dirt, Stone, Diamond, Bedrock, Redstone,
-			Air
+			Air,
+			Water
 		};
 		public enum HealthLevel { NoCrack, Crack1, Crack2, Crack3, Crack4 }
-		public enum FluidType { Water }
 		enum Cubeside { Bottom, Top, Left, Right, Front, Back };
 		
 		BlockType _type;
@@ -22,7 +22,7 @@ namespace Assets.Scripts
 			set
 			{
 				_type = value;
-				IsSolid = _type != BlockType.Air;
+				IsSolid = _type != BlockType.Air && _type != BlockType.Water;
 			}
 		}
 
@@ -38,12 +38,8 @@ namespace Assets.Scripts
 		// this corresponds to the BlockType enum, so for example Grass can be hit 3 times
 		readonly int[] _blockHealthMax = { 
 			3, 3, 4, 4, -1, 4,
-			0 // air
-		}; // -1 means the block cannot be destroyed
-
-		// this corresponds to the FluidType enum, so for example Grass can be hit 3 times
-		readonly int[] _fluidHealthMax = {
-			8 // water
+			0, // air
+			8
 		}; // -1 means the block cannot be destroyed
 
 		readonly GameObject _parent;
@@ -65,7 +61,9 @@ namespace Assets.Scripts
 			/*BEDROCK*/			{new Vector2( 0.3125f, 0.8125f ), new Vector2( 0.375f, 0.8125f),
 									new Vector2( 0.3125f, 0.875f ), new Vector2( 0.375f, 0.875f )},
 			/*REDSTONE*/		{new Vector2( 0.1875f, 0.75f ), new Vector2( 0.25f, 0.75f),
-									new Vector2( 0.1875f, 0.8125f ), new Vector2( 0.25f, 0.8125f )}
+									new Vector2( 0.1875f, 0.8125f ), new Vector2( 0.25f, 0.8125f )},
+			/*WATER*/			{new Vector2(0.875f,0.125f), new Vector2(0.9375f,0.125f),
+									new Vector2(0.875f,0.1875f), new Vector2(0.9375f,0.1875f)},
 			
 			// BUG - tile sheet provided is broken and some tiles overlaps each other
 		};
@@ -82,12 +80,6 @@ namespace Assets.Scripts
 									new Vector2(0.3125f,0.0625f), new Vector2(0.375f,0.0625f)},
 			/*CRACK4*/			{new Vector2(0.4375f,0f), new Vector2(0.5f,0f),
 									new Vector2(0.4375f,0.0625f), new Vector2(0.5f,0.0625f)}
-		};
-
-		readonly Vector2[,] _fluidUVs = { 
-			// left-bottom, right-bottom, left-top, right-top
-			/*WATER*/			{new Vector2(0.875f,0.125f), new Vector2(0.9375f,0.125f),
-									new Vector2(0.875f,0.1875f), new Vector2(0.9375f,0.1875f)},
 		};
 
 		public Block(BlockType type, Vector3 pos, GameObject p, Chunk o)
@@ -181,6 +173,13 @@ namespace Assets.Scripts
 				uv10 = _blockUVs[(int)(BlockType.Dirt + 1), 1];
 				uv01 = _blockUVs[(int)(BlockType.Dirt + 1), 2];
 				uv11 = _blockUVs[(int)(BlockType.Dirt + 1), 3];
+			}
+			else if (Type == BlockType.Water)
+			{
+				uv00 = _blockUVs[(int)Type, 0];
+				uv10 = _blockUVs[(int)Type, 1];
+				uv01 = _blockUVs[(int)Type, 2];
+				uv11 = _blockUVs[(int)Type, 3];
 			}
 			else
 			{
@@ -313,11 +312,12 @@ namespace Assets.Scripts
 		{
 			try
 			{
-				Block b = GetBlock(x, y, z);
-				if (b != null)
-					return b.IsSolid; //|| b.Type != Type; // here we test if this block type and neighboring block's type are different
-														// and if they are we draw the quad
-														// this is not efficient because we need that check because of the water
+				Block target = GetBlock(x, y, z);
+				if (target != null)
+				{
+					if (Type == BlockType.Water && target.Type == BlockType.Water) return true;
+					return target.IsSolid && IsSolid;
+				}
 			}
 			catch (IndexOutOfRangeException) { } // BUG I am not sure if this is correct way - exception handling maybe very slow
 
