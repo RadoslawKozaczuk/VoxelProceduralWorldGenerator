@@ -5,6 +5,9 @@ using UnityEngine;
 
 namespace Assets.Scripts
 {
+	// PostTextureAtlas extends the Unity class AssetPostprocessor. 
+	// Just being in the project will have them run at the appropriate times.  
+	// In this case, this file will run when you change the Texture type in the Inspector from one thing to another and then click on apply.
 	public class ProcessTextureAtlas : AssetPostprocessor
 	{
 		static readonly List<string> _uvs = new List<string>();
@@ -58,14 +61,14 @@ namespace Assets.Scripts
 					float uv4x = (c * sw + sw) / (float)texture.width;
 					float uv4y = (r * sh + sh) / (float)texture.height;
 					meta.name = uv1x + "," + uv1y + "|" +
-					            uv2x + "," + uv2y + "|" +
-					            uv3x + "," + uv3y + "|" +
-					            uv4x + "," + uv4y;
+								uv2x + "," + uv2y + "|" +
+								uv3x + "," + uv3y + "|" +
+								uv4x + "," + uv4y;
 					metas.Add(meta);
 					string n = "Row: " + r + " Col: " + c + " { new Vector2(" + uv1x + "f," + uv1y + "f)," +
-					           " new Vector2(" + uv2x + "f," + uv2y + "f),\n" +
-					           " new Vector2(" + uv3x + "f," + uv3y + "f)," +
-					           " new Vector2(" + uv4x + "f," + uv4y + "f)}";
+							   " new Vector2(" + uv2x + "f," + uv2y + "f),\n" +
+							   " new Vector2(" + uv3x + "f," + uv3y + "f)," +
+							   " new Vector2(" + uv4x + "f," + uv4y + "f)}";
 					_uvs.Add(n);
 				}
 			}

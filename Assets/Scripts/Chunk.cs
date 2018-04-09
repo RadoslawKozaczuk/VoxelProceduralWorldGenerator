@@ -34,7 +34,7 @@ namespace Assets.Scripts
 		public Material CubeMaterial;
 		public Material FluidMaterial;
 		public GameObject ChunkObject;
-		//public GameObject FluidObject;
+		public GameObject FluidObject;
 		public Block[,,] Blocks;
 		public ChunkMB MonoBehavior;
 		public bool Changed = false;
@@ -68,8 +68,8 @@ namespace Assets.Scripts
 			ChunkObject.transform.position = position;
 			CubeMaterial = chunkMaterial;
 
-			//FluidObject = new GameObject(chunkName + "_fluid");
-			//FluidObject.transform.position = position;
+			FluidObject = new GameObject(chunkName + "_fluid");
+			FluidObject.transform.position = position;
 			FluidMaterial = transparentMaterial;
 
 			MonoBehavior = ChunkObject.AddComponent<ChunkMB>();
@@ -151,8 +151,8 @@ namespace Assets.Scripts
 			UnityEngine.Object.DestroyImmediate(ChunkObject.GetComponent<MeshFilter>());
 			UnityEngine.Object.DestroyImmediate(ChunkObject.GetComponent<MeshRenderer>());
 			UnityEngine.Object.DestroyImmediate(ChunkObject.GetComponent<Collider>());
-			//UnityEngine.Object.DestroyImmediate(FluidObject.GetComponent<MeshFilter>());
-			//UnityEngine.Object.DestroyImmediate(FluidObject.GetComponent<MeshRenderer>());
+			UnityEngine.Object.DestroyImmediate(FluidObject.GetComponent<MeshFilter>());
+			UnityEngine.Object.DestroyImmediate(FluidObject.GetComponent<MeshRenderer>());
 			DrawChunk();
 		}
 
@@ -170,7 +170,7 @@ namespace Assets.Scripts
 			var collider = ChunkObject.gameObject.AddComponent(typeof(MeshCollider)) as MeshCollider;
 			collider.sharedMesh = ChunkObject.transform.GetComponent<MeshFilter>().mesh;
 
-			//CombineQuads(FluidObject.gameObject, FluidMaterial);
+			CombineQuads(FluidObject.gameObject, FluidMaterial);
 			Status = ChunkStatus.Done;
 		}
 		

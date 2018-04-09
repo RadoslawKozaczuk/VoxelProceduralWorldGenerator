@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Assets.Scripts
@@ -8,20 +9,13 @@ namespace Assets.Scripts
 		public enum BlockType
 		{
 			Grass, Dirt, Stone, Diamond, Bedrock, Redstone,
-			//Water,
 			Air
 		};
-
-		public enum HealthLevel
-		{
-			NoCrack, Crack1, Crack2, Crack3, Crack4
-		}
-
+		public enum HealthLevel { NoCrack, Crack1, Crack2, Crack3, Crack4 }
+		public enum FluidType { Water }
 		enum Cubeside { Bottom, Top, Left, Right, Front, Back };
-
-		public bool IsSolid;
-
-		private BlockType _type;
+		
+		BlockType _type;
 		public BlockType Type
 		{
 			get { return _type; }
@@ -34,21 +28,26 @@ namespace Assets.Scripts
 
 		// crack texture
 		public HealthLevel HealthType;
+		public bool IsSolid;
+		public readonly Chunk Owner;
+		public Vector3 Position;
 
 		// current health as a number of hit points
-		private int _currentHealth; // start set to maximum health the block can be
+		int _currentHealth; // start set to maximum health the block can be
 
 		// this corresponds to the BlockType enum, so for example Grass can be hit 3 times
-		private readonly int[] _blockHealthMax = {
+		readonly int[] _blockHealthMax = { 
 			3, 3, 4, 4, -1, 4,
-			//8, // water
 			0 // air
 		}; // -1 means the block cannot be destroyed
 
-		public readonly Chunk Owner;
-		readonly GameObject _parent;
-		public Vector3 Position;
+		// this corresponds to the FluidType enum, so for example Grass can be hit 3 times
+		readonly int[] _fluidHealthMax = {
+			8 // water
+		}; // -1 means the block cannot be destroyed
 
+		readonly GameObject _parent;
+		
 		// assumptions used:
 		// coordination start left down corner
 		readonly Vector2[,] _blockUVs = { 
@@ -66,10 +65,7 @@ namespace Assets.Scripts
 			/*BEDROCK*/			{new Vector2( 0.3125f, 0.8125f ), new Vector2( 0.375f, 0.8125f),
 									new Vector2( 0.3125f, 0.875f ), new Vector2( 0.375f, 0.875f )},
 			/*REDSTONE*/		{new Vector2( 0.1875f, 0.75f ), new Vector2( 0.25f, 0.75f),
-									new Vector2( 0.1875f, 0.8125f ), new Vector2( 0.25f, 0.8125f )}//,
-
-			/*WATER*/			//{new Vector2(0.875f,0.125f), new Vector2(0.9375f,0.125f),
-									//new Vector2(0.875f,0.1875f), new Vector2(0.9375f,0.1875f)},
+									new Vector2( 0.1875f, 0.8125f ), new Vector2( 0.25f, 0.8125f )}
 			
 			// BUG - tile sheet provided is broken and some tiles overlaps each other
 		};
@@ -80,14 +76,20 @@ namespace Assets.Scripts
 									new Vector2(0.6875f,0.0625f), new Vector2(0.75f,0.0625f)},
 			/*CRACK1*/			{new Vector2(0.0625f,0f), new Vector2(0.125f,0f),
 									new Vector2(0.0625f,0.0625f), new Vector2(0.125f,0.0625f)},
- 			/*CRACK2*/			{new Vector2(0.1875f,0f), new Vector2(0.25f,0f),
+			/*CRACK2*/			{new Vector2(0.1875f,0f), new Vector2(0.25f,0f),
 									new Vector2(0.1875f,0.0625f), new Vector2(0.25f,0.0625f)},
- 			/*CRACK3*/			{new Vector2(0.3125f,0f), new Vector2(0.375f,0f),
+			/*CRACK3*/			{new Vector2(0.3125f,0f), new Vector2(0.375f,0f),
 									new Vector2(0.3125f,0.0625f), new Vector2(0.375f,0.0625f)},
- 			/*CRACK4*/			{new Vector2(0.4375f,0f), new Vector2(0.5f,0f),
+			/*CRACK4*/			{new Vector2(0.4375f,0f), new Vector2(0.5f,0f),
 									new Vector2(0.4375f,0.0625f), new Vector2(0.5f,0.0625f)}
 		};
-		
+
+		readonly Vector2[,] _fluidUVs = { 
+			// left-bottom, right-bottom, left-top, right-top
+			/*WATER*/			{new Vector2(0.875f,0.125f), new Vector2(0.9375f,0.125f),
+									new Vector2(0.875f,0.1875f), new Vector2(0.9375f,0.1875f)},
+		};
+
 		public Block(BlockType type, Vector3 pos, GameObject p, Chunk o)
 		{
 			Type = type;
@@ -151,7 +153,7 @@ namespace Assets.Scripts
 			// they the engine which side it should treat as the side on which textures and shaders should be rendered.
 			// Verticies also can have their own normal and this is the case here so each vertex has its own normal vector.
 			var normals = new Vector3[4];
-			              
+
 			// Uvs maps the texture over the surface
 			var uvs = new Vector2[4];
 			var triangles = new int[6];
@@ -263,12 +265,13 @@ namespace Assets.Scripts
 			meshFilter.mesh = mesh;
 		}
 
+		// convert x, y or z to what it is in the neighboring block
 		int ConvertBlockIndexToLocal(int i)
 		{
 			if (i == -1)
-				i = World.ChunkSize - 1;
-			else if (i == World.ChunkSize)
-				i = 0;
+				return World.ChunkSize - 1;
+			if (i == World.ChunkSize)
+				return 0;
 			return i;
 		}
 
@@ -284,10 +287,11 @@ namespace Assets.Scripts
 				z < 0 || z >= World.ChunkSize)
 			{
 				// block in a neighboring chunk
-				var neighborChunkPos = _parent.transform.position +
+				var neighborChunkPos = _parent.transform.position + 
 									   new Vector3((x - (int)Position.x) * World.ChunkSize,
 										   (y - (int)Position.y) * World.ChunkSize,
 										   (z - (int)Position.z) * World.ChunkSize);
+				
 				var chunkName = World.BuildChunkName(neighborChunkPos);
 
 				x = ConvertBlockIndexToLocal(x);
@@ -311,12 +315,11 @@ namespace Assets.Scripts
 			{
 				Block b = GetBlock(x, y, z);
 				if (b != null)
-					return b.IsSolid 
-						/*|| b.Type != Type*/; // here we test if this block type and neighboring block's type are different
-				// and if they are we draw the quad
-				// this is not efficient because we need that check because of the water
+					return b.IsSolid || b.Type != Type; // here we test if this block type and neighboring block's type are different
+														// and if they are we draw the quad
+														// this is not efficient because we need that check because of the water
 			}
-			catch (System.IndexOutOfRangeException) { }
+			catch (IndexOutOfRangeException) { } // BUG I am not sure if this is correct way - exception handling maybe very slow
 
 			return false;
 		}
