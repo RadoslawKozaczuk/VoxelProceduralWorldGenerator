@@ -315,7 +315,7 @@ namespace Assets.Scripts
 			{
 				Block b = GetBlock(x, y, z);
 				if (b != null)
-					return b.IsSolid || b.Type != Type; // here we test if this block type and neighboring block's type are different
+					return b.IsSolid; //|| b.Type != Type; // here we test if this block type and neighboring block's type are different
 														// and if they are we draw the quad
 														// this is not efficient because we need that check because of the water
 			}
