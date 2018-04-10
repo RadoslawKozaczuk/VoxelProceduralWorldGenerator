@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Assets.Scripts
@@ -9,6 +10,8 @@ namespace Assets.Scripts
 
 		private const float AttackRange = 4.0f;
 
+		private Block.BlockType _buildBlockType = Block.BlockType.Stone;
+
 		// Use this for initialization
 		void Start()
 		{
@@ -18,6 +21,10 @@ namespace Assets.Scripts
 		// Update is called once per frame
 		void Update()
 		{
+			if (!Input.anyKey) return;
+
+			CheckForBuildBlockType();
+
 			// left mouse click is going to destroy block and the right mouse click will add a block
 			if (!(Input.GetMouseButtonDown(0) || Input.GetMouseButtonDown(1)))
 				return;
@@ -61,12 +68,51 @@ namespace Assets.Scripts
 
 			bool update = Input.GetMouseButtonDown(0) 
 				? b.HitBlock() // if destroyed
-				: b.BuildBlock(Block.BlockType.Stone); // always returns true
+				: b.BuildBlock(_buildBlockType); // always returns true
 
 			if (!update) return;
 
 			hitc.Changed = true;
 			RedrawNeighbours(b.Position, thisChunkx, thisChunky, thisChunkz);
+		}
+
+		void CheckForBuildBlockType()
+		{
+			if (Input.GetKeyDown("1"))
+			{
+				_buildBlockType = Block.BlockType.Grass;
+				Debug.Log("Change build block type to Grass");
+			}
+			else if (Input.GetKeyDown("2"))
+			{
+				_buildBlockType = Block.BlockType.Dirt;
+				Debug.Log("Change build block type to Dirt");
+			}
+			else if (Input.GetKeyDown("3"))
+			{
+				_buildBlockType = Block.BlockType.Stone;
+				Debug.Log("Change build block type to Stone");
+			}
+			else if (Input.GetKeyDown("4"))
+			{
+				_buildBlockType = Block.BlockType.Diamond;
+				Debug.Log("Change build block type to Diamond");
+			}
+			else if (Input.GetKeyDown("5"))
+			{
+				_buildBlockType = Block.BlockType.Bedrock;
+				Debug.Log("Change build block type to Bedrock");
+			}
+			else if (Input.GetKeyDown("6"))
+			{
+				_buildBlockType = Block.BlockType.Redstone;
+				Debug.Log("Change build block type to Redstone");
+			}
+			else if (Input.GetKeyDown("7"))	
+			{
+				_buildBlockType = Block.BlockType.Water;
+				Debug.Log("Change build block type to Water");
+			}
 		}
 
 		private void RedrawNeighbours(Vector3 position, float chunkX, float chunkY, float chunkZ)
