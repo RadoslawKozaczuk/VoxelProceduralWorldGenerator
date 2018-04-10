@@ -35,7 +35,7 @@ namespace Assets.Scripts
 		// this is necessary to avoid building world when the player does not move
 		public Vector3 LastBuildPos;
 
-		private CoroutineQueue _queue;
+		public static CoroutineQueue Queue;
 		public static uint MaxCoroutines = 1000;
 		
 
@@ -59,7 +59,7 @@ namespace Assets.Scripts
 			transform.position = Vector3.zero;
 			transform.rotation = Quaternion.identity;
 
-			_queue = new CoroutineQueue(MaxCoroutines, StartCoroutine);
+			Queue = new CoroutineQueue(MaxCoroutines, StartCoroutine);
 
 			//build starting chunk
 			BuildChunkAt(
@@ -68,10 +68,10 @@ namespace Assets.Scripts
 				(int)(Player.transform.position.z / ChunkSize));
 
 			//draw it
-			_queue.Run(DrawChunks());
+			Queue.Run(DrawChunks());
 
 			//create a bigger world
-			_queue.Run(BuildRecursiveWorld(
+			Queue.Run(BuildRecursiveWorld(
 				(int)(Player.transform.position.x / ChunkSize),
 				(int)(Player.transform.position.y / ChunkSize),
 				(int)(Player.transform.position.z / ChunkSize),
@@ -94,7 +94,7 @@ namespace Assets.Scripts
 				_firstBuild = false;
 			}
 			
-			_queue.Run(DrawChunks());
+			Queue.Run(DrawChunks());
 			RemoveOldChunks();
 		}
 		
@@ -229,7 +229,7 @@ namespace Assets.Scripts
 		{
 			// we stop any existing build that is going on - this will stop all the recursive calls as well
 			StopCoroutine("BuildRecursiveWorld");
-			_queue.Run(BuildRecursiveWorld(
+			Queue.Run(BuildRecursiveWorld(
 				(int)(Player.transform.position.x / ChunkSize),
 				(int)(Player.transform.position.y / ChunkSize),
 				(int)(Player.transform.position.z / ChunkSize),

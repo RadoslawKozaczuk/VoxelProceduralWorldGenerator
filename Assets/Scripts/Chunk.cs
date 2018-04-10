@@ -99,46 +99,66 @@ namespace Assets.Scripts
 							Blocks[x, y, z] = new Block(_blockData.Matrix[x, y, z], pos, ChunkObject.gameObject, this);
 							continue;
 						}
-
-						// old random way
-						//var type = Random.Range(0, 100) < 50 ? Block.BlockType.Dirt : Block.BlockType.Air;
-
+						
 						// generate height
-						//Block.BlockType type;
+						Block.BlockType type;
+						GameObject gameObject;
+
 						if (worldY <= Utils.GenerateBedrockHeight(worldX, worldZ))
-							Blocks[x, y, z] = new Block(Block.BlockType.Bedrock, pos, ChunkObject.gameObject, this);
+						{
+							type = Block.BlockType.Bedrock;
+							gameObject = ChunkObject.gameObject;
+						}
 						else if (worldY <= Utils.GenerateStoneHeight(worldX, worldZ))
 						{
 							if (Utils.FractalBrownianMotion3D(worldX, worldY, worldZ, DiamondSmooth, DiamondOctaves) < DiamondProbability 
 								&& worldY < DiamondMaxHeight)
 							{
-								Blocks[x, y, z] = new Block(Block.BlockType.Diamond, pos, ChunkObject.gameObject, this);
+								type = Block.BlockType.Diamond;
+								gameObject = ChunkObject.gameObject;
 							}
 							else if (Utils.FractalBrownianMotion3D(worldX, worldY, worldZ, RedstoneSmooth, RedstoneOctaves) < RedstoneProbability
 								&& worldY < RedstoneMaxHeight)
 							{
-								Blocks[x, y, z] = new Block(Block.BlockType.Redstone, pos, ChunkObject.gameObject, this);
+								type = Block.BlockType.Redstone;
+								gameObject = ChunkObject.gameObject;
 							}
 							else
-								Blocks[x, y, z] = new Block(Block.BlockType.Stone, pos, ChunkObject.gameObject, this);
+							{
+								type = Block.BlockType.Stone;
+								gameObject = ChunkObject.gameObject;
+							}
 						}
 						else if (worldY == Utils.GenerateHeight(worldX, worldZ))
-							Blocks[x, y, z] = new Block(Block.BlockType.Grass, pos, ChunkObject.gameObject, this);
-						else if (worldY <= Utils.GenerateHeight(worldX, worldZ))
-							Blocks[x, y, z] = new Block(Block.BlockType.Dirt, pos, ChunkObject.gameObject, this);
-						else if (worldY <= WaterLeverl)
-							Blocks[x, y, z] = new Block(Block.BlockType.Water, pos, FluidObject.gameObject, this);
-						else
-							Blocks[x, y, z] = new Block(Block.BlockType.Air, pos, ChunkObject.gameObject, this);
-
-						// generate caves
-						if (/*Blocks[x, y, z].Type != Block.BlockType.Water 
-							&&*/ Utils.FractalBrownianMotion3D(worldX, worldY, worldZ, CaveSmooth, CaveOctaves) < CaveProbability)
 						{
-							Blocks[x, y, z] = new Block(Block.BlockType.Air, pos, ChunkObject.gameObject, this);
+							type = Block.BlockType.Grass;
+							gameObject = ChunkObject.gameObject;
+						}
+						else if (worldY <= Utils.GenerateHeight(worldX, worldZ))
+						{
+							type = Block.BlockType.Dirt;
+							gameObject = ChunkObject.gameObject;
+						}
+						else if (worldY <= WaterLeverl)
+						{
+							type = Block.BlockType.Water;
+							gameObject = FluidObject.gameObject;
+						}
+						else
+						{
+							type = Block.BlockType.Air;
+							gameObject = ChunkObject.gameObject;
+						}
+						
+						// generate caves
+						if (type != Block.BlockType.Water 
+							&& Utils.FractalBrownianMotion3D(worldX, worldY, worldZ, CaveSmooth, CaveOctaves) < CaveProbability)
+						{
+							type = Block.BlockType.Air;
+							gameObject = ChunkObject.gameObject;
 						}
 
-						//Blocks[x, y, z] = new Block(type, pos, ChunkObject.gameObject, this);
+						Blocks[x, y, z] = new Block(type, pos, gameObject, this);
 					}
 
 			// chunk just has been created and it is ready to be drawn

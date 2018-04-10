@@ -33,7 +33,7 @@ namespace Assets.Scripts
 		public Vector3 Position;
 
 		// current health as a number of hit points
-		int _currentHealth; // start set to maximum health the block can be
+		public int CurrentHealth; // start set to maximum health the block can be
 
 		// this corresponds to the BlockType enum, so for example Grass can be hit 3 times
 		readonly int[] _blockHealthMax = { 
@@ -86,7 +86,7 @@ namespace Assets.Scripts
 		{
 			Type = type;
 			HealthType = HealthLevel.NoCrack;
-			_currentHealth = _blockHealthMax[(int)_type]; // maximum health
+			CurrentHealth = _blockHealthMax[(int)_type]; // maximum health
 			Owner = o;
 			_parent = p;
 			Position = pos;
@@ -95,16 +95,28 @@ namespace Assets.Scripts
 		public void Reset()
 		{
 			HealthType = HealthLevel.NoCrack;
-			_currentHealth = _blockHealthMax[(int)Type];
+			CurrentHealth = _blockHealthMax[(int)Type];
 			Owner.Redraw();
 		}
 
 		// BUG - if we build where we stand player falls into the block
 		public bool BuildBlock(BlockType type)
 		{
-			Type = type;
-			_currentHealth = _blockHealthMax[(int)_type]; // maximum health
-			Owner.Redraw();
+			if (type == BlockType.Water)
+			{
+				Owner.MonoBehavior.StartCoroutine(Owner.MonoBehavior.Flow(
+					this, 
+					BlockType.Water,
+					_blockHealthMax[(int) BlockType.Water],
+					10));
+			}
+			else
+			{
+				Type = type;
+				CurrentHealth = _blockHealthMax[(int)_type]; // maximum health
+				Owner.Redraw();
+			}
+			
 			return true;
 		}
 
@@ -113,15 +125,15 @@ namespace Assets.Scripts
 		/// </summary>
 		public bool HitBlock()
 		{
-			if (_currentHealth == -1) return false;
-			_currentHealth--;
+			if (CurrentHealth == -1) return false;
+			CurrentHealth--;
 			HealthType++;
 
 			// if the block was hit for the first time start the coroutine
-			if (_currentHealth == _blockHealthMax[(int)Type] - 1)
+			if (CurrentHealth == _blockHealthMax[(int)Type] - 1)
 				Owner.MonoBehavior.StartCoroutine(Owner.MonoBehavior.HealBlock(Position));
 
-			if (_currentHealth <= 0)
+			if (CurrentHealth <= 0)
 			{
 				_type = BlockType.Air;
 				IsSolid = false;
@@ -277,7 +289,7 @@ namespace Assets.Scripts
 		/// <summary>
 		/// Returns the neighboring block
 		/// </summary>
-		Block GetBlock(int x, int y, int z)
+		public Block GetBlock(int x, int y, int z)
 		{
 			Block[,,] blocks;
 
