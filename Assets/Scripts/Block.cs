@@ -65,7 +65,7 @@ namespace Assets.Scripts
 			/*WATER*/			{new Vector2(0.875f,0.125f), new Vector2(0.9375f,0.125f),
 									new Vector2(0.875f,0.1875f), new Vector2(0.9375f,0.1875f)},
 			
-			// BUG - tile sheet provided is broken and some tiles overlaps each other
+			// BUG: Tile sheet provided is broken and some tiles overlaps each other
 		};
 
 		readonly Vector2[,] _crackUVs = { 
@@ -99,7 +99,7 @@ namespace Assets.Scripts
 			Owner.Redraw();
 		}
 
-		// BUG - if we build where we stand player falls into the block
+		// BUG: If we build where we stand player falls into the block
 		public bool BuildBlock(BlockType type)
 		{
 			if (type == BlockType.Water)
@@ -320,37 +320,44 @@ namespace Assets.Scripts
 			return blocks[x, y, z];
 		}
 
-		bool HasSolidNeighbor(int x, int y, int z)
+		bool ShouldCreateQuad(int x, int y, int z)
 		{
 			try
 			{
-				Block target = GetBlock(x, y, z);
+				var target = GetBlock(x, y, z);
 				if (target != null)
 				{
-					if (Type == BlockType.Water && target.Type == BlockType.Water) return true;
-					return target.IsSolid && IsSolid;
+					if (Type == BlockType.Water && target.Type == BlockType.Water) return false;
+					return !(target.IsSolid && IsSolid);
 				}
 			}
-			catch (IndexOutOfRangeException) { } // BUG I am not sure if this is correct way - exception handling maybe very slow
+			catch (IndexOutOfRangeException) { } // BUG: I am not sure if this is the correct way - exception handling may be very slow
 
-			return false;
+			return true;
 		}
 
 		public void Draw()
 		{
 			if (Type == BlockType.Air) return;
 
-			if (!HasSolidNeighbor((int)Position.x, (int)Position.y, (int)Position.z + 1))
+			int castedX = (int)Position.x,
+				castedY = (int)Position.y,
+				castedZ = (int)Position.z;
+
+			// BUG: ShouldCreateQuad is called hundreds times per second and each time we call GetBlock method six times
+			// the result of the check should be stored preferably in a table for the whole chunk
+			// and changed each time block was destroyed or added
+			if (ShouldCreateQuad(castedX, castedY, castedZ + 1))
 				CreateQuad(Cubeside.Front);
-			if (!HasSolidNeighbor((int)Position.x, (int)Position.y, (int)Position.z - 1))
+			if (ShouldCreateQuad(castedX, castedY, castedZ - 1))
 				CreateQuad(Cubeside.Back);
-			if (!HasSolidNeighbor((int)Position.x, (int)Position.y + 1, (int)Position.z))
+			if (ShouldCreateQuad(castedX, castedY + 1, castedZ))
 				CreateQuad(Cubeside.Top);
-			if (!HasSolidNeighbor((int)Position.x, (int)Position.y - 1, (int)Position.z))
+			if (ShouldCreateQuad(castedX, castedY - 1, castedZ))
 				CreateQuad(Cubeside.Bottom);
-			if (!HasSolidNeighbor((int)Position.x - 1, (int)Position.y, (int)Position.z))
+			if (ShouldCreateQuad(castedX - 1, castedY, castedZ))
 				CreateQuad(Cubeside.Left);
-			if (!HasSolidNeighbor((int)Position.x + 1, (int)Position.y, (int)Position.z))
+			if (ShouldCreateQuad(castedX + 1, castedY, castedZ))
 				CreateQuad(Cubeside.Right);
 		}
 	}

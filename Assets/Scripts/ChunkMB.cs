@@ -30,7 +30,7 @@ namespace Assets.Scripts
 			if (startingBlock == null) yield break; // block would be null if the neighboring location does not exist
 			if (strength <= 0) yield break;
 			if (startingBlock.Type != Block.BlockType.Air) yield break; // water only spread trough the air
-			startingBlock.Type = bt; // BUG - this should also change the parent's game object to apply transparency
+			startingBlock.Type = bt; // BUG: This should also change the parent's game object to apply transparency
 			startingBlock.CurrentHealth = strength;
 			startingBlock.Owner.Redraw();
 			yield return new WaitForSeconds(1); // water spread one block per second

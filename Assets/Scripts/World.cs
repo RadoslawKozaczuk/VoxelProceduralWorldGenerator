@@ -133,6 +133,7 @@ namespace Assets.Scripts
 			else return null;
 		}
 
+		// BUG: This is a huge choke point. Chunk name should be a number to avoid thousands of string concatenations and comparisons
 		public static string BuildChunkName(Vector3 v)
 		{
 			return (int)v.x + "_" + (int)v.y + "_" + (int)v.z;
