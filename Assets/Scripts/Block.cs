@@ -287,37 +287,33 @@ namespace Assets.Scripts
 		}
 
 		/// <summary>
-		/// Returns the neighboring block
+		/// Returns the block from the chunk
+		/// Returns null in case the chunk that the block supposed to be in does no exists
 		/// </summary>
 		public Block GetBlock(int x, int y, int z)
 		{
-			Block[,,] blocks;
+			// block is in this chunk
+			if (x >= 0 && x < World.ChunkSize && 
+			    y >= 0 && y < World.ChunkSize && 
+			    z >= 0 && z < World.ChunkSize)
+				return Owner.Blocks[x, y, z];
 
-			if (x < 0 || x >= World.ChunkSize ||
-				y < 0 || y >= World.ChunkSize ||
-				z < 0 || z >= World.ChunkSize)
-			{
-				// block in a neighboring chunk
-				var neighborChunkPos = _parent.transform.position + 
-									   new Vector3((x - (int)Position.x) * World.ChunkSize,
-										   (y - (int)Position.y) * World.ChunkSize,
-										   (z - (int)Position.z) * World.ChunkSize);
+			var otherChunkPos = _parent.transform.position + 
+			                       new Vector3(
+				                       (x - (int)Position.x) * World.ChunkSize,
+				                       (y - (int)Position.y) * World.ChunkSize,
+				                       (z - (int)Position.z) * World.ChunkSize);
 				
-				var chunkName = World.BuildChunkName(neighborChunkPos);
+			var chunkName = World.BuildChunkName(otherChunkPos);
 
-				x = ConvertBlockIndexToLocal(x);
-				y = ConvertBlockIndexToLocal(y);
-				z = ConvertBlockIndexToLocal(z);
+			x = ConvertBlockIndexToLocal(x);
+			y = ConvertBlockIndexToLocal(y);
+			z = ConvertBlockIndexToLocal(z);
 
-				Chunk chunk;
-				if (World.Chunks.TryGetValue(chunkName, out chunk))
-					blocks = chunk.Blocks;
-				else return null; // block is outside of the world
-			} // block is in this chunk
-			else
-				blocks = Owner.Blocks;
-
-			return blocks[x, y, z];
+			Chunk chunk;
+			return World.Chunks.TryGetValue(chunkName, out chunk) 
+				? chunk.Blocks[x, y, z] // block is in the other chunk
+				: null; // block is outside of the world
 		}
 
 		bool ShouldCreateQuad(int x, int y, int z)
