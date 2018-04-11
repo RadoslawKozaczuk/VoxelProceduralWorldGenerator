@@ -37,6 +37,7 @@ namespace Assets.Scripts
 		public GameObject FluidObject;
 		public Block[,,] Blocks;
 		public ChunkMB MonoBehavior;
+		public UVScroller TextureScroller;
 		public bool Changed = false;
 
 		// caves should be more erratic so has to be a higher number
@@ -74,6 +75,10 @@ namespace Assets.Scripts
 
 			MonoBehavior = ChunkObject.AddComponent<ChunkMB>();
 			MonoBehavior.SetOwner(this);
+
+			// BUG: This is extremely slow
+			TextureScroller = FluidObject.AddComponent<UVScroller>();
+
 			BuildChunk();
 		}
 

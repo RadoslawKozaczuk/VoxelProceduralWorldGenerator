@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace Assets.Scripts
 {
-	// we don't Block to be MonoBehavior because that would add a lot of additional stuff limiting performance
+	// we don't want Block to be MonoBehavior because that would add a lot of additional stuff limiting performance
 	public class ChunkMB : MonoBehaviour
 	{
 		Chunk _owner;
