@@ -297,23 +297,21 @@ namespace Assets.Scripts
 			    y >= 0 && y < World.ChunkSize && 
 			    z >= 0 && z < World.ChunkSize)
 				return Owner.Blocks[x, y, z];
-
-			var otherChunkPos = _parent.transform.position + 
-			                       new Vector3(
-				                       (x - (int)Position.x) * World.ChunkSize,
-				                       (y - (int)Position.y) * World.ChunkSize,
-				                       (z - (int)Position.z) * World.ChunkSize);
-				
-			var chunkName = World.BuildChunkName(otherChunkPos);
-
-			x = ConvertBlockIndexToLocal(x);
-			y = ConvertBlockIndexToLocal(y);
-			z = ConvertBlockIndexToLocal(z);
+			
+			// the other chunk name based on its position
+			var chunkName = World.BuildChunkName(
+				(int)_parent.transform.position.x + (x - (int)Position.x) * World.ChunkSize, 
+				(int)_parent.transform.position.y + (y - (int)Position.y) * World.ChunkSize, 
+				(int)_parent.transform.position.z + (z - (int)Position.z) * World.ChunkSize);
 
 			Chunk chunk;
-			return World.Chunks.TryGetValue(chunkName, out chunk) 
-				? chunk.Blocks[x, y, z] // block is in the other chunk
-				: null; // block is outside of the world
+			if (World.Chunks.TryGetValue(chunkName, out chunk))
+				return chunk.Blocks[
+					ConvertBlockIndexToLocal(x), 
+					ConvertBlockIndexToLocal(y), 
+					ConvertBlockIndexToLocal(z)]; // block is in the other chunk
+			
+			return null; // block is outside of the world
 		}
 
 		bool ShouldCreateQuad(int x, int y, int z)

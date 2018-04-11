@@ -17,10 +17,10 @@ namespace Assets.Scripts
 		public static int WorldSize = 8; // number of columns in x and y
 		public static int Radius = 6; // radius tell us how many chunks around the layer needs to be generated
 
-		public static List<string> ToRemove = new List<string>();
+		public static List<int> ToRemove = new List<int>();
 
 		// this is equivalent to Microsoft's concurrent dictionary - Unity simply does not support high enough .Net Framework
-		public static ConcurrentDictionary<string, Chunk> Chunks;
+		public static ConcurrentDictionary<int, Chunk> Chunks;
 		
 		public Slider LoadingAmount;
 		public Camera MainCamera;
@@ -45,7 +45,8 @@ namespace Assets.Scripts
 			DisableUI();
 
 			Vector3 playerPos = Player.transform.position;
-			Player.transform.position = new Vector3(playerPos.x,
+			Player.transform.position = new Vector3(
+				playerPos.x,
 				Utils.GenerateHeight(playerPos.x, playerPos.z) + 1,
 				playerPos.z);
 
@@ -55,7 +56,7 @@ namespace Assets.Scripts
 			Player.SetActive(false);
 
 			_firstBuild = true;
-			Chunks = new ConcurrentDictionary<string, Chunk>();
+			Chunks = new ConcurrentDictionary<int, Chunk>();
 			transform.position = Vector3.zero;
 			transform.rotation = Quaternion.identity;
 
@@ -119,7 +120,7 @@ namespace Assets.Scripts
 				? (int)((Mathf.Round(pos.z - ChunkSize) + 1) / ChunkSize) * ChunkSize 
 				: (int)(Mathf.Round(pos.z) / ChunkSize) * ChunkSize;
 			
-			string chunkName = BuildChunkName(new Vector3(chunkX, chunkY, chunkZ));
+			var chunkName = BuildChunkName(chunkX, chunkY, chunkZ);
 			Chunk c;
 			if (Chunks.TryGetValue(chunkName, out c))
 			{
@@ -133,10 +134,69 @@ namespace Assets.Scripts
 			else return null;
 		}
 
-		// BUG: This is a huge choke point. Chunk name should be a number to avoid thousands of string concatenations and comparisons
-		public static string BuildChunkName(Vector3 v)
+		/// <summary>
+		/// Creates a unique number based on the chunk coordinates. First digit holds signs of all three dimensions (as a bit map).
+		/// X and Y dimensions have 3 digits to store their values. These coordinates can be up to 992 or -992 which gives 249 chunks in total.
+		/// Z dimension has only 2 digits to store its value therefore z coordinate cannot exceeds 96 and -96 which gives 25 chunks in total.
+		/// These limitations are not checked in the function for performance reasons.
+		/// </summary>
+		public static int BuildChunkName(Vector3 v)
 		{
-			return (int)v.x + "_" + (int)v.y + "_" + (int)v.z;
+			int x = (int)v.x, 
+				y = (int)v.y, 
+				z = (int)v.z;
+
+			// create a bit map that holds all signs
+			var res = 1; // initialize with one so the number will always have the same amount of digits
+			if (x >= 0) res += 1;
+			if (y >= 0) res += 2;
+			if (z >= 0) res += 4;
+			res *= 1000000;
+
+			return res + Math.Abs(x) * 100000
+			           + Math.Abs(y) * 1000
+			           + Math.Abs(z);
+
+			// both algorithms do the same but I am too lazy to rewrite the top one especially because it is more human readable
+		}
+
+		/// <summary>
+		/// Creates a unique number based on the chunk coordinates. First digit holds signs of all three dimensions (as a bit map).
+		/// X and Y dimensions have 3 digits to store their values. These coordinates can be up to 992 or -992 which gives 249 chunks in total.
+		/// Z dimension has only 2 digits to store its value therefore z coordinate cannot exceeds 96 and -96 which gives 25 chunks in total.
+		/// These limitations are not checked in the function for performance reasons.
+		/// </summary>
+		public static int BuildChunkName(int x, int y, int z)
+		{
+			// create a bit map that holds all signs
+			var bitMap = 1; // initialize with one so the number will always have the same amount of digits
+			var number = 0;
+			if (x >= 0)
+			{
+				number += x * 100000;
+				bitMap += 1;
+			}
+			else
+				number += x * -100000;
+
+			if (y >= 0)
+			{
+				number += y * 1000;
+				bitMap += 2;
+			}
+			else
+				number += y * -1000;
+			
+			if (z >= 0)
+			{
+				number += z;
+				bitMap += 4;
+			}
+			else
+				number += z * -1;
+			bitMap *= 1000000;
+			
+			return bitMap + number;
 		}
 
 		public static string BuildChunkFileName(Vector3 v)
@@ -148,19 +208,19 @@ namespace Assets.Scripts
 		
 		void BuildChunkAt(int x, int y, int z)
 		{
-			Vector3 chunkPosition = new Vector3(x * ChunkSize,
-				y * ChunkSize,
+			var chunkPosition = new Vector3(
+				x * ChunkSize, 
+				y * ChunkSize, 
 				z * ChunkSize);
 
-			string chunkName = BuildChunkName(chunkPosition);
-			Chunk c;
+			var chunkName = BuildChunkName(chunkPosition);
 
-			if (!Chunks.TryGetValue(chunkName, out c))
-			{
-				c = new Chunk(chunkPosition, TextureAtlas, FluidTexture, chunkName);
-				c.ChunkObject.transform.parent = transform;
-				Chunks.TryAdd(c.ChunkObject.name, c);
-			}
+			Chunk c;
+			if (Chunks.TryGetValue(chunkName, out c)) return; // chunk is already there
+
+			c = new Chunk(chunkPosition, TextureAtlas, FluidTexture, chunkName);
+			c.ChunkObject.transform.parent = transform;
+			Chunks.TryAdd(int.Parse(c.ChunkObject.name), c);
 		}
 
 		IEnumerator BuildRecursiveWorld(int x, int y, int z, int radius)
@@ -201,14 +261,18 @@ namespace Assets.Scripts
 
 		IEnumerator DrawChunks()
 		{
-			foreach (KeyValuePair<string, Chunk> c in Chunks)
+			foreach (KeyValuePair<int, Chunk> c in Chunks)
 			{
 				if (c.Value.Status == Chunk.ChunkStatus.Draw)
 					c.Value.DrawChunk();
 
-				if(c.Value.ChunkObject 
-				   && Vector3.Distance(Player.transform.position, c.Value.ChunkObject.transform.position) > Radius * ChunkSize)
+				if (c.Value.ChunkObject
+				    && Vector3.Distance(
+					    Player.transform.position,
+					    c.Value.ChunkObject.transform.position) > Radius * ChunkSize)
+				{
 					ToRemove.Add(c.Key);
+				}
 
 				yield return null;
 			}

@@ -62,13 +62,13 @@ namespace Assets.Scripts
 		public ChunkStatus Status; // status of the current chunk
 		private BlockData _blockData;
 
-		public Chunk(Vector3 position, Material chunkMaterial, Material transparentMaterial, string chunkName)
+		public Chunk(Vector3 position, Material chunkMaterial, Material transparentMaterial, int chunkName)
 		{
-			ChunkObject = new GameObject(chunkName);
+			ChunkObject = new GameObject(chunkName.ToString());
 			ChunkObject.transform.position = position;
 			CubeMaterial = chunkMaterial;
 
-			FluidObject = new GameObject(chunkName + "_fluid");
+			FluidObject = new GameObject((chunkName * -1).ToString()); // fluids have negative unique numbers
 			FluidObject.transform.position = position;
 			FluidMaterial = transparentMaterial;
 

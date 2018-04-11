@@ -56,7 +56,7 @@ namespace Assets.Scripts
 
 			// we keep performing check if the block is completely gone
 			Chunk hitc;
-			if (!World.Chunks.TryGetValue(hit.collider.gameObject.name, out hitc)) // if we hit something
+			if (!World.Chunks.TryGetValue(int.Parse(hit.collider.gameObject.name), out hitc)) // if we hit something
 				return;
 			
 			// DEBUG - calculated coordinates
@@ -117,23 +117,23 @@ namespace Assets.Scripts
 
 		private void RedrawNeighbours(Vector3 position, float chunkX, float chunkY, float chunkZ)
 		{
-			var updates = new List<string>();
+			var updates = new List<int>();
 
 			// if the block is on the edge of the chunk we need to inform neighbor chunk
 			if (position.x == 0)
-				updates.Add(World.BuildChunkName(new Vector3(chunkX - World.ChunkSize, chunkY, chunkZ)));
+				updates.Add(World.BuildChunkName((int)chunkX - World.ChunkSize, (int)chunkY, (int)chunkZ));
 			if (position.x == World.ChunkSize - 1)
-				updates.Add(World.BuildChunkName(new Vector3(chunkX + World.ChunkSize, chunkY, chunkZ)));
+				updates.Add(World.BuildChunkName((int)chunkX + World.ChunkSize, (int)chunkY, (int)chunkZ));
 			if (position.y == 0)
-				updates.Add(World.BuildChunkName(new Vector3(chunkX, chunkY - World.ChunkSize, chunkZ)));
+				updates.Add(World.BuildChunkName((int)chunkX, (int)chunkY - World.ChunkSize, (int)chunkZ));
 			if (position.y == World.ChunkSize - 1)
-				updates.Add(World.BuildChunkName(new Vector3(chunkX, chunkY + World.ChunkSize, chunkZ)));
+				updates.Add(World.BuildChunkName((int)chunkX, (int)chunkY + World.ChunkSize, (int)chunkZ));
 			if (position.z == 0)
-				updates.Add(World.BuildChunkName(new Vector3(chunkX, chunkY, chunkZ - World.ChunkSize)));
+				updates.Add(World.BuildChunkName((int)chunkX, (int)chunkY, (int)chunkZ - World.ChunkSize));
 			if (position.z == World.ChunkSize - 1)
-				updates.Add(World.BuildChunkName(new Vector3(chunkX, chunkY, chunkZ + World.ChunkSize)));
+				updates.Add(World.BuildChunkName((int)chunkX, (int)chunkY, (int)chunkZ + World.ChunkSize));
 
-			foreach (string cname in updates)
+			foreach (int cname in updates)
 			{
 				Chunk c;
 				if (!World.Chunks.TryGetValue(cname, out c))
