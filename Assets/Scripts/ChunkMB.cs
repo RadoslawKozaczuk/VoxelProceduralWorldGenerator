@@ -6,6 +6,8 @@ namespace Assets.Scripts
 	// we don't want Block to be MonoBehavior because that would add a lot of additional stuff limiting performance
 	public class ChunkMB : MonoBehaviour
 	{
+		// how far a block can fall until it disappear - it prevents from infinite drop
+		private const int MaxDropValue = 100;
 		Chunk _owner;
 		public ChunkMB() { }
 		public void SetOwner(Chunk o)
@@ -64,6 +66,30 @@ namespace Assets.Scripts
 				// flow back
 				World.Queue.Run(Flow(startingBlock.GetBlock(x, y, z - 1), bt, strength, maxsize));
 				yield return new WaitForSeconds(1);
+			}
+		}
+
+		public IEnumerator Drop(Block thisBlock, Block.BlockType type)
+		{
+			Block prevBlock = null;
+			for (int i = 0; i < MaxDropValue; i++)
+			{
+				Block.BlockType previousType = thisBlock.Type;
+				thisBlock.Type = type;
+				if (prevBlock != null)
+					prevBlock.Type = previousType;
+
+				prevBlock = thisBlock;
+				thisBlock.Owner.Redraw();
+
+				yield return new WaitForSeconds(0.2f);
+				Vector3 pos = thisBlock.Position;
+
+				thisBlock = thisBlock.GetBlock((int)pos.x, (int)pos.y - 1, (int)pos.z);
+				if (thisBlock.IsSolid)
+				{
+					yield break;
+				}
 			}
 		}
 

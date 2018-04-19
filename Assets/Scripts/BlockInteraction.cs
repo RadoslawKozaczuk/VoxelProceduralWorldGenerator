@@ -57,11 +57,11 @@ namespace Assets.Scripts
 			Chunk hitc;
 			if (!World.Chunks.TryGetValue(int.Parse(hit.collider.gameObject.name), out hitc)) // if we hit something
 				return;
-			
+
 			// DEBUG - calculated coordinates
-			//Debug.Log("block hit x" + x + " y" + y + " z" + z 
-			//	+ " chunk x" + thisChunkx + " y" + thisChunky + " z" + thisChunkz 
-			//	+ "HitColliderName: " + hit.collider.gameObject.name);
+			Debug.Log("block hit x" + hitBlock.x + " y" + hitBlock.y + " z" + hitBlock.z
+				+ " chunk x" + thisChunkx + " y" + thisChunky + " z" + thisChunkz
+				+ " HitColliderName: " + hit.collider.gameObject.name + "block type: " + b.Type);
 
 			hitc = b.Owner;
 
@@ -107,7 +107,12 @@ namespace Assets.Scripts
 				_buildBlockType = Block.BlockType.Redstone;
 				Debug.Log("Change build block type to Redstone");
 			}
-			else if (Input.GetKeyDown("7"))	
+			else if (Input.GetKeyDown("7"))
+			{
+				_buildBlockType = Block.BlockType.Sand;
+				Debug.Log("Change build block type to Sand");
+			}
+			else if (Input.GetKeyDown("8"))	
 			{
 				_buildBlockType = Block.BlockType.Water;
 				Debug.Log("Change build block type to Water");

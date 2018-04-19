@@ -69,7 +69,7 @@ namespace Assets.Scripts
 			ChunkObject.transform.position = position;
 			CubeMaterial = chunkMaterial;
 
-			FluidObject = new GameObject((chunkName * -1).ToString()); // fluids have negative unique numbers
+			FluidObject = new GameObject(chunkName + "_fluid");
 			FluidObject.transform.position = position;
 			FluidMaterial = transparentMaterial;
 
@@ -77,7 +77,7 @@ namespace Assets.Scripts
 			MonoBehavior.SetOwner(this);
 
 			// BUG: This is extremely slow
-			TextureScroller = FluidObject.AddComponent<UVScroller>();
+			//TextureScroller = FluidObject.AddComponent<UVScroller>();
 
 			BuildChunk();
 		}
@@ -162,7 +162,7 @@ namespace Assets.Scripts
 							type = Block.BlockType.Air;
 							gameObject = ChunkObject.gameObject;
 						}
-
+						
 						Blocks[x, y, z] = new Block(type, pos, gameObject, this);
 					}
 

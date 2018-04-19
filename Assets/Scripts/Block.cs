@@ -8,12 +8,13 @@ namespace Assets.Scripts
 	{
 		public enum BlockType
 		{
-			Grass, Dirt, Stone, Diamond, Bedrock, Redstone,
-			Air,
-			Water
-		};
+			Dirt, Stone, Diamond, Bedrock, Redstone, Sand,
+			Water,
+			Grass, // types that have different textures on different sides are moved at the end just before air
+			Air
+		}
 		public enum HealthLevel { NoCrack, Crack1, Crack2, Crack3, Crack4 }
-		enum Cubeside { Bottom, Top, Left, Right, Front, Back };
+		enum Cubeside { Bottom, Top, Left, Right, Front, Back }
 		
 		BlockType _type;
 		public BlockType Type
@@ -37,9 +38,10 @@ namespace Assets.Scripts
 
 		// this corresponds to the BlockType enum, so for example Grass can be hit 3 times
 		readonly int[] _blockHealthMax = { 
-			3, 3, 4, 4, -1, 4,
-			0, // air
-			8
+			3, 4, 4, -1, 4, 3,
+			8, // water
+			3, // grass
+			0  // air
 		}; // -1 means the block cannot be destroyed
 
 		readonly GameObject _parent;
@@ -48,22 +50,27 @@ namespace Assets.Scripts
 		// coordination start left down corner
 		readonly Vector2[,] _blockUVs = { 
 								// left-bottom, right-bottom, left-top, right-top
-			/*GRASS TOP*/		{new Vector2( 0.125f, 0.375f ), new Vector2( 0.1875f, 0.375f),
-									new Vector2( 0.125f, 0.4375f ), new Vector2( 0.1875f, 0.4375f )},
-			/*GRASS SIDE*/		{new Vector2( 0.1875f, 0.9375f ), new Vector2( 0.25f, 0.9375f),
-									new Vector2( 0.1875f, 1.0f ), new Vector2( 0.25f, 1.0f )},
-			/*DIRT*/			{new Vector2( 0.125f, 0.9375f ), new Vector2( 0.1875f, 0.9375f),
-									new Vector2( 0.125f, 1.0f ), new Vector2( 0.1875f, 1.0f )},
-			/*STONE*/			{new Vector2( 0, 0.875f ), new Vector2( 0.0625f, 0.875f),
-									new Vector2( 0, 0.9375f ), new Vector2( 0.0625f, 0.9375f )},
-			/*DIAMOND*/			{new Vector2( 0.125f, 0.75f ), new Vector2( 0.1875f, 0.75f),
-									new Vector2( 0.125f, 0.8125f ), new Vector2( 0.1875f, 0.81f )},
-			/*BEDROCK*/			{new Vector2( 0.3125f, 0.8125f ), new Vector2( 0.375f, 0.8125f),
-									new Vector2( 0.3125f, 0.875f ), new Vector2( 0.375f, 0.875f )},
-			/*REDSTONE*/		{new Vector2( 0.1875f, 0.75f ), new Vector2( 0.25f, 0.75f),
-									new Vector2( 0.1875f, 0.8125f ), new Vector2( 0.25f, 0.8125f )},
+			
+			/*DIRT*/			{new Vector2(0.125f, 0.9375f), new Vector2(0.1875f, 0.9375f),
+									new Vector2(0.125f, 1.0f), new Vector2(0.1875f, 1.0f)},
+			/*STONE*/			{new Vector2(0, 0.875f), new Vector2(0.0625f, 0.875f),
+									new Vector2(0, 0.9375f), new Vector2(0.0625f, 0.9375f)},
+			/*DIAMOND*/			{new Vector2 (0.125f, 0.75f), new Vector2(0.1875f, 0.75f),
+									new Vector2(0.125f, 0.8125f), new Vector2(0.1875f, 0.81f)},
+			/*BEDROCK*/			{new Vector2(0.3125f, 0.8125f), new Vector2(0.375f, 0.8125f),
+									new Vector2(0.3125f, 0.875f), new Vector2(0.375f, 0.875f)},
+			/*REDSTONE*/		{new Vector2(0.1875f, 0.75f), new Vector2(0.25f, 0.75f),
+									new Vector2(0.1875f, 0.8125f), new Vector2(0.25f, 0.8125f)},
+			/*SAND*/			{new Vector2(0.125f, 0.875f), new Vector2(0.1875f, 0.875f),
+									new Vector2(0.125f, 0.9375f), new Vector2(0.1875f, 0.9375f)},
+
 			/*WATER*/			{new Vector2(0.875f,0.125f), new Vector2(0.9375f,0.125f),
 									new Vector2(0.875f,0.1875f), new Vector2(0.9375f,0.1875f)},
+
+			/*GRASS TOP*/		{new Vector2(0.125f, 0.375f), new Vector2(0.1875f, 0.375f),
+									new Vector2(0.125f, 0.4375f), new Vector2(0.1875f, 0.4375f)},
+			/*GRASS SIDE*/		{new Vector2(0.1875f, 0.9375f), new Vector2(0.25f, 0.9375f),
+									new Vector2(0.1875f, 1.0f), new Vector2(0.25f, 1.0f)}
 			
 			// BUG: Tile sheet provided is broken and some tiles overlaps each other
 		};
@@ -82,6 +89,25 @@ namespace Assets.Scripts
 									new Vector2(0.4375f,0.0625f), new Vector2(0.5f,0.0625f)}
 		};
 
+		// calculation constants
+		//all possible vertices
+		static readonly Vector3 _p0 = new Vector3(-0.5f, -0.5f, 0.5f),
+								_p1 = new Vector3(0.5f, -0.5f, 0.5f),
+								_p2 = new Vector3(0.5f, -0.5f, -0.5f),
+								_p3 = new Vector3(-0.5f, -0.5f, -0.5f),
+								_p4 = new Vector3(-0.5f, 0.5f, 0.5f),
+								_p5 = new Vector3(0.5f, 0.5f, 0.5f),
+								_p6 = new Vector3(0.5f, 0.5f, -0.5f),
+								_p7 = new Vector3(-0.5f, 0.5f, -0.5f);
+		
+		static readonly Vector3[] _downNormals = {Vector3.down, Vector3.down, Vector3.down, Vector3.down},
+								  _upNormals = {Vector3.up, Vector3.up, Vector3.up, Vector3.up},
+								  _leftNormals = {Vector3.left, Vector3.left, Vector3.left, Vector3.left},
+								  _rightNormals = {Vector3.right, Vector3.right, Vector3.right, Vector3.right},
+								  _forwardNormals = {Vector3.forward, Vector3.forward, Vector3.forward, Vector3.forward},
+								  _backNormals = {Vector3.back, Vector3.back, Vector3.back, Vector3.back};
+
+		
 		public Block(BlockType type, Vector3 pos, GameObject p, Chunk o)
 		{
 			Type = type;
@@ -109,6 +135,12 @@ namespace Assets.Scripts
 					BlockType.Water,
 					_blockHealthMax[(int) BlockType.Water],
 					10));
+			}
+			else if (type == BlockType.Sand)
+			{
+				Owner.MonoBehavior.StartCoroutine(Owner.MonoBehavior.Drop(
+					this,
+					BlockType.Sand));
 			}
 			else
 			{
@@ -148,123 +180,83 @@ namespace Assets.Scripts
 
 		void CreateQuad(Cubeside side)
 		{
-			var mesh = new Mesh();
-			mesh.name = "ScriptedMesh" + side;
+			// BUG: This could be moved one level higher because for all types but grass the result is always the same
+			int typeIndex;
+			if (Type == BlockType.Grass)
+			{
+				if (side == Cubeside.Top)
+				{
+					typeIndex = (int)BlockType.Grass;
+				}
+				else if (side == Cubeside.Bottom)
+				{
+					typeIndex = (int)BlockType.Dirt;
+				}
+				else // any side
+				{
+					typeIndex = (int)BlockType.Grass + 1;
+				}
+			}
+			else
+			{
+				typeIndex = (int)Type;
+			}
 
-			var vertices = new Vector3[4];
+			//all possible UVs
+			Vector2 uv00 = _blockUVs[typeIndex, 0],
+					uv10 = _blockUVs[typeIndex, 1],
+					uv01 = _blockUVs[typeIndex, 2],
+					uv11 = _blockUVs[typeIndex, 3];
+
+			// second uvs - this holds cracks
+			// secondary uvs need to be stored in a List - this is required by the Unity engine
+			// set cracks - this need to be add with the correct order - why this order is different than above, I don't know
+			var suvs = new List<Vector2>
+			{
+				_crackUVs[(int) HealthType, 3],	// top right corner
+				_crackUVs[(int) HealthType, 2],	// top left corner
+				_crackUVs[(int) HealthType, 0],	// bottom left corner
+				_crackUVs[(int) HealthType, 1]	// bottom right corner
+			};
 
 			// Normals are vectors projected from the polygon (triangle) at the angle of 90 degrees,
 			// they the engine which side it should treat as the side on which textures and shaders should be rendered.
 			// Verticies also can have their own normal and this is the case here so each vertex has its own normal vector.
-			var normals = new Vector3[4];
-
-			// Uvs maps the texture over the surface
-			var uvs = new Vector2[4];
-			var triangles = new int[6];
-
-			// second uvs - this holds cracks
-			var suvs = new List<Vector2>(); // secondary uvs need to be stored in a List - this is required by the Unity engine
-
-			//all possible UVs
-			Vector2 uv00;
-			Vector2 uv10;
-			Vector2 uv01;
-			Vector2 uv11;
-
-			if (Type == BlockType.Grass && side == Cubeside.Top)
-			{
-				uv00 = _blockUVs[0, 0];
-				uv10 = _blockUVs[0, 1];
-				uv01 = _blockUVs[0, 2];
-				uv11 = _blockUVs[0, 3];
-			}
-			else if (Type == BlockType.Grass && side == Cubeside.Bottom)
-			{
-				// first param gets plus one because grass has two types and because of that it does not match enum anymore
-				uv00 = _blockUVs[(int)(BlockType.Dirt + 1), 0];
-				uv10 = _blockUVs[(int)(BlockType.Dirt + 1), 1];
-				uv01 = _blockUVs[(int)(BlockType.Dirt + 1), 2];
-				uv11 = _blockUVs[(int)(BlockType.Dirt + 1), 3];
-			}
-			else if (Type == BlockType.Water)
-			{
-				uv00 = _blockUVs[(int)Type, 0];
-				uv10 = _blockUVs[(int)Type, 1];
-				uv01 = _blockUVs[(int)Type, 2];
-				uv11 = _blockUVs[(int)Type, 3];
-			}
-			else
-			{
-				// first param gets plus one because grass has two types and because of that it does not match enum anymore
-				uv00 = _blockUVs[(int)(Type + 1), 0];
-				uv10 = _blockUVs[(int)(Type + 1), 1];
-				uv01 = _blockUVs[(int)(Type + 1), 2];
-				uv11 = _blockUVs[(int)(Type + 1), 3];
-			}
-
-			// set cracks - this need to be add with the correct order - why this order is different than above, I don't know
-			suvs.Add(_crackUVs[(int)HealthType, 3]); // top right corner
-			suvs.Add(_crackUVs[(int)HealthType, 2]); // top left corner
-			suvs.Add(_crackUVs[(int)HealthType, 0]); // bottom left corner
-			suvs.Add(_crackUVs[(int)HealthType, 1]); // bottom right corner
-
-			//all possible vertices
-			var p0 = new Vector3(-0.5f, -0.5f, 0.5f);
-			var p1 = new Vector3(0.5f, -0.5f, 0.5f);
-			var p2 = new Vector3(0.5f, -0.5f, -0.5f);
-			var p3 = new Vector3(-0.5f, -0.5f, -0.5f);
-			var p4 = new Vector3(-0.5f, 0.5f, 0.5f);
-			var p5 = new Vector3(0.5f, 0.5f, 0.5f);
-			var p6 = new Vector3(0.5f, 0.5f, -0.5f);
-			var p7 = new Vector3(-0.5f, 0.5f, -0.5f);
-
+			var mesh = new Mesh();
 			switch (side)
 			{
 				case Cubeside.Bottom:
-					vertices = new[] { p0, p1, p2, p3 };
-					normals = new[] { Vector3.down, Vector3.down, Vector3.down, Vector3.down };
-					uvs = new[] { uv11, uv01, uv00, uv10 };
-					triangles = new[] { 3, 1, 0, 3, 2, 1 };
+					mesh.vertices = new[] { _p0, _p1, _p2, _p3 };
+					mesh.normals = _downNormals;
 					break;
 				case Cubeside.Top:
-					vertices = new[] { p7, p6, p5, p4 };
-					normals = new[] { Vector3.up, Vector3.up, Vector3.up, Vector3.up };
-					uvs = new[] { uv11, uv01, uv00, uv10 };
-					triangles = new[] { 3, 1, 0, 3, 2, 1 };
+					mesh.vertices = new[] { _p7, _p6, _p5, _p4 };
+					mesh.normals = _upNormals;
 					break;
 				case Cubeside.Left:
-					vertices = new[] { p7, p4, p0, p3 };
-					normals = new[] { Vector3.left, Vector3.left, Vector3.left, Vector3.left };
-					uvs = new[] { uv11, uv01, uv00, uv10 };
-					triangles = new[] { 3, 1, 0, 3, 2, 1 };
+					mesh.vertices = new[] { _p7, _p4, _p0, _p3 };
+					mesh.normals = _leftNormals;
 					break;
 				case Cubeside.Right:
-					vertices = new[] { p5, p6, p2, p1 };
-					normals = new[] { Vector3.right, Vector3.right, Vector3.right, Vector3.right };
-					uvs = new[] { uv11, uv01, uv00, uv10 };
-					triangles = new[] { 3, 1, 0, 3, 2, 1 };
+					mesh.vertices = new[] { _p5, _p6, _p2, _p1 };
+					mesh.normals = _rightNormals;
 					break;
 				case Cubeside.Front:
-					vertices = new[] { p4, p5, p1, p0 };
-					normals = new[] { Vector3.forward, Vector3.forward, Vector3.forward, Vector3.forward };
-					uvs = new[] { uv11, uv01, uv00, uv10 };
-					triangles = new[] { 3, 1, 0, 3, 2, 1 };
+					mesh.vertices = new[] { _p4, _p5, _p1, _p0 };
+					mesh.normals = _forwardNormals;
 					break;
 				case Cubeside.Back:
-					vertices = new[] { p6, p7, p3, p2 };
-					normals = new[] { Vector3.back, Vector3.back, Vector3.back, Vector3.back };
-					uvs = new[] { uv11, uv01, uv00, uv10 };
-					triangles = new[] { 3, 1, 0, 3, 2, 1 };
+					mesh.vertices = new[] { _p6, _p7, _p3, _p2 };
+					mesh.normals = _backNormals;
 					break;
 			}
-
-			mesh.vertices = vertices;
-			mesh.normals = normals;
-			mesh.uv = uvs;
+			
+			// Uvs maps the texture over the surface
+			mesh.uv = new[] { uv11, uv01, uv00, uv10 };
 
 			// channel 1 relates to the UV1 we set in the editor
 			mesh.SetUVs(1, suvs);
-			mesh.triangles = triangles;
+			mesh.triangles = new[] { 3, 1, 0, 3, 2, 1 };
 
 			mesh.RecalculateBounds();
 
@@ -294,8 +286,8 @@ namespace Assets.Scripts
 		{
 			// block is in this chunk
 			if (x >= 0 && x < World.ChunkSize && 
-			    y >= 0 && y < World.ChunkSize && 
-			    z >= 0 && z < World.ChunkSize)
+				y >= 0 && y < World.ChunkSize && 
+				z >= 0 && z < World.ChunkSize)
 				return Owner.Blocks[x, y, z];
 			
 			// the other chunk name based on its position
@@ -337,7 +329,7 @@ namespace Assets.Scripts
 			int castedX = (int)Position.x,
 				castedY = (int)Position.y,
 				castedZ = (int)Position.z;
-
+			
 			// BUG: ShouldCreateQuad is called hundreds times per second and each time we call GetBlock method six times
 			// the result of the check should be stored preferably in a table for the whole chunk
 			// and changed each time block was destroyed or added

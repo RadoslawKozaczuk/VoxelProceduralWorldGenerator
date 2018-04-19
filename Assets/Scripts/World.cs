@@ -14,7 +14,10 @@ namespace Assets.Scripts
 		public Material FluidTexture;
 		public static int ColumnHeight = 16; // number of chunks in column
 		public static int ChunkSize = 8; // number of blocks in x and y
-		public static int WorldSize = 8; // number of columns in x and y
+
+		// Bug: this is not used anywhere
+		//public static int WorldSize = 1; // number of columns in x and y
+
 		public static int Radius = 6; // radius tell us how many chunks around the layer needs to be generated
 
 		public static List<int> ToRemove = new List<int>();
@@ -131,7 +134,8 @@ namespace Assets.Scripts
 				
 				return c.Blocks[blx, bly, blz];
 			}
-			else return null;
+
+			return null;
 		}
 
 		/// <summary>
@@ -152,10 +156,10 @@ namespace Assets.Scripts
 			if (y >= 0) res += 2;
 			if (z >= 0) res += 4;
 			res *= 1000000;
-
+			
 			return res + Math.Abs(x) * 100000
-			           + Math.Abs(y) * 1000
-			           + Math.Abs(z);
+					   + Math.Abs(y) * 1000
+					   + Math.Abs(z);
 
 			// both algorithms do the same but I am too lazy to rewrite the top one especially because it is more human readable
 		}
@@ -267,9 +271,9 @@ namespace Assets.Scripts
 					c.Value.DrawChunk();
 
 				if (c.Value.ChunkObject
-				    && Vector3.Distance(
-					    Player.transform.position,
-					    c.Value.ChunkObject.transform.position) > Radius * ChunkSize)
+					&& Vector3.Distance(
+						Player.transform.position,
+						c.Value.ChunkObject.transform.position) > Radius * ChunkSize)
 				{
 					ToRemove.Add(c.Key);
 				}
@@ -300,8 +304,7 @@ namespace Assets.Scripts
 				(int)(Player.transform.position.z / ChunkSize),
 				Radius));
 		}
-
-
+		
 		#region Loading And Menu (not implemented yet)
 		private void DisableUI()
 		{
