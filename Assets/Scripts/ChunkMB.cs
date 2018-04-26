@@ -74,8 +74,9 @@ namespace Assets.Scripts
 			Block prevBlock = null;
 			for (int i = 0; i < MaxDropValue; i++)
 			{
-				Block.BlockType previousType = thisBlock.Type;
-				thisBlock.Type = type;
+				var previousType = thisBlock.Type;
+				if(previousType != type)
+					thisBlock.Type = type;
 				if (prevBlock != null)
 					prevBlock.Type = previousType;
 

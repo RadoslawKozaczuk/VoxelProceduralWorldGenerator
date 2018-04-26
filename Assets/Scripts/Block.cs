@@ -170,6 +170,7 @@ namespace Assets.Scripts
 				IsSolid = false;
 				HealthType = HealthLevel.NoCrack; // we change it to NoCrack because we don't want cracks to appear on air
 				Owner.Redraw();
+				Owner.UpdateChunk();
 				return true;
 			}
 

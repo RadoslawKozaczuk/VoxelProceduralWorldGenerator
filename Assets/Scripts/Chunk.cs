@@ -82,6 +82,17 @@ namespace Assets.Scripts
 			BuildChunk();
 		}
 
+		public void UpdateChunk()
+		{
+			for (var z = 0; z < World.ChunkSize; z++)
+				for (var y = 0; y < World.ChunkSize; y++)
+					for (var x = 0; x < World.ChunkSize; x++)
+						if (Blocks[x, y, z].Type == Block.BlockType.Sand)
+							MonoBehavior.StartCoroutine(MonoBehavior.Drop(
+								Blocks[x, y, z], 
+								Block.BlockType.Sand));
+		}
+
 		void BuildChunk()
 		{
 			bool dataFromFile = Load();
