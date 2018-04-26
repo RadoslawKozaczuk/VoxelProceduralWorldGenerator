@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 
 namespace Assets.Scripts
@@ -308,18 +307,11 @@ namespace Assets.Scripts
 
 		bool ShouldCreateQuad(int x, int y, int z)
 		{
-			try
-			{
-				var target = GetBlock(x, y, z);
-				if (target != null)
-				{
-					if (Type == BlockType.Water && target.Type == BlockType.Water) return false;
-					return !(target.IsSolid && IsSolid);
-				}
-			}
-			catch (IndexOutOfRangeException) { } // BUG: I am not sure if this is the correct way - exception handling may be very slow
+			var target = GetBlock(x, y, z);
+			if (target == null) return true;
+			if (Type == BlockType.Water && target.Type == BlockType.Water) return false;
 
-			return true;
+			return !(target.IsSolid && IsSolid);
 		}
 
 		public void Draw()
@@ -330,9 +322,6 @@ namespace Assets.Scripts
 				castedY = (int)Position.y,
 				castedZ = (int)Position.z;
 			
-			// BUG: ShouldCreateQuad is called hundreds times per second and each time we call GetBlock method six times
-			// the result of the check should be stored preferably in a table for the whole chunk
-			// and changed each time block was destroyed or added
 			if (ShouldCreateQuad(castedX, castedY, castedZ + 1))
 				CreateQuad(Cubeside.Front);
 			if (ShouldCreateQuad(castedX, castedY, castedZ - 1))
