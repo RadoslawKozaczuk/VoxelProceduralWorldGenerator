@@ -5,9 +5,12 @@ namespace Assets.Scripts
 {
 	public class Block
 	{
+		// INFO: I constantly lose a lot of time trying to solve out the same freaking error over and over again!
+		// So to avoid this crap once for all - every time a new value is added to this enum all saved chunk data becomes INCOMPATIBLE
+		// and needs to be DELETED otherwise weird rendering errors will occur and I will lose another hour debugging the crap out of this game!
 		public enum BlockType
 		{
-			Dirt, Stone, Diamond, Bedrock, Redstone, Sand,
+			Dirt, Stone, Diamond, Bedrock, Redstone, Sand, Leaves, Wood, Woodbase,
 			Water,
 			Grass, // types that have different textures on different sides are moved at the end just before air
 			Air
@@ -37,7 +40,7 @@ namespace Assets.Scripts
 
 		// this corresponds to the BlockType enum, so for example Grass can be hit 3 times
 		readonly int[] _blockHealthMax = { 
-			3, 4, 4, -1, 4, 3,
+			3, 4, 4, -1, 4, 3, 3, 3, 3,
 			8, // water
 			3, // grass
 			0  // air
@@ -49,7 +52,6 @@ namespace Assets.Scripts
 		// coordination start left down corner
 		readonly Vector2[,] _blockUVs = { 
 								// left-bottom, right-bottom, left-top, right-top
-			
 			/*DIRT*/			{new Vector2(0.125f, 0.9375f), new Vector2(0.1875f, 0.9375f),
 									new Vector2(0.125f, 1.0f), new Vector2(0.1875f, 1.0f)},
 			/*STONE*/			{new Vector2(0, 0.875f), new Vector2(0.0625f, 0.875f),
@@ -62,7 +64,13 @@ namespace Assets.Scripts
 									new Vector2(0.1875f, 0.8125f), new Vector2(0.25f, 0.8125f)},
 			/*SAND*/			{new Vector2(0.125f, 0.875f), new Vector2(0.1875f, 0.875f),
 									new Vector2(0.125f, 0.9375f), new Vector2(0.1875f, 0.9375f)},
-
+            /*LEAVES*/			{new Vector2(0.0625f,0.375f), new Vector2(0.125f,0.375f),
+									new Vector2(0.0625f,0.4375f), new Vector2(0.125f,0.4375f)},
+ 			/*WOOD*/			{new Vector2(0.375f,0.625f), new Vector2(0.4375f,0.625f),
+									new Vector2(0.375f,0.6875f), new Vector2(0.4375f,0.6875f)},
+ 			/*WOODBASE*/		{new Vector2(0.375f,0.625f), new Vector2(0.4375f,0.625f),
+									new Vector2(0.375f,0.6875f), new Vector2(0.4375f,0.6875f)},	    
+			
 			/*WATER*/			{new Vector2(0.875f,0.125f), new Vector2(0.9375f,0.125f),
 									new Vector2(0.875f,0.1875f), new Vector2(0.9375f,0.1875f)},
 
@@ -105,7 +113,6 @@ namespace Assets.Scripts
 								  _rightNormals = {Vector3.right, Vector3.right, Vector3.right, Vector3.right},
 								  _forwardNormals = {Vector3.forward, Vector3.forward, Vector3.forward, Vector3.forward},
 								  _backNormals = {Vector3.back, Vector3.back, Vector3.back, Vector3.back};
-
 		
 		public Block(BlockType type, Vector3 pos, GameObject p, Chunk o)
 		{
@@ -271,10 +278,10 @@ namespace Assets.Scripts
 		// convert x, y or z to what it is in the neighboring block
 		int ConvertBlockIndexToLocal(int i)
 		{
-			if (i == -1)
-				return World.ChunkSize - 1;
-			if (i == World.ChunkSize)
-				return 0;
+			if (i <= -1)
+				return World.ChunkSize + i;
+			if (i >= World.ChunkSize)
+				return i - World.ChunkSize;
 			return i;
 		}
 

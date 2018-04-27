@@ -39,6 +39,7 @@ namespace Assets.Scripts
 		public ChunkMB MonoBehavior;
 		public UVScroller TextureScroller;
 		public bool Changed = false;
+		bool treesCreated = false;
 
 		// caves should be more erratic so has to be a higher number
 		private const float CaveProbability = 0.43f;
@@ -57,6 +58,12 @@ namespace Assets.Scripts
 		private const float RedstoneSmooth = 0.06f;
 		private const int RedstoneOctaves = 3;
 		private const int RedstoneMaxHeight = 30;
+
+		// woodbase
+		// BUG: these values are very counterintuitive and at some point needs to be converted to percentage values
+		private const float WoodbaseProbability = 0.36f;
+		private const float WoodbaseSmooth = 0.4f;
+		private const int WoodbaseOctaves = 2;
 
 		public enum ChunkStatus { Draw, Done, Keep }
 
@@ -147,7 +154,10 @@ namespace Assets.Scripts
 						}
 						else if (worldY == Utils.GenerateHeight(worldX, worldZ))
 						{
-							type = Block.BlockType.Grass;
+							type = Utils.FractalBrownianMotion3D(worldX, worldY, worldZ, WoodbaseSmooth, WoodbaseOctaves) < WoodbaseProbability
+								? Block.BlockType.Woodbase 
+								: Block.BlockType.Grass;
+							
 							gameObject = ChunkObject.gameObject;
 						}
 						else if (worldY <= Utils.GenerateHeight(worldX, worldZ))
@@ -173,7 +183,7 @@ namespace Assets.Scripts
 							type = Block.BlockType.Air;
 							gameObject = ChunkObject.gameObject;
 						}
-						
+
 						Blocks[x, y, z] = new Block(type, pos, gameObject, this);
 					}
 
@@ -194,12 +204,23 @@ namespace Assets.Scripts
 
 		public void DrawChunk()
 		{
+			if (!treesCreated)
+			{
+				for (int z = 0; z < World.ChunkSize; z++)
+					for (int y = 0; y < World.ChunkSize; y++)
+						for (int x = 0; x < World.ChunkSize; x++)
+						{
+							BuildTrees(Blocks[x, y, z], x, y, z);
+						}
+
+				treesCreated = true;
+			}
+			
 			for (var z = 0; z < World.ChunkSize; z++)
 				for (var y = 0; y < World.ChunkSize; y++)
 					for (var x = 0; x < World.ChunkSize; x++)
-					{
 						Blocks[x, y, z].Draw();
-					}
+
 			CombineQuads(ChunkObject.gameObject, CubeMaterial);
 
 			// adding collision
@@ -209,7 +230,44 @@ namespace Assets.Scripts
 			CombineQuads(FluidObject.gameObject, FluidMaterial);
 			Status = ChunkStatus.Done;
 		}
-		
+
+		// BUG: Some trees are flying in the sky!
+		// Also another check need to be done to prevent trees from spawning to close to each other
+		// And just for the record some trees are generated without leaves
+		void BuildTrees(Block trunk, int x, int y, int z)
+		{
+			if (trunk.Type != Block.BlockType.Woodbase) return;
+
+			Block t = trunk.GetBlock(x, y + 1, z);
+			if (t != null)
+			{
+				t.Type = Block.BlockType.Wood;
+				Block t1 = t.GetBlock(x, y + 2, z);
+				if (t1 != null)
+				{
+					t1.Type = Block.BlockType.Wood;
+
+					for (int i = -1; i <= 1; i++)
+						for (int j = -1; j <= 1; j++)
+							for (int k = 3; k <= 4; k++)
+							{
+								Block t2 = trunk.GetBlock(x + i, y + k, z + j);
+
+								if (t2 != null)
+								{
+									t2.Type = Block.BlockType.Leaves;
+								}
+								else return;
+							}
+					Block t3 = t1.GetBlock(x, y + 5, z);
+					if (t3 != null)
+					{
+						t3.Type = Block.BlockType.Leaves;
+					}
+				}
+			}
+		}
+
 		/// <summary>
 		/// 
 		/// </summary>
