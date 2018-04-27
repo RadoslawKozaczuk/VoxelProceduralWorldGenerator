@@ -17,15 +17,9 @@ namespace Assets.Scripts
 		{
 			Matrix = new Block.BlockType[World.ChunkSize, World.ChunkSize, World.ChunkSize];
 			for (int z = 0; z < World.ChunkSize; z++)
-			{
 				for (int y = 0; y < World.ChunkSize; y++)
-				{
 					for (int x = 0; x < World.ChunkSize; x++)
-					{
 						Matrix[x, y, z] = b[x, y, z].Type;
-					}
-				}
-			}
 		}
 	}
 
@@ -123,72 +117,49 @@ namespace Assets.Scripts
 							continue;
 						}
 						
-						// generate height
-						Block.BlockType type;
-						GameObject gameObject;
-
-						if (worldY <= Utils.GenerateBedrockHeight(worldX, worldZ))
-						{
-							type = Block.BlockType.Bedrock;
-							gameObject = ChunkObject.gameObject;
-						}
-						else if (worldY <= Utils.GenerateStoneHeight(worldX, worldZ))
-						{
-							if (Utils.FractalBrownianMotion3D(worldX, worldY, worldZ, DiamondSmooth, DiamondOctaves) < DiamondProbability 
-								&& worldY < DiamondMaxHeight)
-							{
-								type = Block.BlockType.Diamond;
-								gameObject = ChunkObject.gameObject;
-							}
-							else if (Utils.FractalBrownianMotion3D(worldX, worldY, worldZ, RedstoneSmooth, RedstoneOctaves) < RedstoneProbability
-								&& worldY < RedstoneMaxHeight)
-							{
-								type = Block.BlockType.Redstone;
-								gameObject = ChunkObject.gameObject;
-							}
-							else
-							{
-								type = Block.BlockType.Stone;
-								gameObject = ChunkObject.gameObject;
-							}
-						}
-						else if (worldY == Utils.GenerateHeight(worldX, worldZ))
-						{
-							type = Utils.FractalBrownianMotion3D(worldX, worldY, worldZ, WoodbaseSmooth, WoodbaseOctaves) < WoodbaseProbability
-								? Block.BlockType.Woodbase 
-								: Block.BlockType.Grass;
-							
-							gameObject = ChunkObject.gameObject;
-						}
-						else if (worldY <= Utils.GenerateHeight(worldX, worldZ))
-						{
-							type = Block.BlockType.Dirt;
-							gameObject = ChunkObject.gameObject;
-						}
-						else if (worldY <= WaterLeverl)
-						{
-							type = Block.BlockType.Water;
-							gameObject = FluidObject.gameObject;
-						}
-						else
-						{
-							type = Block.BlockType.Air;
-							gameObject = ChunkObject.gameObject;
-						}
+						Block.BlockType type = DetermineType(worldX, worldY, worldZ);
+						GameObject gameObject = type == Block.BlockType.Water 
+							? FluidObject.gameObject 
+							: ChunkObject.gameObject;
 						
-						// generate caves
-						if (type != Block.BlockType.Water 
-							&& Utils.FractalBrownianMotion3D(worldX, worldY, worldZ, CaveSmooth, CaveOctaves) < CaveProbability)
-						{
-							type = Block.BlockType.Air;
-							gameObject = ChunkObject.gameObject;
-						}
-
 						Blocks[x, y, z] = new Block(type, pos, gameObject, this);
 					}
 
 			// chunk just has been created and it is ready to be drawn
 			Status = ChunkStatus.Draw;
+		}
+		
+		Block.BlockType DetermineType(int worldX, int worldY, int worldZ)
+		{
+			Block.BlockType type;
+
+			if (worldY <= Utils.GenerateBedrockHeight(worldX, worldZ))
+				type = Block.BlockType.Bedrock;
+			else if (worldY <= Utils.GenerateStoneHeight(worldX, worldZ))
+			{
+				if (Utils.FractalFunc(worldX, worldY, worldZ, DiamondSmooth, DiamondOctaves) < DiamondProbability && worldY < DiamondMaxHeight)
+					type = Block.BlockType.Diamond;
+				else if (Utils.FractalFunc(worldX, worldY, worldZ, RedstoneSmooth, RedstoneOctaves) < RedstoneProbability && worldY < RedstoneMaxHeight)
+					type = Block.BlockType.Redstone;
+				else
+					type = Block.BlockType.Stone;
+			}
+			else if (worldY == Utils.GenerateHeight(worldX, worldZ))
+				type = Utils.FractalFunc(worldX, worldY, worldZ, WoodbaseSmooth, WoodbaseOctaves) < WoodbaseProbability
+					? Block.BlockType.Woodbase
+					: Block.BlockType.Grass;
+			else if (worldY <= Utils.GenerateHeight(worldX, worldZ))
+				type = Block.BlockType.Dirt;
+			else if (worldY <= WaterLeverl)
+				type = Block.BlockType.Water;
+			else
+				type = Block.BlockType.Air;
+
+			// generate caves
+			if (type != Block.BlockType.Water && Utils.FractalFunc(worldX, worldY, worldZ, CaveSmooth, CaveOctaves) < CaveProbability)
+				type = Block.BlockType.Air;
+
+			return type;
 		}
 
 		public void Redraw()

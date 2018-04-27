@@ -69,7 +69,8 @@ namespace Assets.Scripts
 			return total / maxValue;
 		}
 
-		public static float FractalBrownianMotion3D(float x, float y, int z, float smooth, int octaves)
+		// FractalBrownianMotion3D
+		public static float FractalFunc(float x, float y, int z, float smooth, int octaves)
 		{
 			// this is obviously more computational heavy
 			float xy = FractalBrownianMotion(x * smooth, y * smooth, octaves, 0.5f);
