@@ -296,18 +296,25 @@ namespace Assets.Scripts
 				y >= 0 && y < World.ChunkSize && 
 				z >= 0 && z < World.ChunkSize)
 				return Owner.Blocks[x, y, z];
-			
+
+			int newX = x, newY = y, newZ = z;
+			if (x < 0 || x >= World.ChunkSize)
+				newX = (x - (int)Position.x) * World.ChunkSize;
+			if (y < 0 || y >= World.ChunkSize)
+				newY = (y - (int)Position.y) * World.ChunkSize;
+			if (z < 0 || z >= World.ChunkSize)
+				newZ = (z - (int)Position.z) * World.ChunkSize;
+
+			Vector3 neighbourChunkPos = _parent.transform.position + new Vector3(newX, newY, newZ);
+
 			// the other chunk name based on its position
-			var chunkName = World.BuildChunkName(
-				(int)_parent.transform.position.x + (x - (int)Position.x) * World.ChunkSize, 
-				(int)_parent.transform.position.y + (y - (int)Position.y) * World.ChunkSize, 
-				(int)_parent.transform.position.z + (z - (int)Position.z) * World.ChunkSize);
+			var chunkName = World.BuildChunkName(neighbourChunkPos);
 
 			Chunk chunk;
 			if (World.Chunks.TryGetValue(chunkName, out chunk))
 				return chunk.Blocks[
-					ConvertBlockIndexToLocal(x), 
-					ConvertBlockIndexToLocal(y), 
+					ConvertBlockIndexToLocal(x),
+					ConvertBlockIndexToLocal(y),
 					ConvertBlockIndexToLocal(z)]; // block is in the other chunk
 			
 			return null; // block is outside of the world

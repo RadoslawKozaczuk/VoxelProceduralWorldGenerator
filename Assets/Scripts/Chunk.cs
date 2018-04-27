@@ -231,8 +231,7 @@ namespace Assets.Scripts
 			Status = ChunkStatus.Done;
 		}
 
-		// BUG: Some trees are flying in the sky!
-		// Also another check need to be done to prevent trees from spawning to close to each other
+		// BUG: Also another check need to be done to prevent trees from spawning too close to each other
 		// And just for the record some trees are generated without leaves
 		void BuildTrees(Block trunk, int x, int y, int z)
 		{
