@@ -34,7 +34,8 @@ namespace Assets.Scripts
 			if (startingBlock.Type != Block.BlockType.Air) yield break; // water only spread trough the air
 			startingBlock.Type = bt; // BUG: This should also change the parent's game object to apply transparency
 			startingBlock.CurrentHealth = strength;
-			startingBlock.Owner.Redraw();
+			startingBlock.Owner.Clean();
+			startingBlock.Owner.CreateMesh();
 			yield return new WaitForSeconds(1); // water spread one block per second
 
 			int x = (int)startingBlock.Position.x;
@@ -81,7 +82,8 @@ namespace Assets.Scripts
 					prevBlock.Type = previousType;
 
 				prevBlock = thisBlock;
-				thisBlock.Owner.Redraw();
+				thisBlock.Owner.Clean();
+				thisBlock.Owner.CreateMesh();
 
 				yield return new WaitForSeconds(0.2f);
 				Vector3 pos = thisBlock.Position;

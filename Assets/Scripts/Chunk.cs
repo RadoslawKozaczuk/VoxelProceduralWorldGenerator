@@ -59,18 +59,18 @@ namespace Assets.Scripts
 		private const float WoodbaseSmooth = 0.4f;
 		private const int WoodbaseOctaves = 2;
 
-		public enum ChunkStatus { Draw, Done, Keep }
+		public enum ChunkStatus { NotInitialized, Created, NeedToBeRedrawn, Keep }
 
 		public ChunkStatus Status; // status of the current chunk
 		private BlockData _blockData;
-
-		public Chunk(Vector3 position, Material chunkMaterial, Material transparentMaterial, int chunkName)
+		
+		public Chunk(Vector3 position, Material chunkMaterial, Material transparentMaterial, int chunkKey)
 		{
-			ChunkObject = new GameObject(chunkName.ToString());
+			ChunkObject = new GameObject(chunkKey.ToString());
 			ChunkObject.transform.position = position;
 			CubeMaterial = chunkMaterial;
 
-			FluidObject = new GameObject(chunkName + "_fluid");
+			FluidObject = new GameObject(chunkKey + "_fluid");
 			FluidObject.transform.position = position;
 			FluidMaterial = transparentMaterial;
 
@@ -82,7 +82,7 @@ namespace Assets.Scripts
 
 			BuildChunk();
 		}
-
+		
 		public void UpdateChunk()
 		{
 			for (var z = 0; z < World.ChunkSize; z++)
@@ -121,12 +121,12 @@ namespace Assets.Scripts
 						GameObject gameObject = type == Block.BlockType.Water 
 							? FluidObject.gameObject 
 							: ChunkObject.gameObject;
-						
+
 						Blocks[x, y, z] = new Block(type, pos, gameObject, this);
 					}
 
 			// chunk just has been created and it is ready to be drawn
-			Status = ChunkStatus.Draw;
+			Status = ChunkStatus.NotInitialized;
 		}
 		
 		Block.BlockType DetermineType(int worldX, int worldY, int worldZ)
@@ -162,7 +162,10 @@ namespace Assets.Scripts
 			return type;
 		}
 
-		public void Redraw()
+		/// <summary>
+		/// Destroys Meshes and Colliders
+		/// </summary>
+		public void Clean()
 		{
 			// we cannot use normal destroy because it may wait to the next update loop or something which will break the code
 			UnityEngine.Object.DestroyImmediate(ChunkObject.GetComponent<MeshFilter>());
@@ -170,27 +173,17 @@ namespace Assets.Scripts
 			UnityEngine.Object.DestroyImmediate(ChunkObject.GetComponent<Collider>());
 			UnityEngine.Object.DestroyImmediate(FluidObject.GetComponent<MeshFilter>());
 			UnityEngine.Object.DestroyImmediate(FluidObject.GetComponent<MeshRenderer>());
-			DrawChunk();
 		}
 
-		public void DrawChunk()
+		public void CreateMesh()
 		{
 			if (!treesCreated)
-			{
-				for (int z = 0; z < World.ChunkSize; z++)
-					for (int y = 0; y < World.ChunkSize; y++)
-						for (int x = 0; x < World.ChunkSize; x++)
-						{
-							BuildTrees(Blocks[x, y, z], x, y, z);
-						}
+				CreateTrees();
 
-				treesCreated = true;
-			}
-			
 			for (var z = 0; z < World.ChunkSize; z++)
 				for (var y = 0; y < World.ChunkSize; y++)
 					for (var x = 0; x < World.ChunkSize; x++)
-						Blocks[x, y, z].Draw();
+						Blocks[x, y, z].CreateQuads();
 
 			CombineQuads(ChunkObject.gameObject, CubeMaterial);
 
@@ -199,7 +192,19 @@ namespace Assets.Scripts
 			collider.sharedMesh = ChunkObject.transform.GetComponent<MeshFilter>().mesh;
 
 			CombineQuads(FluidObject.gameObject, FluidMaterial);
-			Status = ChunkStatus.Done;
+			Status = ChunkStatus.Created;
+		}
+
+		void CreateTrees()
+		{
+			for (int z = 0; z < World.ChunkSize; z++)
+				for (int y = 0; y < World.ChunkSize; y++)
+					for (int x = 0; x < World.ChunkSize; x++)
+					{
+						BuildTrees(Blocks[x, y, z], x, y, z);
+					}
+
+			treesCreated = true;
 		}
 
 		// BUG: Also another check need to be done to prevent trees from spawning too close to each other

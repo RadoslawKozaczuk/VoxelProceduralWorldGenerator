@@ -143,7 +143,8 @@ namespace Assets.Scripts
 				if (!World.Chunks.TryGetValue(cname, out c))
 					continue;
 				
-				c.Redraw();
+				c.Clean();
+				c.CreateMesh();
 			}
 		}
 	}

@@ -140,38 +140,29 @@ namespace Assets.Scripts
 
 		/// <summary>
 		/// Creates a unique number based on the chunk coordinates. First digit holds signs of all three dimensions (as a bit map).
-		/// X and Y dimensions have 3 digits to store their values. These coordinates can be up to 992 or -992 which gives 249 chunks in total.
-		/// Z dimension has only 2 digits to store its value therefore z coordinate cannot exceeds 96 and -96 which gives 25 chunks in total.
-		/// These limitations are not checked in the function for performance reasons.
+		/// X and Z dimensions have 3 digits to store their values. Y dimension has only 2 digits to store its value.
+		/// Given coordinates are divided by the ChunkSize constant allowing more keys to be generated.
 		/// </summary>
 		public static int BuildChunkName(Vector3 v)
 		{
-			int x = (int)v.x, 
-				y = (int)v.y, 
-				z = (int)v.z;
-
-			// create a bit map that holds all signs
-			var res = 1; // initialize with one so the number will always have the same amount of digits
-			if (x >= 0) res += 1;
-			if (y >= 0) res += 2;
-			if (z >= 0) res += 4;
-			res *= 1000000;
-			
-			return res + Math.Abs(x) * 100000
-					   + Math.Abs(y) * 1000
-					   + Math.Abs(z);
-
-			// both algorithms do the same but I am too lazy to rewrite the top one especially because it is more human readable
+			return BuildChunkNameInternal((int)v.x / ChunkSize, (int)v.y / ChunkSize, (int)v.z / ChunkSize);
 		}
 
 		/// <summary>
 		/// Creates a unique number based on the chunk coordinates. First digit holds signs of all three dimensions (as a bit map).
-		/// X and Y dimensions have 3 digits to store their values. These coordinates can be up to 992 or -992 which gives 249 chunks in total.
-		/// Z dimension has only 2 digits to store its value therefore z coordinate cannot exceeds 96 and -96 which gives 25 chunks in total.
-		/// These limitations are not checked in the function for performance reasons.
+		/// X and Z dimensions have 3 digits to store their values. Y dimension has only 2 digits to store its value.
+		/// Given coordinates are divided by the ChunkSize constant allowing more keys to be generated.
 		/// </summary>
 		public static int BuildChunkName(int x, int y, int z)
 		{
+			return BuildChunkNameInternal(x / ChunkSize, y / ChunkSize, z / ChunkSize);
+		}
+
+		static int BuildChunkNameInternal(int x, int y, int z)
+		{
+			if (x > 999 || x < -999 || y > 99 || y < -99 || z > 999 || z < -999)
+				throw new ArgumentException();
+
 			// create a bit map that holds all signs
 			var bitMap = 1; // initialize with one so the number will always have the same amount of digits
 			var number = 0;
@@ -190,7 +181,7 @@ namespace Assets.Scripts
 			}
 			else
 				number += y * -1000;
-			
+
 			if (z >= 0)
 			{
 				number += z;
@@ -198,9 +189,43 @@ namespace Assets.Scripts
 			}
 			else
 				number += z * -1;
-			bitMap *= 1000000;
-			
+			bitMap *= 100000000;
+
 			return bitMap + number;
+		}
+
+		public Vector3 DecomposeChunkName(string chunkName)
+		{
+			int bitMap = int.Parse(chunkName.Substring(0, 1)) - 1; // +1 is always added
+			
+			int xDir = -1, 
+				yDir = -1, 
+				zDir = -1;
+
+			if (bitMap > 3)
+			{
+				zDir = 1;
+				bitMap -= 4;
+			}
+			if(bitMap > 1)
+			{
+				yDir = 1;
+				bitMap -= 2;
+			}
+			if(bitMap > 0)
+				xDir = 1;
+
+			int x = int.Parse(chunkName.Substring(1, 3)) * xDir,
+				y = int.Parse(chunkName.Substring(4, 2)) * yDir,
+				z = int.Parse(chunkName.Substring(6, 3)) * zDir;
+			
+			return new Vector3(x, y , z);
+		}
+
+		int DigitAt(int number, int position)
+		{
+			if (position < 0) throw new ArgumentException();
+			return (int)(number * Math.Pow(10, position)) % 10;
 		}
 
 		public static string BuildChunkFileName(Vector3 v)
@@ -267,8 +292,13 @@ namespace Assets.Scripts
 		{
 			foreach (KeyValuePair<int, Chunk> c in Chunks)
 			{
-				if (c.Value.Status == Chunk.ChunkStatus.Draw)
-					c.Value.DrawChunk();
+				if (c.Value.Status == Chunk.ChunkStatus.NotInitialized)
+					c.Value.CreateMesh();
+				else if (c.Value.Status == Chunk.ChunkStatus.NeedToBeRedrawn)
+				{
+					c.Value.Clean();
+					c.Value.CreateMesh();
+				}
 
 				if (c.Value.ChunkObject
 					&& Vector3.Distance(

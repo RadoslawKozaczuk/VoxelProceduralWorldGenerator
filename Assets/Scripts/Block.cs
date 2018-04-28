@@ -128,7 +128,8 @@ namespace Assets.Scripts
 		{
 			HealthType = HealthLevel.NoCrack;
 			CurrentHealth = _blockHealthMax[(int)Type];
-			Owner.Redraw();
+			Owner.Clean();
+			Owner.CreateMesh();
 		}
 
 		// BUG: If we build where we stand player falls into the block
@@ -152,7 +153,8 @@ namespace Assets.Scripts
 			{
 				Type = type;
 				CurrentHealth = _blockHealthMax[(int)_type]; // maximum health
-				Owner.Redraw();
+				Owner.Clean();
+				Owner.CreateMesh();
 			}
 			
 			return true;
@@ -176,12 +178,14 @@ namespace Assets.Scripts
 				_type = BlockType.Air;
 				IsSolid = false;
 				HealthType = HealthLevel.NoCrack; // we change it to NoCrack because we don't want cracks to appear on air
-				Owner.Redraw();
+				Owner.Clean();
+				Owner.CreateMesh();
 				Owner.UpdateChunk();
 				return true;
 			}
 
-			Owner.Redraw();
+			Owner.Clean();
+			Owner.CreateMesh();
 			return false;
 		}
 
@@ -192,24 +196,16 @@ namespace Assets.Scripts
 			if (Type == BlockType.Grass)
 			{
 				if (side == Cubeside.Top)
-				{
 					typeIndex = (int)BlockType.Grass;
-				}
 				else if (side == Cubeside.Bottom)
-				{
 					typeIndex = (int)BlockType.Dirt;
-				}
 				else // any side
-				{
 					typeIndex = (int)BlockType.Grass + 1;
-				}
 			}
 			else
-			{
 				typeIndex = (int)Type;
-			}
 
-			//all possible UVs
+			// all possible UVs
 			Vector2 uv00 = _blockUVs[typeIndex, 0],
 					uv10 = _blockUVs[typeIndex, 1],
 					uv01 = _blockUVs[typeIndex, 2],
@@ -329,7 +325,7 @@ namespace Assets.Scripts
 			return !(target.IsSolid && IsSolid);
 		}
 
-		public void Draw()
+		public void CreateQuads()
 		{
 			if (Type == BlockType.Air) return;
 
