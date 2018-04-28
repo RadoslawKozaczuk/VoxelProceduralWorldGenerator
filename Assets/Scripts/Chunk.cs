@@ -25,6 +25,8 @@ namespace Assets.Scripts
 
 	public class Chunk
 	{
+		public enum ChunkStatus { NotInitialized, Created, NeedToBeRedrawn, Keep }
+
 		public Material CubeMaterial;
 		public Material FluidMaterial;
 		public GameObject ChunkObject;
@@ -33,36 +35,34 @@ namespace Assets.Scripts
 		public ChunkMB MonoBehavior;
 		public UVScroller TextureScroller;
 		public bool Changed = false;
-		bool treesCreated = false;
+		public ChunkStatus Status; // status of the current chunk
 
 		// caves should be more erratic so has to be a higher number
-		private const float CaveProbability = 0.43f;
-		private const float CaveSmooth = 0.09f;
-		private const int CaveOctaves = 3; // reduced a bit to lower workload but not to much to maintain randomness
-		private const int WaterLeverl = 65; // inclusive
+		const float CaveProbability = 0.43f;
+		const float CaveSmooth = 0.09f;
+		const int CaveOctaves = 3; // reduced a bit to lower workload but not to much to maintain randomness
+		const int WaterLeverl = 65; // inclusive
 
 		// shiny diamonds!
-		private const float DiamondProbability = 0.38f; // this is not percentage chance because we are using Perlin function
-		private const float DiamondSmooth = 0.06f;
-		private const int DiamondOctaves = 3;
-		private const int DiamondMaxHeight = 50;
+		const float DiamondProbability = 0.38f; // this is not percentage chance because we are using Perlin function
+		const float DiamondSmooth = 0.06f;
+		const int DiamondOctaves = 3;
+		const int DiamondMaxHeight = 50;
 
 		// red stones
-		private const float RedstoneProbability = 0.41f;
-		private const float RedstoneSmooth = 0.06f;
-		private const int RedstoneOctaves = 3;
-		private const int RedstoneMaxHeight = 30;
+		const float RedstoneProbability = 0.41f;
+		const float RedstoneSmooth = 0.06f;
+		const int RedstoneOctaves = 3;
+		const int RedstoneMaxHeight = 30;
 
 		// woodbase
 		// BUG: these values are very counterintuitive and at some point needs to be converted to percentage values
-		private const float WoodbaseProbability = 0.36f;
-		private const float WoodbaseSmooth = 0.4f;
-		private const int WoodbaseOctaves = 2;
+		const float WoodbaseProbability = 0.36f;
+		const float WoodbaseSmooth = 0.4f;
+		const int WoodbaseOctaves = 2;
 
-		public enum ChunkStatus { NotInitialized, Created, NeedToBeRedrawn, Keep }
-
-		public ChunkStatus Status; // status of the current chunk
-		private BlockData _blockData;
+		BlockData _blockData;
+		bool treesCreated = false;
 		
 		public Chunk(Vector3 position, Material chunkMaterial, Material transparentMaterial, int chunkKey)
 		{
@@ -81,6 +81,10 @@ namespace Assets.Scripts
 			//TextureScroller = FluidObject.AddComponent<UVScroller>();
 
 			BuildChunk();
+
+			// BUG: It doesn't really work as intended 
+			// For some reason recreated chunks lose their transparency
+			InformSurroundingChunks(chunkKey);
 		}
 		
 		public void UpdateChunk()
@@ -128,7 +132,41 @@ namespace Assets.Scripts
 			// chunk just has been created and it is ready to be drawn
 			Status = ChunkStatus.NotInitialized;
 		}
-		
+
+		void InformSurroundingChunks(int chunkKey)
+		{
+			// BUG: In future I should encapsulate key arithmetic logic and move it somewhere else
+
+			// front
+			SetChunkToBeDrawn(chunkKey + World.ChunkSize);
+
+			// back
+			SetChunkToBeDrawn(chunkKey - World.ChunkSize);
+
+			// up
+			SetChunkToBeDrawn(chunkKey + World.ChunkSize * 1000);
+
+			// down
+			SetChunkToBeDrawn(chunkKey - World.ChunkSize * 1000);
+
+			// left
+			SetChunkToBeDrawn(chunkKey + World.ChunkSize * 1000000);
+
+			// right
+			SetChunkToBeDrawn(chunkKey - World.ChunkSize * 1000000);
+
+			// BUG: the above does not take into consideration the edge scenario in the middle of the coordinate system
+		}
+
+		void SetChunkToBeDrawn(int targetChunkKey)
+		{
+			Chunk c;
+			World.Chunks.TryGetValue(targetChunkKey, out c);
+
+			if (c != null)
+				c.Status = ChunkStatus.NeedToBeRedrawn;
+		}
+
 		Block.BlockType DetermineType(int worldX, int worldY, int worldZ)
 		{
 			Block.BlockType type;

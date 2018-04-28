@@ -14,12 +14,10 @@ namespace Assets.Scripts
 		public Material FluidTexture;
 		public static int ColumnHeight = 16; // number of chunks in column
 		public static int ChunkSize = 8; // number of blocks in x and y
-
-		// Bug: this is not used anywhere
-		//public static int WorldSize = 1; // number of columns in x and y
-
+		public static CoroutineQueue Queue;
+		public static uint MaxCoroutines = 1000;
+		
 		public static int Radius = 6; // radius tell us how many chunks around the layer needs to be generated
-
 		public static List<int> ToRemove = new List<int>();
 
 		// this is equivalent to Microsoft's concurrent dictionary - Unity simply does not support high enough .Net Framework
@@ -32,16 +30,12 @@ namespace Assets.Scripts
 		public int Posx;
 		public int Posz;
 
-		private bool _firstBuild = true; // true if the first world hasn't been built is yet
-		private bool _building = false; // true when the building method is running
+		bool _firstBuild = true; // true if the first world hasn't been built is yet
+		bool _building = false; // true when the building method is running
 
 		// this is necessary to avoid building world when the player does not move
 		public Vector3 LastBuildPos;
-
-		public static CoroutineQueue Queue;
-		public static uint MaxCoroutines = 1000;
 		
-
 		void Start()
 		{
 			// temporary solution to avoid pointless clicking

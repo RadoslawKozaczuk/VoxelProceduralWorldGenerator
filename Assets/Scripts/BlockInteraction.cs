@@ -6,10 +6,8 @@ namespace Assets.Scripts
 	public class BlockInteraction : MonoBehaviour
 	{
 		public GameObject Cam;
-
-		private const float AttackRange = 4.0f;
-
-		private Block.BlockType _buildBlockType = Block.BlockType.Stone;
+		const float AttackRange = 4.0f;
+		Block.BlockType _buildBlockType = Block.BlockType.Stone;
 
 		// Use this for initialization
 		void Start()
