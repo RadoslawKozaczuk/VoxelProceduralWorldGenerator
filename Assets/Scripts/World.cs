@@ -215,13 +215,7 @@ namespace Assets.Scripts
 			
 			return new Vector3(x, y , z);
 		}
-
-		int DigitAt(int number, int position)
-		{
-			if (position < 0) throw new ArgumentException();
-			return (int)(number * Math.Pow(10, position)) % 10;
-		}
-
+		
 		public static string BuildChunkFileName(Vector3 v)
 		{
 			return Application.persistentDataPath + "/savedata/Chunk_" 
