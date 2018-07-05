@@ -8,16 +8,19 @@ using System;
 namespace Assets.Scripts
 {
 	public class World : MonoBehaviour
-	{
+	{   
+        public bool UseJobSystem = true;
+
 		public GameObject Player;
-		public Material TextureAtlas;
+		public Material TextureAtlas; 
 		public Material FluidTexture;
-		public static int ColumnHeight = 16; // number of chunks in column
-		public static int ChunkSize = 8; // number of blocks in x and y
-		public static CoroutineQueue Queue;
+		public const int ColumnHeight = 6; // number of chunks in column
+		public const int ChunkSize = 16; // number of blocks in x, y and z
+
+        public static CoroutineQueue Queue;
 		public static uint MaxCoroutines = 1000;
 		
-		public static int Radius = 6; // radius tell us how many chunks around the layer needs to be generated
+		public const int Radius = 4; // radius tell us how many chunks around the layer needs to be generated
 		public static List<int> ToRemove = new List<int>();
 
 		// this is equivalent to Microsoft's concurrent dictionary - Unity simply does not support high enough .Net Framework
@@ -235,7 +238,7 @@ namespace Assets.Scripts
 			Chunk c;
 			if (Chunks.TryGetValue(chunkName, out c)) return; // chunk is already there
 
-			c = new Chunk(chunkPosition, TextureAtlas, FluidTexture, chunkName);
+			c = new Chunk(chunkPosition, TextureAtlas, FluidTexture, chunkName, this);
 			c.ChunkObject.transform.parent = transform;
 			Chunks.TryAdd(int.Parse(c.ChunkObject.name), c);
 		}

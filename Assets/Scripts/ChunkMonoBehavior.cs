@@ -4,12 +4,12 @@ using UnityEngine;
 namespace Assets.Scripts
 {
 	// we don't want Block to be MonoBehavior because that would add a lot of additional stuff limiting performance
-	public class ChunkMB : MonoBehaviour
+	public class ChunkMonoBehavior : MonoBehaviour
 	{
 		// how far a block can fall until it disappear - it prevents from infinite drop
 		private const int MaxDropValue = 100;
 		Chunk _owner;
-		public ChunkMB() { }
+		public ChunkMonoBehavior() { }
 		public void SetOwner(Chunk o)
 		{
 			_owner = o;
