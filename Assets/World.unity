@@ -853,6 +853,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0515154f6f47b8d46a28b22689f7979c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  QueueSize: 0
   UseJobSystem: 1
   Player: {fileID: 1746416011}
   TextureAtlas: {fileID: 2100000, guid: 0beff685461bd4744bc433ab1599a347, type: 2}

@@ -8,7 +8,8 @@ using System;
 namespace Assets.Scripts
 {
 	public class World : MonoBehaviour
-	{   
+	{
+        public uint QueueSize;
         public bool UseJobSystem = true;
 
 		public GameObject Player;
@@ -20,7 +21,7 @@ namespace Assets.Scripts
         public static CoroutineQueue Queue;
 		public static uint MaxCoroutines = 1000;
 		
-		public const int Radius = 4; // radius tell us how many chunks around the layer needs to be generated
+		public const int Radius = 5; // radius tell us how many chunks around the layer needs to be generated
 		public static List<int> ToRemove = new List<int>();
 
 		// this is equivalent to Microsoft's concurrent dictionary - Unity simply does not support high enough .Net Framework
@@ -38,11 +39,11 @@ namespace Assets.Scripts
 
 		// this is necessary to avoid building world when the player does not move
 		public Vector3 LastBuildPos;
-		
+        
 		void Start()
 		{
-			// temporary solution to avoid pointless clicking
-			DisableUI();
+            // temporary solution to avoid pointless clicking
+            DisableUI();
 
 			Vector3 playerPos = Player.transform.position;
 			Player.transform.position = new Vector3(
@@ -81,8 +82,10 @@ namespace Assets.Scripts
 
 		void Update()
 		{
-			// test how far the player has moved
-			Vector3 movement = LastBuildPos - Player.transform.position;
+            QueueSize = Queue.NumActive;
+
+            // test how far the player has moved
+            Vector3 movement = LastBuildPos - Player.transform.position;
 			if (movement.magnitude > ChunkSize)
 			{
 				LastBuildPos = Player.transform.position;
@@ -129,7 +132,7 @@ namespace Assets.Scripts
 				int bly = (int)Mathf.Abs((float)Math.Round(pos.y) - chunkY);
 				int blz = (int)Mathf.Abs((float)Math.Round(pos.z) - chunkZ);
 				
-				return c.Blocks[blx, bly, blz];
+				return c.GetBlock(blx, bly, blz);
 			}
 
 			return null;

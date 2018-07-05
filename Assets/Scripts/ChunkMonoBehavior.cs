@@ -105,8 +105,8 @@ namespace Assets.Scripts
 			int z = (int)bpos.z;
 
 			// if it hasn't been already destroy reset it
-			if (_owner.Blocks[x, y, z].Type != Block.BlockType.Air)
-				_owner.Blocks[x, y, z].Reset();
+			if (_owner.GetBlock(x, y, z).Type != Block.BlockType.Air)
+				_owner.GetBlock(x, y, z).Reset();
 		}
 
 		public void SaveProgress()

@@ -291,7 +291,7 @@ namespace Assets.Scripts
 			if (x >= 0 && x < World.ChunkSize && 
 				y >= 0 && y < World.ChunkSize && 
 				z >= 0 && z < World.ChunkSize)
-				return Owner.Blocks[x, y, z];
+				return Owner.GetBlock(x, y, z);
 
 			int newX = x, newY = y, newZ = z;
 			if (x < 0 || x >= World.ChunkSize)
@@ -308,10 +308,10 @@ namespace Assets.Scripts
 
 			Chunk chunk;
 			if (World.Chunks.TryGetValue(chunkName, out chunk))
-				return chunk.Blocks[
-					ConvertBlockIndexToLocal(x),
-					ConvertBlockIndexToLocal(y),
-					ConvertBlockIndexToLocal(z)]; // block is in the other chunk
+				return chunk.GetBlock(
+                    ConvertBlockIndexToLocal(x),
+                    ConvertBlockIndexToLocal(y),
+                    ConvertBlockIndexToLocal(z)); // block is in the other chunk
 			
 			return null; // block is outside of the world
 		}

@@ -15,17 +15,18 @@ namespace Assets.Scripts
 
         public BlockData() { }
 
-        public BlockData(Block[,,] b)
+        public BlockData(Block[] b)
         {
             BlockTypes = new Block.BlockType[World.ChunkSize, World.ChunkSize, World.ChunkSize];
+
             for (int z = 0; z < World.ChunkSize; z++)
                 for (int y = 0; y < World.ChunkSize; y++)
                     for (int x = 0; x < World.ChunkSize; x++)
-                        BlockTypes[x, y, z] = b[x, y, z].Type;
+                        BlockTypes[x, y, z] = b[x + y * World.ChunkSize + z * World.ChunkSize * World.ChunkSize].Type;
         }
     }
 
-    public struct MyParallelJob : IJobParallelFor
+    public struct BlockTypeJob : IJobParallelFor
     {
         // Native Array is basically just an array
         // but it has bunch of restriction and it integrates with the safty system
@@ -34,16 +35,32 @@ namespace Assets.Scripts
 
         // Jobs declare all data that will be accessed in the job
         // For quaranteeing job safety, it is also required to declare if data is only read.
+
         [ReadOnly]
-        public NativeArray<Vector3Int> WorldCoords;
+        public NativeArray<int> Indexes;
+        [ReadOnly]
+        public float ChunkPosX;
+        [ReadOnly]
+        public float ChunkPosY;
+        [ReadOnly]
+        public float ChunkPosZ;
 
         // result
         public NativeArray<Block.BlockType> Result;
 
         public void Execute(int i)
         {
-            var coord = WorldCoords[i];
-            Result[i] = Chunk.DetermineType(coord.x, coord.y, coord.z);
+            // deflattenization - extract coords from the index
+            var index = Indexes[i];
+            var z = index / (World.ChunkSize * World.ChunkSize);
+            index -= z * World.ChunkSize * World.ChunkSize;
+
+            var y = index / World.ChunkSize;
+            index -= y * World.ChunkSize;
+
+            var x = index;
+            
+            Result[i] = Chunk.DetermineType((int)(x + ChunkPosX), (int)(y + ChunkPosY), (int)(z + ChunkPosZ));
         }
     }
 
@@ -58,10 +75,15 @@ namespace Assets.Scripts
         public GameObject ChunkObject;
         public GameObject FluidObject;
 
-        public Block[,,] Blocks;
+        private Block[] _blocks;
         public Block GetBlock(int x, int y, int z)
         {
-            return Blocks[x, y * World.ChunkSize, z * World.ChunkSize * World.ChunkSize];
+            return _blocks[x + y * World.ChunkSize + z * World.ChunkSize * World.ChunkSize];
+        }
+
+        public void SetBlock(int x, int y, int z, Block block)
+        {
+            _blocks[x + y * World.ChunkSize + z * World.ChunkSize * World.ChunkSize] = block;
         }
         
         public ChunkMonoBehavior MonoBehavior;
@@ -97,9 +119,20 @@ namespace Assets.Scripts
         BlockData _blockData;
         
         // parallelism
-        MyParallelJob myJob;
-        JobHandle myJobHandle;
-        
+        BlockTypeJob _typeJob;
+        JobHandle _typeJobHandle;
+
+        public static readonly int[] TypeJobIndexes = InitializeJobIndexes();
+
+        public static int[] InitializeJobIndexes()
+        {
+            var size = World.ChunkSize * World.ChunkSize * World.ChunkSize;
+            var table = new int[size];
+            for (int i = 0; i < size; i++)
+                table[i] = i;
+            return table;
+        }
+
         public Chunk(Vector3 position, Material chunkMaterial, Material transparentMaterial, int chunkKey, World worldReference)
         {
             _worldReference = worldReference;
@@ -119,10 +152,10 @@ namespace Assets.Scripts
             //TextureScroller = FluidObject.AddComponent<UVScroller>();
             
             if (_worldReference.UseJobSystem)
-                BuildChunk();
+                BuildChunkTurbo();
             else
                 BuildChunkOld();
-
+            
             // BUG: It doesn't really work as intended 
             // For some reason recreated chunks lose their transparency
             InformSurroundingChunks(chunkKey);
@@ -133,9 +166,9 @@ namespace Assets.Scripts
             for (var z = 0; z < World.ChunkSize; z++)
                 for (var y = 0; y < World.ChunkSize; y++)
                     for (var x = 0; x < World.ChunkSize; x++)
-                        if (Blocks[x, y, z].Type == Block.BlockType.Sand)
+                        if (GetBlock(x, y, z).Type == Block.BlockType.Sand)
                             MonoBehavior.StartCoroutine(MonoBehavior.Drop(
-                                Blocks[x, y, z],
+                                GetBlock(x, y, z),
                                 Block.BlockType.Sand));
         }
 
@@ -157,7 +190,7 @@ namespace Assets.Scripts
             for (var z = 0; z < World.ChunkSize; z++)
                 for (var y = 0; y < World.ChunkSize; y++)
                     for (var x = 0; x < World.ChunkSize; x++)
-                        Blocks[x, y, z].CreateQuads();
+                        GetBlock(x, y, z).CreateQuads();
 
             CombineQuads(ChunkObject.gameObject, CubeMaterial);
 
@@ -169,111 +202,58 @@ namespace Assets.Scripts
             Status = ChunkStatus.Created;
         }
 
-        /* New Build Chunk (async) */
-        void BuildChunk()
+        void BuildChunkTurbo()
         {
-            bool dataFromFile = Load();
-            Blocks = new Block[World.ChunkSize, World.ChunkSize, World.ChunkSize];
+            //bool dataFromFile = Load();
+            _blocks = new Block[World.ChunkSize * World.ChunkSize * World.ChunkSize];
             
-            // input data
-            var worldCoords = new Vector3Int[World.ChunkSize * World.ChunkSize * World.ChunkSize];
-
             // output data
-            var types = new Block.BlockType[World.ChunkSize * World.ChunkSize * World. ChunkSize];
+            var types = new Block.BlockType[World.ChunkSize * World.ChunkSize * World.ChunkSize];
 
-            // create terrain
-            
-            // prepare data for pararell
+            _typeJob = new BlockTypeJob()
+            {
+                // input data
+                ChunkPosX = ChunkObject.transform.position.x,
+                ChunkPosY = ChunkObject.transform.position.y,
+                ChunkPosZ = ChunkObject.transform.position.z,
+                Indexes = new NativeArray<int>(TypeJobIndexes, Allocator.TempJob),
+                Result = new NativeArray<Block.BlockType>(types, Allocator.TempJob)
+            };
+
+            // schedule jobs (as many as TypeJobIndexes.Length)
+            _typeJobHandle = _typeJob.Schedule(TypeJobIndexes.Length, 5);
+            _typeJobHandle.Complete();
+
+            _typeJob.Result.CopyTo(types);
+
+            // clean up
+            _typeJob.Indexes.Dispose();
+            _typeJob.Result.Dispose();
+
             for (var z = 0; z < World.ChunkSize; z++)
                 for (var y = 0; y < World.ChunkSize; y++)
                     for (var x = 0; x < World.ChunkSize; x++)
                     {
-                        if(dataFromFile)
-                        {
-                            var pos = new Vector3(x, y, z);
+                        var pos = new Vector3(x, y, z);
+                        var type = types[x + y * World.ChunkSize + z * World.ChunkSize * World.ChunkSize];
 
-                            Block.BlockType type;
-                            if (dataFromFile)
-                            {
-                                type = _blockData.BlockTypes[x, y, z];
-                            }
-                            else
-                            {
-                                int worldX = (int)(x + ChunkObject.transform.position.x);
-                                int worldY = (int)(y + ChunkObject.transform.position.y);
-                                int worldZ = (int)(z + ChunkObject.transform.position.z);
-                                type = DetermineType(worldX, worldY, worldZ);
-                            }
+                        GameObject gameObject = type == Block.BlockType.Water
+                            ? FluidObject.gameObject
+                            : ChunkObject.gameObject;
 
-                            GameObject gameObject = type == Block.BlockType.Water
-                                ? FluidObject.gameObject
-                                : ChunkObject.gameObject;
-
-                            Blocks[x, y, z] = new Block(type, pos, gameObject, this);
-                        }
-                        else
-                        {
-                            // flattering the table
-                            var vector = new Vector3Int(
-                                (int)(x + ChunkObject.transform.position.x),
-                                (int)(y + ChunkObject.transform.position.y),
-                                (int)(z + ChunkObject.transform.position.z));
-
-                            worldCoords[x + y * World.ChunkSize + z * World.ChunkSize * World.ChunkSize] = vector;
-                        }
+                        SetBlock(x, y, z, new Block(type, pos, gameObject, this));
                     }
 
+            AddTrees();
 
-            // creating a job - pararell
-            if(!dataFromFile)
-            {
-                DetermineTypes(worldCoords, types);
-
-                for (var z = 0; z < World.ChunkSize; z++)
-                    for (var y = 0; y < World.ChunkSize; y++)
-                        for (var x = 0; x < World.ChunkSize; x++)
-                        {
-                            var pos = new Vector3(x, y, z);
-                            var type = types[x + y * World.ChunkSize + z * World.ChunkSize * World.ChunkSize];
-
-                            GameObject gameObject = type == Block.BlockType.Water
-                                ? FluidObject.gameObject
-                                : ChunkObject.gameObject;
-
-                            Blocks[x, y, z] = new Block(type, pos, gameObject, this);
-                        }
-
-                AddTrees();
-            }
-                
             // chunk just has been created and it is ready to be drawn
             Status = ChunkStatus.NotInitialized;
         }
         
-        void DetermineTypes(Vector3Int[] worldCoords, Block.BlockType[] types)
-        {
-            var coordArray = new NativeArray<Vector3Int>(worldCoords, Allocator.TempJob);
-            var typeArray = new NativeArray<Block.BlockType>(types, Allocator.TempJob);
-            myJob = new MyParallelJob()
-            {
-                WorldCoords = coordArray,
-                Result = typeArray
-            };
-
-            myJobHandle = myJob.Schedule(worldCoords.Length, 5);
-            myJobHandle.Complete();
-
-            myJob.Result.CopyTo(types);
-
-            coordArray.Dispose();
-            typeArray.Dispose();
-        }
-
-        /* Old Build Chunk */
         void BuildChunkOld()
         {
             bool dataFromFile = Load();
-            Blocks = new Block[World.ChunkSize, World.ChunkSize, World.ChunkSize];
+            _blocks = new Block[World.ChunkSize * World.ChunkSize * World.ChunkSize];
 
             // create terrain
             for (var z = 0; z < World.ChunkSize; z++)
@@ -298,8 +278,8 @@ namespace Assets.Scripts
                         GameObject gameObject = type == Block.BlockType.Water
                             ? FluidObject.gameObject
                             : ChunkObject.gameObject;
-                        
-                        Blocks[x, y, z] = new Block(type, pos, gameObject, this);
+
+                        SetBlock(x, y, z, new Block(type, pos, gameObject, this));
                     }
 
             if (!dataFromFile)
@@ -318,7 +298,7 @@ namespace Assets.Scripts
                 for (var y = 0; y < World.ChunkSize - TreeHeight; y++)
                     for (var x = 1; x < World.ChunkSize - 1; x++)
                     {
-                        if (Blocks[x, y, z].Type != Block.BlockType.Grass) continue;
+                        if (GetBlock(x, y, z).Type != Block.BlockType.Grass) continue;
 
                         if (IsThereEnoughSpaceForTree(x, y, z))
                         {
@@ -328,7 +308,7 @@ namespace Assets.Scripts
 
                             if (Utils.FractalFunc(worldX, worldY, worldZ, WoodbaseSmooth, WoodbaseOctaves) < WoodbaseProbability)
                             {
-                                BuildTree(Blocks[x, y, z], x, y, z);
+                                BuildTree(GetBlock(x, y, z), x, y, z);
                                 x += 2; // no trees can be that close
                             }
                         }
@@ -347,14 +327,14 @@ namespace Assets.Scripts
 
             for (int i = 2; i < TreeHeight; i++)
             {
-                if (Blocks[x + 1, y + i, z].Type != Block.BlockType.Air
-                    || Blocks[x - 1, y + i, z].Type != Block.BlockType.Air
-                    || Blocks[x, y + i, z + 1].Type != Block.BlockType.Air
-                    || Blocks[x, y + i, z - 1].Type != Block.BlockType.Air
-                    || Blocks[x + 1, y + i, z + 1].Type != Block.BlockType.Air
-                    || Blocks[x + 1, y + i, z - 1].Type != Block.BlockType.Air
-                    || Blocks[x - 1, y + i, z + 1].Type != Block.BlockType.Air
-                    || Blocks[x - 1, y + i, z - 1].Type != Block.BlockType.Air)
+                if (GetBlock(x + 1, y + i, z).Type != Block.BlockType.Air
+                    || GetBlock(x - 1, y + i, z).Type != Block.BlockType.Air
+                    || GetBlock(x, y + i, z + 1).Type != Block.BlockType.Air
+                    || GetBlock(x, y + i, z - 1).Type != Block.BlockType.Air
+                    || GetBlock(x + 1, y + i, z + 1).Type != Block.BlockType.Air
+                    || GetBlock(x + 1, y + i, z - 1).Type != Block.BlockType.Air
+                    || GetBlock(x - 1, y + i, z + 1).Type != Block.BlockType.Air
+                    || GetBlock(x - 1, y + i, z - 1).Type != Block.BlockType.Air)
                     return false;
             }
 
@@ -498,11 +478,31 @@ namespace Assets.Scripts
 
             var bf = new BinaryFormatter();
             FileStream file = File.Open(chunkFile, FileMode.OpenOrCreate);
-            _blockData = new BlockData(Blocks);
+            _blockData = new BlockData(_blocks);
             bf.Serialize(file, _blockData);
             file.Close();
             
             //Debug.Log("Saving chunk from file: " + chunkFile);
+        }
+
+        // not used
+        public Vector3Int ExtractCoordinates(int index)
+        {
+            var z = index / (World.ChunkSize * World.ChunkSize);
+            index -= z * World.ChunkSize * World.ChunkSize;
+
+            var y = index / World.ChunkSize;
+            index -= y * World.ChunkSize;
+
+            var x = index;
+
+            return new Vector3Int(x, y, z);
+        }
+
+        // not used
+        public int FlattenizeCoordinates(int x, int y, int z)
+        {
+            return x + y * World.ChunkSize + z * World.ChunkSize * World.ChunkSize;
         }
     }
 }
