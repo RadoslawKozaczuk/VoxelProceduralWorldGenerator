@@ -2,359 +2,114 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
-using Realtime.Messaging.Internal;
-using System;
 
 namespace Assets.Scripts
 {
 	public class World : MonoBehaviour
 	{
+        public Transform TerrainParent;
+        public Transform WaterParent;
+
         public uint QueueSize;
         public bool UseJobSystem = true;
 
 		public GameObject Player;
 		public Material TextureAtlas; 
 		public Material FluidTexture;
-		public const int ColumnHeight = 6; // number of chunks in column
-		public const int ChunkSize = 16; // number of blocks in x, y and z
+		public const int ColumnHeight = 3; // number of chunks in column
+		public const int ChunkSize = 10; // number of blocks in x, y and z (32 is safe and recomended)
 
+        public const int WorldSizeX = 5;
+        public const int WorldSizeY = 10; // height
+        public const int WorldSizeZ = 5;
+        
         public static CoroutineQueue Queue;
 		public static uint MaxCoroutines = 1000;
 		
-		public const int Radius = 5; // radius tell us how many chunks around the layer needs to be generated
+		public const int Radius = 3; // radius tell us how many chunks around the layer needs to be generated
 		public static List<int> ToRemove = new List<int>();
-
-		// this is equivalent to Microsoft's concurrent dictionary - Unity simply does not support high enough .Net Framework
-		public static ConcurrentDictionary<int, Chunk> Chunks;
-		
-		public Slider LoadingAmount;
+        
+        public static Chunk[,,] Chunks = new Chunk[WorldSizeX, WorldSizeY, WorldSizeZ];
+        
+        public Slider LoadingAmount;
 		public Camera MainCamera;
 		public Button PlayButton;
 
 		public int Posx;
 		public int Posz;
-
-		bool _firstBuild = true; // true if the first world hasn't been built is yet
-		bool _building = false; // true when the building method is running
-
-		// this is necessary to avoid building world when the player does not move
-		public Vector3 LastBuildPos;
         
 		void Start()
 		{
-            // temporary solution to avoid pointless clicking
-            DisableUI();
-
 			Vector3 playerPos = Player.transform.position;
 			Player.transform.position = new Vector3(
 				playerPos.x,
 				Utils.GenerateHeight(playerPos.x, playerPos.z) + 1,
 				playerPos.z);
 
-			LastBuildPos = Player.transform.position;
-
 			// to be sure player won't fall through the world that hasn't been build yet
 			Player.SetActive(false);
-
-			_firstBuild = true;
-			Chunks = new ConcurrentDictionary<int, Chunk>();
-			transform.position = Vector3.zero;
-			transform.rotation = Quaternion.identity;
-
+            
 			Queue = new CoroutineQueue(MaxCoroutines, StartCoroutine);
 
-			//build starting chunk
-			BuildChunkAt(
-				(int)(Player.transform.position.x / ChunkSize),
-				(int)(Player.transform.position.y / ChunkSize),
-				(int)(Player.transform.position.z / ChunkSize));
+            for (int x = 0; x < WorldSizeX; x++)
+                for (int z = 0; z < WorldSizeZ; z++)
+                    for (int y = 0; y < WorldSizeY; y++)
+                        BuildChunkAt(x, y, z);
 
-			//draw it
-			Queue.Run(DrawChunks());
+            // BUG: It doesn't really work as intended 
+            // For some reason recreated chunks lose their transparency
+            //InformSurroundingChunks(x, y, z);
+        }
 
-			//create a bigger world
-			Queue.Run(BuildRecursiveWorld(
-				(int)(Player.transform.position.x / ChunkSize),
-				(int)(Player.transform.position.y / ChunkSize),
-				(int)(Player.transform.position.z / ChunkSize),
-				Radius));
-		}
-
-		void Update()
+        void Update()
 		{
             QueueSize = Queue.NumActive;
-
-            // test how far the player has moved
-            Vector3 movement = LastBuildPos - Player.transform.position;
-			if (movement.magnitude > ChunkSize)
-			{
-				LastBuildPos = Player.transform.position;
-				BuildNearPlayer();
-			}
 			
+            // in final version it should wait for the world genration to end
 			if (!Player.activeSelf)
 			{
 				Player.SetActive(true);
-				_firstBuild = false;
 			}
 			
 			Queue.Run(DrawChunks());
-			RemoveOldChunks();
 		}
-		
-		/// <summary>
-		/// Returns the block we hit.
-		/// </summary>
-		/// <param name="pos">hit point coordinates</param>
-		public static Block GetWorldBlock(Vector3 pos)
-		{
-			// with chuck we are talking about
-			// for example if we are in block 4 we round it down to 0 which means we are in chunk 0
-			int chunkX = pos.x < 0
-				// this plus one is here to avoid problem with rounding which occurs around the value -16
-				? (int)((Mathf.Round(pos.x - ChunkSize) + 1) / ChunkSize) * ChunkSize
-				: (int)(Mathf.Round(pos.x) / ChunkSize) * ChunkSize;
-
-			int chunkY = pos.y < 0 
-				? (int)((Mathf.Round(pos.y - ChunkSize) + 1) / ChunkSize) * ChunkSize 
-				: (int)(Mathf.Round(pos.y) / ChunkSize) * ChunkSize;
-			
-			int chunkZ = pos.z < 0 
-				? (int)((Mathf.Round(pos.z - ChunkSize) + 1) / ChunkSize) * ChunkSize 
-				: (int)(Mathf.Round(pos.z) / ChunkSize) * ChunkSize;
-			
-			var chunkName = BuildChunkName(chunkX, chunkY, chunkZ);
-			Chunk c;
-			if (Chunks.TryGetValue(chunkName, out c))
-			{
-				// we need to make absolute for all of these because there is no chunk with negative index
-				int blx = (int)Mathf.Abs((float)Math.Round(pos.x) - chunkX);
-				int bly = (int)Mathf.Abs((float)Math.Round(pos.y) - chunkY);
-				int blz = (int)Mathf.Abs((float)Math.Round(pos.z) - chunkZ);
-				
-				return c.GetBlock(blx, bly, blz);
-			}
-
-			return null;
-		}
-
-		/// <summary>
-		/// Creates a unique number based on the chunk coordinates. First digit holds signs of all three dimensions (as a bit map).
-		/// X and Z dimensions have 3 digits to store their values. Y dimension has only 2 digits to store its value.
-		/// Given coordinates are divided by the ChunkSize constant allowing more keys to be generated.
-		/// </summary>
-		public static int BuildChunkName(Vector3 v)
-		{
-			return BuildChunkNameInternal((int)v.x / ChunkSize, (int)v.y / ChunkSize, (int)v.z / ChunkSize);
-		}
-
-		/// <summary>
-		/// Creates a unique number based on the chunk coordinates. First digit holds signs of all three dimensions (as a bit map).
-		/// X and Z dimensions have 3 digits to store their values. Y dimension has only 2 digits to store its value.
-		/// Given coordinates are divided by the ChunkSize constant allowing more keys to be generated.
-		/// </summary>
-		public static int BuildChunkName(int x, int y, int z)
-		{
-			return BuildChunkNameInternal(x / ChunkSize, y / ChunkSize, z / ChunkSize);
-		}
-
-		static int BuildChunkNameInternal(int x, int y, int z)
-		{
-			if (x > 999 || x < -999 || y > 99 || y < -99 || z > 999 || z < -999)
-				throw new ArgumentException();
-
-			// create a bit map that holds all signs
-			var bitMap = 1; // initialize with one so the number will always have the same amount of digits
-			var number = 0;
-			if (x >= 0)
-			{
-				number += x * 100000;
-				bitMap += 1;
-			}
-			else
-				number += x * -100000;
-
-			if (y >= 0)
-			{
-				number += y * 1000;
-				bitMap += 2;
-			}
-			else
-				number += y * -1000;
-
-			if (z >= 0)
-			{
-				number += z;
-				bitMap += 4;
-			}
-			else
-				number += z * -1;
-			bitMap *= 100000000;
-
-			return bitMap + number;
-		}
-
-		public Vector3 DecomposeChunkName(string chunkName)
-		{
-			int bitMap = int.Parse(chunkName.Substring(0, 1)) - 1; // +1 is always added
-			
-			int xDir = -1, 
-				yDir = -1, 
-				zDir = -1;
-
-			if (bitMap > 3)
-			{
-				zDir = 1;
-				bitMap -= 4;
-			}
-			if(bitMap > 1)
-			{
-				yDir = 1;
-				bitMap -= 2;
-			}
-			if(bitMap > 0)
-				xDir = 1;
-
-			int x = int.Parse(chunkName.Substring(1, 3)) * xDir,
-				y = int.Parse(chunkName.Substring(4, 2)) * yDir,
-				z = int.Parse(chunkName.Substring(6, 3)) * zDir;
-			
-			return new Vector3(x, y , z);
-		}
-		
+        
 		public static string BuildChunkFileName(Vector3 v)
 		{
 			return Application.persistentDataPath + "/savedata/Chunk_" 
 												  + (int) v.x + "_" + (int) v.y + "_" + (int) v.z + "_" 
 												  + ChunkSize + "_" + Radius + ".dat";
 		}
-		
-		void BuildChunkAt(int x, int y, int z)
-		{
-			var chunkPosition = new Vector3(
-				x * ChunkSize, 
-				y * ChunkSize, 
-				z * ChunkSize);
 
-			var chunkName = BuildChunkName(chunkPosition);
+        public static int BuildChunkName(int x, int y, int z) 
+            => WorldSizeY * WorldSizeY * y + WorldSizeZ * z + x;
 
-			Chunk c;
-			if (Chunks.TryGetValue(chunkName, out c)) return; // chunk is already there
+        void BuildChunkAt(int x, int y, int z)
+        {
+            var chunkPosition = new Vector3(x * ChunkSize, y * ChunkSize, z * ChunkSize);
+            var chunkName = BuildChunkName(x, y, z);
 
-			c = new Chunk(chunkPosition, TextureAtlas, FluidTexture, chunkName, this);
-			c.ChunkObject.transform.parent = transform;
-			Chunks.TryAdd(int.Parse(c.ChunkObject.name), c);
-		}
+            var c = new Chunk(chunkPosition, TextureAtlas, FluidTexture, chunkName, this, x, y, z);
+            Chunks[x, y, z] = c;
+        }
+        
+        IEnumerator DrawChunks()
+        {
+            for (int x = 0; x < WorldSizeX; x++)
+                for (int z = 0; z < WorldSizeZ; z++)
+                    for (int y = 0; y < WorldSizeY; y++)
+                    {
+                        Chunk c = Chunks[x, y, z];
+                        if (c.Status == Chunk.ChunkStatus.NotInitialized)
+                            c.CreateMeshAndCollider();
+                        else if (c.Status == Chunk.ChunkStatus.NeedToBeRedrawn)
+                        {
+                            c.DestroyMeshAndCollider();
+                            c.CreateMeshAndCollider();
+                        }
 
-		IEnumerator BuildRecursiveWorld(int x, int y, int z, int radius)
-		{
-			radius--;
-			if (radius <= 0) yield break;
-
-			// build chunk front
-			BuildChunkAt(x, y, z + 1);
-			StartCoroutine(BuildRecursiveWorld(x, y, z + 1, radius));
-			yield return null;
-
-			// build chunk back
-			BuildChunkAt(x, y, z - 1);
-			StartCoroutine(BuildRecursiveWorld(x, y, z - 1, radius));
-			yield return null;
-
-			// build chunk left
-			BuildChunkAt(x - 1, y, z);
-			StartCoroutine(BuildRecursiveWorld(x - 1, y, z, radius));
-			yield return null;
-
-			// build chunk right
-			BuildChunkAt(x + 1, y, z);
-			StartCoroutine(BuildRecursiveWorld(x + 1, y, z, radius));
-			yield return null;
-
-			// build chunk up
-			BuildChunkAt(x, y + 1, z);
-			StartCoroutine(BuildRecursiveWorld(x, y + 1, z, radius));
-			yield return null;
-
-			// build chunk down
-			BuildChunkAt(x, y - 1, z);
-			StartCoroutine(BuildRecursiveWorld(x, y - 1, z, radius));
-			yield return null;
-		}
-
-		IEnumerator DrawChunks()
-		{
-			foreach (KeyValuePair<int, Chunk> c in Chunks)
-			{
-				if (c.Value.Status == Chunk.ChunkStatus.NotInitialized)
-					c.Value.CreateMesh();
-				else if (c.Value.Status == Chunk.ChunkStatus.NeedToBeRedrawn)
-				{
-					c.Value.Clean();
-					c.Value.CreateMesh();
-				}
-
-				if (c.Value.ChunkObject
-					&& Vector3.Distance(
-						Player.transform.position,
-						c.Value.ChunkObject.transform.position) > Radius * ChunkSize)
-				{
-					ToRemove.Add(c.Key);
-				}
-
-				yield return null;
-			}
-		}
-
-		void RemoveOldChunks()
-		{
-			foreach (var chunkName in ToRemove)
-			{
-				Chunk c;
-				if (!Chunks.TryGetValue(chunkName, out c)) continue;
-				Destroy(c.ChunkObject);
-				Chunks.TryRemove(chunkName, out c);
-				//yield return null;
-			}
-		}
-
-		void BuildNearPlayer()
-		{
-			// we stop any existing build that is going on - this will stop all the recursive calls as well
-			StopCoroutine("BuildRecursiveWorld");
-			Queue.Run(BuildRecursiveWorld(
-				(int)(Player.transform.position.x / ChunkSize),
-				(int)(Player.transform.position.y / ChunkSize),
-				(int)(Player.transform.position.z / ChunkSize),
-				Radius));
-		}
-		
-		#region Loading And Menu (not implemented yet)
-		private void DisableUI()
-		{
-			LoadingAmount.gameObject.SetActive(false);
-			//MainCamera.gameObject.SetActive(false);
-			PlayButton.gameObject.SetActive(false);
-		}
-
-		// need to be public so PlayButton can access it
-		public void StartBuild()
-		{
-			if (_stillLoading)
-				StartCoroutine(Wait());
-		}
-
-		private float _loadingValue = 0;
-		private const float DummyLoadingTime = 2.0f;
-		private bool _stillLoading = true;
-		IEnumerator Wait()
-		{
-			_stillLoading = true;
-			_loadingValue += Time.deltaTime;
-			LoadingAmount.value += _loadingValue;
-			yield return new WaitForSeconds(DummyLoadingTime);
-			_stillLoading = false;
-		}
-		#endregion
+                        yield return null;
+                    }
+        }
 	}
 }

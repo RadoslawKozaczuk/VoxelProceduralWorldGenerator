@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
+using System;
 
 namespace Assets.Scripts
 {
@@ -8,13 +9,7 @@ namespace Assets.Scripts
 		public GameObject Cam;
 		const float AttackRange = 4.0f;
 		Block.BlockType _buildBlockType = Block.BlockType.Stone;
-
-		// Use this for initialization
-		void Start()
-		{
-
-		}
-
+        
 		// Update is called once per frame
 		void Update()
 		{
@@ -28,49 +23,51 @@ namespace Assets.Scripts
 
 			RaycastHit hit;
 
-			//for mouse clicking
-			//Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition); 
-			//if ( Physics.Raycast (ray,out hit,10)) 
-			//{
+            //for mouse clicking
+            //Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition); 
+            //if ( Physics.Raycast (ray,out hit,10)) 
+            //{
 
-			// DEBUG - visible ray
-			//Debug.DrawRay(Cam.transform.position, Cam.transform.forward, Color.red, 1000, true);
+            // DEBUG - visible ray
+            //Debug.DrawRay(Cam.transform.position, Cam.transform.forward, Color.red, 1000, true);
+            
+            var sw = new System.Diagnostics.Stopwatch();
 
-			//for cross hairs
-			if (!Physics.Raycast(Cam.transform.position, Cam.transform.forward, out hit, AttackRange))
-				return;
+            sw.Start();
+            //for cross hairs
+            if (!Physics.Raycast(Cam.transform.position, Cam.transform.forward, out hit, AttackRange))
+            {
+                sw.Stop();
+                Debug.Log("Raycast missed. " + sw.ElapsedTicks + " ticks");
+                return;
+            }
+            sw.Stop();
+            Debug.Log("Raycast hit. " + sw.ElapsedTicks + " ticks");
 
-			Vector3 hitBlock = Input.GetMouseButtonDown(0)
+            Vector3 hitBlock = Input.GetMouseButtonDown(0)
 				? hit.point - hit.normal / 2.0f // central point
 				: hit.point + hit.normal / 2.0f; // next to the one that we are pointing at
-
-			// the absolute value of the block we are after
-			Block b = World.GetWorldBlock(hitBlock);
-			
-			float thisChunkx = hit.collider.gameObject.transform.position.x;
-			float thisChunky = hit.collider.gameObject.transform.position.y;
-			float thisChunkz = hit.collider.gameObject.transform.position.z;
-
-			// we keep performing check if the block is completely gone
-			Chunk hitc;
-			if (!World.Chunks.TryGetValue(int.Parse(hit.collider.gameObject.name), out hitc)) // if we hit something
-				return;
             
-            // DEBUG - calculated coordinates
-            Debug.Log("block hit x" + hitBlock.x + " y" + hitBlock.y + " z" + hitBlock.z
-				+ " chunk x" + thisChunkx + " y" + thisChunky + " z" + thisChunkz
-				+ " HitColliderName: " + hit.collider.gameObject.name + "block type: " + b.Type);
+            int chunkX = hitBlock.x < 0 ? 0 : (int)(hitBlock.x / World.ChunkSize);
+            int chunkY = hitBlock.y < 0 ? 0 : (int)(hitBlock.y / World.ChunkSize);
+            int chunkZ = hitBlock.z < 0 ? 0 : (int)(hitBlock.z / World.ChunkSize);
 
-			hitc = b.Owner;
-
+            Chunk hitc = World.Chunks[chunkX, chunkY, chunkZ];
+            
+            int blx = (int)hitBlock.x - chunkX * World.ChunkSize;
+            int bly = (int)hitBlock.y - chunkY * World.ChunkSize;
+            int blz = (int)hitBlock.z - chunkZ * World.ChunkSize;
+            
+            Block b = hitc.Blocks[blx, bly, blz];
+            
 			bool update = Input.GetMouseButtonDown(0) 
-				? b.HitBlock() // if destroyed
+				? b.HitBlock() // returns true if destroyed
 				: b.BuildBlock(_buildBlockType); // always returns true
 
 			if (!update) return;
 
 			hitc.Changed = true;
-			RedrawNeighbours(b.Position, thisChunkx, thisChunky, thisChunkz);
+			RedrawNeighbours(b.LocalPosition, chunkX, chunkY, chunkZ);
 		}
 
 		void CheckForBuildBlockType()
@@ -117,33 +114,23 @@ namespace Assets.Scripts
 			}
 		}
 
-		private void RedrawNeighbours(Vector3 position, float chunkX, float chunkY, float chunkZ)
+		private void RedrawNeighbours(Vector3 blockPosition, int chunkX, int chunkY, int chunkZ)
 		{
-			var updates = new List<int>();
+            // if the block is on the edge of the chunk we need to inform the neighbor chunk
+            if (blockPosition.x == 0 && chunkX - 1 >= 0)
+                World.Chunks[chunkX - 1, chunkY, chunkZ].RecreateMeshAndCollider();
+			if (blockPosition.x == World.ChunkSize - 1 && chunkX + 1 < World.WorldSizeX)
+                World.Chunks[chunkX + 1, chunkY, chunkZ].RecreateMeshAndCollider();
 
-			// if the block is on the edge of the chunk we need to inform neighbor chunk
-			if (position.x == 0)
-				updates.Add(World.BuildChunkName((int)chunkX - World.ChunkSize, (int)chunkY, (int)chunkZ));
-			if (position.x == World.ChunkSize - 1)
-				updates.Add(World.BuildChunkName((int)chunkX + World.ChunkSize, (int)chunkY, (int)chunkZ));
-			if (position.y == 0)
-				updates.Add(World.BuildChunkName((int)chunkX, (int)chunkY - World.ChunkSize, (int)chunkZ));
-			if (position.y == World.ChunkSize - 1)
-				updates.Add(World.BuildChunkName((int)chunkX, (int)chunkY + World.ChunkSize, (int)chunkZ));
-			if (position.z == 0)
-				updates.Add(World.BuildChunkName((int)chunkX, (int)chunkY, (int)chunkZ - World.ChunkSize));
-			if (position.z == World.ChunkSize - 1)
-				updates.Add(World.BuildChunkName((int)chunkX, (int)chunkY, (int)chunkZ + World.ChunkSize));
+			if (blockPosition.y == 0 && chunkY - 1 >= 0)
+                World.Chunks[chunkX, chunkY - 1, chunkZ].RecreateMeshAndCollider();
+			if (blockPosition.y == World.ChunkSize - 1 && chunkY + 1 < World.WorldSizeY)
+                World.Chunks[chunkX, chunkY + 1, chunkZ].RecreateMeshAndCollider();
 
-			foreach (int cname in updates)
-			{
-				Chunk c;
-				if (!World.Chunks.TryGetValue(cname, out c))
-					continue;
-				
-				c.Clean();
-				c.CreateMesh();
-			}
+			if (blockPosition.z == 0 && chunkX - 1 >= 0)
+                World.Chunks[chunkX, chunkY, chunkZ - 1].RecreateMeshAndCollider();
+			if (blockPosition.z == World.ChunkSize - 1 && chunkZ + 1 < World.WorldSizeZ)
+                World.Chunks[chunkX, chunkY, chunkZ + 1].RecreateMeshAndCollider();
 		}
 	}
 }

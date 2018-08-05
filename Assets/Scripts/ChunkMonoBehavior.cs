@@ -34,13 +34,13 @@ namespace Assets.Scripts
 			if (startingBlock.Type != Block.BlockType.Air) yield break; // water only spread trough the air
 			startingBlock.Type = bt; // BUG: This should also change the parent's game object to apply transparency
 			startingBlock.CurrentHealth = strength;
-			startingBlock.Owner.Clean();
-			startingBlock.Owner.CreateMesh();
+			startingBlock.Owner.DestroyMeshAndCollider();
+			startingBlock.Owner.CreateMeshAndCollider();
 			yield return new WaitForSeconds(1); // water spread one block per second
 
-			int x = (int)startingBlock.Position.x;
-			int y = (int)startingBlock.Position.y;
-			int z = (int)startingBlock.Position.z;
+			int x = (int)startingBlock.LocalPosition.x;
+			int y = (int)startingBlock.LocalPosition.y;
+			int z = (int)startingBlock.LocalPosition.z;
 
 			// flow down if air block beneath
 			Block below = startingBlock.GetBlock(x, y - 1, z);
@@ -82,11 +82,11 @@ namespace Assets.Scripts
 					prevBlock.Type = previousType;
 
 				prevBlock = thisBlock;
-				thisBlock.Owner.Clean();
-				thisBlock.Owner.CreateMesh();
+				thisBlock.Owner.DestroyMeshAndCollider();
+				thisBlock.Owner.CreateMeshAndCollider();
 
 				yield return new WaitForSeconds(0.2f);
-				Vector3 pos = thisBlock.Position;
+				Vector3 pos = thisBlock.LocalPosition;
 
 				thisBlock = thisBlock.GetBlock((int)pos.x, (int)pos.y - 1, (int)pos.z);
 				if (thisBlock.IsSolid)
@@ -104,9 +104,10 @@ namespace Assets.Scripts
 			int y = (int)bpos.y;
 			int z = (int)bpos.z;
 
-			// if it hasn't been already destroy reset it
-			if (_owner.GetBlock(x, y, z).Type != Block.BlockType.Air)
-				_owner.GetBlock(x, y, z).Reset();
+            // if it hasn't been already destroy reset it
+            var block = _owner.Blocks[x, y, z];
+            if (block.Type != Block.BlockType.Air)
+                block.Reset();
 		}
 
 		public void SaveProgress()

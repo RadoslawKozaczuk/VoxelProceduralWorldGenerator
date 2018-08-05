@@ -15,14 +15,14 @@ namespace Assets.Scripts
 
         public BlockData() { }
 
-        public BlockData(Block[] b)
+        public BlockData(Block[,,] b)
         {
             BlockTypes = new Block.BlockType[World.ChunkSize, World.ChunkSize, World.ChunkSize];
 
             for (int z = 0; z < World.ChunkSize; z++)
                 for (int y = 0; y < World.ChunkSize; y++)
                     for (int x = 0; x < World.ChunkSize; x++)
-                        BlockTypes[x, y, z] = b[x + y * World.ChunkSize + z * World.ChunkSize * World.ChunkSize].Type;
+                        BlockTypes[x, y, z] = b[x, y, z].Type;
         }
     }
 
@@ -70,22 +70,18 @@ namespace Assets.Scripts
 
         [SerializeField] World _worldReference;
 
-        public Material CubeMaterial;
-        public Material FluidMaterial;
-        public GameObject ChunkObject;
-        public GameObject FluidObject;
+        public Material TerrainMaterial;
+        public Material WaterMaterial;
+        public GameObject Terrain;
+        public GameObject Water;
 
-        private Block[] _blocks;
-        public Block GetBlock(int x, int y, int z)
-        {
-            return _blocks[x + y * World.ChunkSize + z * World.ChunkSize * World.ChunkSize];
-        }
+        public Block[,,] Blocks;
 
-        public void SetBlock(int x, int y, int z, Block block)
-        {
-            _blocks[x + y * World.ChunkSize + z * World.ChunkSize * World.ChunkSize] = block;
-        }
-        
+        public int ChunkName;
+        public int X;
+        public int Y;
+        public int Z;
+
         public ChunkMonoBehavior MonoBehavior;
         public UVScroller TextureScroller;
         public bool Changed = false;
@@ -133,19 +129,26 @@ namespace Assets.Scripts
             return table;
         }
 
-        public Chunk(Vector3 position, Material chunkMaterial, Material transparentMaterial, int chunkKey, World worldReference)
+        public Chunk(Vector3 position, Material chunkMaterial, Material transparentMaterial, int chunkKey, World worldReference, int x, int y, int z)
         {
+            ChunkName = chunkKey;
+            X = x;
+            Y = y;
+            Z = z;
+
             _worldReference = worldReference;
 
-            ChunkObject = new GameObject(chunkKey.ToString());
-            ChunkObject.transform.position = position;
-            CubeMaterial = chunkMaterial;
+            Terrain = new GameObject(chunkKey.ToString());
+            Terrain.transform.position = position;
+            Terrain.transform.SetParent(worldReference.TerrainParent);
+            TerrainMaterial = chunkMaterial;
 
-            FluidObject = new GameObject(chunkKey + "_fluid");
-            FluidObject.transform.position = position;
-            FluidMaterial = transparentMaterial;
+            Water = new GameObject(chunkKey + "_fluid");
+            Water.transform.position = position;
+            Water.transform.SetParent(worldReference.WaterParent);
+            WaterMaterial = transparentMaterial;
 
-            MonoBehavior = ChunkObject.AddComponent<ChunkMonoBehavior>();
+            MonoBehavior = Terrain.AddComponent<ChunkMonoBehavior>();
             MonoBehavior.SetOwner(this);
 
             // BUG: This is extremely slow
@@ -155,10 +158,6 @@ namespace Assets.Scripts
                 BuildChunkTurbo();
             else
                 BuildChunkOld();
-            
-            // BUG: It doesn't really work as intended 
-            // For some reason recreated chunks lose their transparency
-            InformSurroundingChunks(chunkKey);
         }
 
         public void UpdateChunk()
@@ -166,46 +165,54 @@ namespace Assets.Scripts
             for (var z = 0; z < World.ChunkSize; z++)
                 for (var y = 0; y < World.ChunkSize; y++)
                     for (var x = 0; x < World.ChunkSize; x++)
-                        if (GetBlock(x, y, z).Type == Block.BlockType.Sand)
-                            MonoBehavior.StartCoroutine(MonoBehavior.Drop(
-                                GetBlock(x, y, z),
-                                Block.BlockType.Sand));
+                    {
+                        var b = Blocks[x, y, z];
+                        if (b.Type == Block.BlockType.Sand)
+                            MonoBehavior.StartCoroutine(MonoBehavior.Drop(b, Block.BlockType.Sand));
+                    }
+                        
+        }
+
+        public void RecreateMeshAndCollider()
+        {
+            DestroyMeshAndCollider();
+            CreateMeshAndCollider();
         }
 
         /// <summary>
 		/// Destroys Meshes and Colliders
 		/// </summary>
-		public void Clean()
+		public void DestroyMeshAndCollider()
         {
             // we cannot use normal destroy because it may wait to the next update loop or something which will break the code
-            UnityEngine.Object.DestroyImmediate(ChunkObject.GetComponent<MeshFilter>());
-            UnityEngine.Object.DestroyImmediate(ChunkObject.GetComponent<MeshRenderer>());
-            UnityEngine.Object.DestroyImmediate(ChunkObject.GetComponent<Collider>());
-            UnityEngine.Object.DestroyImmediate(FluidObject.GetComponent<MeshFilter>());
-            UnityEngine.Object.DestroyImmediate(FluidObject.GetComponent<MeshRenderer>());
+            UnityEngine.Object.DestroyImmediate(Terrain.GetComponent<MeshFilter>());
+            UnityEngine.Object.DestroyImmediate(Terrain.GetComponent<MeshRenderer>());
+            UnityEngine.Object.DestroyImmediate(Terrain.GetComponent<Collider>());
+            UnityEngine.Object.DestroyImmediate(Water.GetComponent<MeshFilter>());
+            UnityEngine.Object.DestroyImmediate(Water.GetComponent<MeshRenderer>());
         }
 
-        public void CreateMesh()
+        public void CreateMeshAndCollider()
         {
             for (var z = 0; z < World.ChunkSize; z++)
                 for (var y = 0; y < World.ChunkSize; y++)
                     for (var x = 0; x < World.ChunkSize; x++)
-                        GetBlock(x, y, z).CreateQuads();
+                        Blocks[x, y, z].CreateQuads();
 
-            CombineQuads(ChunkObject.gameObject, CubeMaterial);
+            CombineQuads(Terrain.gameObject, TerrainMaterial);
 
             // adding collision
-            var collider = ChunkObject.gameObject.AddComponent(typeof(MeshCollider)) as MeshCollider;
-            collider.sharedMesh = ChunkObject.transform.GetComponent<MeshFilter>().mesh;
+            var collider = Terrain.gameObject.AddComponent(typeof(MeshCollider)) as MeshCollider;
+            collider.sharedMesh = Terrain.transform.GetComponent<MeshFilter>().mesh;
 
-            CombineQuads(FluidObject.gameObject, FluidMaterial);
+            CombineQuads(Water.gameObject, WaterMaterial);
             Status = ChunkStatus.Created;
         }
 
         void BuildChunkTurbo()
         {
             //bool dataFromFile = Load();
-            _blocks = new Block[World.ChunkSize * World.ChunkSize * World.ChunkSize];
+            Blocks = new Block[World.ChunkSize, World.ChunkSize, World.ChunkSize];
             
             // output data
             var types = new Block.BlockType[World.ChunkSize * World.ChunkSize * World.ChunkSize];
@@ -213,9 +220,9 @@ namespace Assets.Scripts
             _typeJob = new BlockTypeJob()
             {
                 // input data
-                ChunkPosX = ChunkObject.transform.position.x,
-                ChunkPosY = ChunkObject.transform.position.y,
-                ChunkPosZ = ChunkObject.transform.position.z,
+                ChunkPosX = Terrain.transform.position.x,
+                ChunkPosY = Terrain.transform.position.y,
+                ChunkPosZ = Terrain.transform.position.z,
                 Indexes = new NativeArray<int>(TypeJobIndexes, Allocator.TempJob),
                 Result = new NativeArray<Block.BlockType>(types, Allocator.TempJob)
             };
@@ -238,10 +245,10 @@ namespace Assets.Scripts
                         var type = types[x + y * World.ChunkSize + z * World.ChunkSize * World.ChunkSize];
 
                         GameObject gameObject = type == Block.BlockType.Water
-                            ? FluidObject.gameObject
-                            : ChunkObject.gameObject;
+                            ? Water.gameObject
+                            : Terrain.gameObject;
 
-                        SetBlock(x, y, z, new Block(type, pos, gameObject, this));
+                        Blocks[x, y, z] = new Block(type, pos, gameObject, this);
                     }
 
             AddTrees();
@@ -253,7 +260,7 @@ namespace Assets.Scripts
         void BuildChunkOld()
         {
             bool dataFromFile = Load();
-            _blocks = new Block[World.ChunkSize * World.ChunkSize * World.ChunkSize];
+            Blocks = new Block[World.ChunkSize, World.ChunkSize, World.ChunkSize];
 
             // create terrain
             for (var z = 0; z < World.ChunkSize; z++)
@@ -269,17 +276,17 @@ namespace Assets.Scripts
                         }
                         else
                         {
-                            int worldX = (int)(x + ChunkObject.transform.position.x);
-                            int worldY = (int)(y + ChunkObject.transform.position.y);
-                            int worldZ = (int)(z + ChunkObject.transform.position.z);
+                            int worldX = (int)(x + Terrain.transform.position.x);
+                            int worldY = (int)(y + Terrain.transform.position.y);
+                            int worldZ = (int)(z + Terrain.transform.position.z);
                             type = DetermineType(worldX, worldY, worldZ);
                         }
                         
                         GameObject gameObject = type == Block.BlockType.Water
-                            ? FluidObject.gameObject
-                            : ChunkObject.gameObject;
+                            ? Water.gameObject
+                            : Terrain.gameObject;
 
-                        SetBlock(x, y, z, new Block(type, pos, gameObject, this));
+                        Blocks[x, y, z] = new Block(type, pos, gameObject, this);
                     }
 
             if (!dataFromFile)
@@ -289,6 +296,7 @@ namespace Assets.Scripts
             Status = ChunkStatus.NotInitialized;
         }
         
+        // no part of a tree can be in another chunk
         void AddTrees()
         {
             for (var z = 1; z < World.ChunkSize - 1; z++)
@@ -298,17 +306,18 @@ namespace Assets.Scripts
                 for (var y = 0; y < World.ChunkSize - TreeHeight; y++)
                     for (var x = 1; x < World.ChunkSize - 1; x++)
                     {
-                        if (GetBlock(x, y, z).Type != Block.BlockType.Grass) continue;
+                        var trunk = Blocks[x, y, z];
+                        if (trunk.Type != Block.BlockType.Grass) continue;
 
                         if (IsThereEnoughSpaceForTree(x, y, z))
                         {
-                            int worldX = (int)(x + ChunkObject.transform.position.x);
-                            int worldY = (int)(y + ChunkObject.transform.position.y);
-                            int worldZ = (int)(z + ChunkObject.transform.position.z);
+                            int worldX = (int)(x + Terrain.transform.position.x);
+                            int worldY = (int)(y + Terrain.transform.position.y);
+                            int worldZ = (int)(z + Terrain.transform.position.z);
 
                             if (Utils.FractalFunc(worldX, worldY, worldZ, WoodbaseSmooth, WoodbaseOctaves) < WoodbaseProbability)
                             {
-                                BuildTree(GetBlock(x, y, z), x, y, z);
+                                BuildTree(trunk, x, y, z);
                                 x += 2; // no trees can be that close
                             }
                         }
@@ -327,54 +336,41 @@ namespace Assets.Scripts
 
             for (int i = 2; i < TreeHeight; i++)
             {
-                if (GetBlock(x + 1, y + i, z).Type != Block.BlockType.Air
-                    || GetBlock(x - 1, y + i, z).Type != Block.BlockType.Air
-                    || GetBlock(x, y + i, z + 1).Type != Block.BlockType.Air
-                    || GetBlock(x, y + i, z - 1).Type != Block.BlockType.Air
-                    || GetBlock(x + 1, y + i, z + 1).Type != Block.BlockType.Air
-                    || GetBlock(x + 1, y + i, z - 1).Type != Block.BlockType.Air
-                    || GetBlock(x - 1, y + i, z + 1).Type != Block.BlockType.Air
-                    || GetBlock(x - 1, y + i, z - 1).Type != Block.BlockType.Air)
+                if (Blocks[x + 1, y + i, z].Type != Block.BlockType.Air
+                    || Blocks[x - 1, y + i, z].Type != Block.BlockType.Air
+                    || Blocks[x, y + i, z + 1].Type != Block.BlockType.Air
+                    || Blocks[x, y + i, z - 1].Type != Block.BlockType.Air
+                    || Blocks[x + 1, y + i, z + 1].Type != Block.BlockType.Air
+                    || Blocks[x + 1, y + i, z - 1].Type != Block.BlockType.Air
+                    || Blocks[x - 1, y + i, z + 1].Type != Block.BlockType.Air
+                    || Blocks[x - 1, y + i, z - 1].Type != Block.BlockType.Air)
                     return false;
             }
 
             return true;
         }
 
-        void InformSurroundingChunks(int chunkKey)
+        void InformSurroundingChunks(int x, int y, int z)
         {
-            // BUG: In future I should encapsulate key arithmetic logic and move it somewhere else
+            if (x > 0)
+                World.Chunks[x - 1, y, z].Status = ChunkStatus.NeedToBeRedrawn;
 
-            // front
-            SetChunkToBeDrawn(chunkKey + World.ChunkSize);
+            if (x < World.WorldSizeX - 1)
+                World.Chunks[x + 1, y, z].Status = ChunkStatus.NeedToBeRedrawn;
 
-            // back
-            SetChunkToBeDrawn(chunkKey - World.ChunkSize);
+            if (y > 0)
+                World.Chunks[x, y - 1, z].Status = ChunkStatus.NeedToBeRedrawn;
 
-            // up
-            SetChunkToBeDrawn(chunkKey + World.ChunkSize * 1000);
+            if (y < World.WorldSizeY - 1)
+                World.Chunks[x, y + 1, z].Status = ChunkStatus.NeedToBeRedrawn;
 
-            // down
-            SetChunkToBeDrawn(chunkKey - World.ChunkSize * 1000);
+            if (z > 0)
+                World.Chunks[x, y, z - 1].Status = ChunkStatus.NeedToBeRedrawn;
 
-            // left
-            SetChunkToBeDrawn(chunkKey + World.ChunkSize * 1000000);
-
-            // right
-            SetChunkToBeDrawn(chunkKey - World.ChunkSize * 1000000);
-
-            // BUG: the above does not take into consideration the edge scenario in the middle of the coordinate system
+            if (z < World.WorldSizeZ - 1)
+                World.Chunks[x, y, z + 1].Status = ChunkStatus.NeedToBeRedrawn;
         }
-
-        void SetChunkToBeDrawn(int targetChunkKey)
-        {
-            Chunk c;
-            World.Chunks.TryGetValue(targetChunkKey, out c);
-
-            if (c != null)
-                c.Status = ChunkStatus.NeedToBeRedrawn;
-        }
-
+        
         public static Block.BlockType DetermineType(int worldX, int worldY, int worldZ)
         {
             Block.BlockType type;
@@ -405,18 +401,18 @@ namespace Assets.Scripts
 
             return type;
         }
-
+        
         void BuildTree(Block trunk, int x, int y, int z)
         {
             trunk.Type = Block.BlockType.Woodbase;
-            trunk.GetBlock(x, y + 1, z).Type = Block.BlockType.Wood;
-            trunk.GetBlock(x, y + 2, z).Type = Block.BlockType.Wood;
+            Blocks[x, y + 1, z].Type = Block.BlockType.Wood;
+            Blocks[x, y + 2, z].Type = Block.BlockType.Wood;
 
             for (int i = -1; i <= 1; i++)
                 for (int j = -1; j <= 1; j++)
                     for (int k = 3; k <= 4; k++)
-                        trunk.GetBlock(x + i, y + k, z + j).Type = Block.BlockType.Leaves;
-            trunk.GetBlock(x, y + 5, z).Type = Block.BlockType.Leaves;
+                        Blocks[x + i, y + k, z + j].Type = Block.BlockType.Leaves;
+            Blocks[x, y + 5, z].Type = Block.BlockType.Leaves;
         }
 
         /// <summary>
@@ -450,13 +446,13 @@ namespace Assets.Scripts
             renderer.material = mat;
 
             //5. Delete all uncombined children
-            foreach (Transform quad in ChunkObject.transform)
+            foreach (Transform quad in Terrain.transform)
                 UnityEngine.Object.Destroy(quad.gameObject);
         }
 
         bool Load()
         {
-            string chunkFile = World.BuildChunkFileName(ChunkObject.transform.position);
+            string chunkFile = World.BuildChunkFileName(Terrain.transform.position);
             if (!File.Exists(chunkFile)) return false;
 
             var bf = new BinaryFormatter();
@@ -471,38 +467,18 @@ namespace Assets.Scripts
 
         public void Save()
         {
-            string chunkFile = World.BuildChunkFileName(ChunkObject.transform.position);
+            string chunkFile = World.BuildChunkFileName(Terrain.transform.position);
 
             if (!File.Exists(chunkFile))
                 Directory.CreateDirectory(Path.GetDirectoryName(chunkFile));
 
             var bf = new BinaryFormatter();
             FileStream file = File.Open(chunkFile, FileMode.OpenOrCreate);
-            _blockData = new BlockData(_blocks);
+            _blockData = new BlockData(Blocks);
             bf.Serialize(file, _blockData);
             file.Close();
             
             //Debug.Log("Saving chunk from file: " + chunkFile);
-        }
-
-        // not used
-        public Vector3Int ExtractCoordinates(int index)
-        {
-            var z = index / (World.ChunkSize * World.ChunkSize);
-            index -= z * World.ChunkSize * World.ChunkSize;
-
-            var y = index / World.ChunkSize;
-            index -= y * World.ChunkSize;
-
-            var x = index;
-
-            return new Vector3Int(x, y, z);
-        }
-
-        // not used
-        public int FlattenizeCoordinates(int x, int y, int z)
-        {
-            return x + y * World.ChunkSize + z * World.ChunkSize * World.ChunkSize;
         }
     }
 }

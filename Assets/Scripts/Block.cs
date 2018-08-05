@@ -3,317 +3,332 @@ using UnityEngine;
 
 namespace Assets.Scripts
 {
-	public class Block
-	{
-		// INFO: I constantly lose a lot of time trying to solve out the same freaking error over and over again!
-		// So to avoid this crap once for all - every time a new value is added to this enum all saved chunk data becomes INCOMPATIBLE
-		// and needs to be DELETED otherwise weird rendering errors will occur and I will lose another hour debugging the crap out of this game!
-		public enum BlockType
-		{
-			Dirt, Stone, Diamond, Bedrock, Redstone, Sand, Leaves, Wood, Woodbase,
-			Water,
-			Grass, // types that have different textures on different sides are moved at the end just before air
-			Air
-		}
-		public enum HealthLevel { NoCrack, Crack1, Crack2, Crack3, Crack4 }
-		enum Cubeside { Bottom, Top, Left, Right, Front, Back }
-		
-		BlockType _type;
-		public BlockType Type
-		{
-			get { return _type; }
-			set
-			{
-				_type = value;
-				IsSolid = _type != BlockType.Air && _type != BlockType.Water;
-			}
-		}
+    public class Block
+    {
+        // INFO: I constantly lose a lot of time trying to solve out the same freaking error over and over again!
+        // So to avoid this crap once for all - every time a new value is added to this enum all saved chunk data becomes INCOMPATIBLE
+        // and needs to be DELETED otherwise weird rendering errors will occur and I will lose another hour debugging the crap out of this game!
+        public enum BlockType
+        {
+            Dirt, Stone, Diamond, Bedrock, Redstone, Sand, Leaves, Wood, Woodbase,
+            Water,
+            Grass, // types that have different textures on different sides are moved at the end just before air
+            Air
+        }
+        public enum HealthLevel { NoCrack, Crack1, Crack2, Crack3, Crack4 }
+        enum Cubeside { Bottom, Top, Left, Right, Front, Back }
 
-		// crack texture
-		public HealthLevel HealthType;
-		public bool IsSolid;
-		public readonly Chunk Owner;
-		public Vector3 Position;
+        BlockType _type;
+        public BlockType Type
+        {
+            get { return _type; }
+            set
+            {
+                _type = value;
+                IsSolid = _type != BlockType.Air && _type != BlockType.Water;
+            }
+        }
 
-		// current health as a number of hit points
-		public int CurrentHealth; // start set to maximum health the block can be
+        // crack texture
+        public HealthLevel HealthType;
+        public bool IsSolid;
+        public readonly Chunk Owner;
+        public Vector3 LocalPosition;
 
-		// this corresponds to the BlockType enum, so for example Grass can be hit 3 times
-		readonly int[] _blockHealthMax = { 
-			3, 4, 4, -1, 4, 3, 3, 3, 3,
-			8, // water
+        // current health as a number of hit points
+        public int CurrentHealth; // start set to maximum health the block can be
+
+        // this corresponds to the BlockType enum, so for example Grass can be hit 3 times
+        readonly int[] _blockHealthMax = {
+            3, 4, 4, -1, 4, 3, 3, 3, 3,
+            8, // water
 			3, // grass
 			0  // air
 		}; // -1 means the block cannot be destroyed
 
-		readonly GameObject _parent;
-		
-		// assumptions used:
-		// coordination start left down corner
-		readonly Vector2[,] _blockUVs = { 
+        readonly GameObject _parent;
+
+        // assumptions used:
+        // coordination start left down corner
+        readonly Vector2[,] _blockUVs = { 
 								// left-bottom, right-bottom, left-top, right-top
 			/*DIRT*/			{new Vector2(0.125f, 0.9375f), new Vector2(0.1875f, 0.9375f),
-									new Vector2(0.125f, 1.0f), new Vector2(0.1875f, 1.0f)},
+                                    new Vector2(0.125f, 1.0f), new Vector2(0.1875f, 1.0f)},
 			/*STONE*/			{new Vector2(0, 0.875f), new Vector2(0.0625f, 0.875f),
-									new Vector2(0, 0.9375f), new Vector2(0.0625f, 0.9375f)},
+                                    new Vector2(0, 0.9375f), new Vector2(0.0625f, 0.9375f)},
 			/*DIAMOND*/			{new Vector2 (0.125f, 0.75f), new Vector2(0.1875f, 0.75f),
-									new Vector2(0.125f, 0.8125f), new Vector2(0.1875f, 0.81f)},
+                                    new Vector2(0.125f, 0.8125f), new Vector2(0.1875f, 0.81f)},
 			/*BEDROCK*/			{new Vector2(0.3125f, 0.8125f), new Vector2(0.375f, 0.8125f),
-									new Vector2(0.3125f, 0.875f), new Vector2(0.375f, 0.875f)},
+                                    new Vector2(0.3125f, 0.875f), new Vector2(0.375f, 0.875f)},
 			/*REDSTONE*/		{new Vector2(0.1875f, 0.75f), new Vector2(0.25f, 0.75f),
-									new Vector2(0.1875f, 0.8125f), new Vector2(0.25f, 0.8125f)},
+                                    new Vector2(0.1875f, 0.8125f), new Vector2(0.25f, 0.8125f)},
 			/*SAND*/			{new Vector2(0.125f, 0.875f), new Vector2(0.1875f, 0.875f),
-									new Vector2(0.125f, 0.9375f), new Vector2(0.1875f, 0.9375f)},
+                                    new Vector2(0.125f, 0.9375f), new Vector2(0.1875f, 0.9375f)},
 			/*LEAVES*/			{new Vector2(0.0625f,0.375f), new Vector2(0.125f,0.375f),
-									new Vector2(0.0625f,0.4375f), new Vector2(0.125f,0.4375f)},
+                                    new Vector2(0.0625f,0.4375f), new Vector2(0.125f,0.4375f)},
 			/*WOOD*/			{new Vector2(0.375f,0.625f), new Vector2(0.4375f,0.625f),
-									new Vector2(0.375f,0.6875f), new Vector2(0.4375f,0.6875f)},
+                                    new Vector2(0.375f,0.6875f), new Vector2(0.4375f,0.6875f)},
 			/*WOODBASE*/		{new Vector2(0.375f,0.625f), new Vector2(0.4375f,0.625f),
-									new Vector2(0.375f,0.6875f), new Vector2(0.4375f,0.6875f)},	    
+                                    new Vector2(0.375f,0.6875f), new Vector2(0.4375f,0.6875f)},	    
 			
 			/*WATER*/			{new Vector2(0.875f,0.125f), new Vector2(0.9375f,0.125f),
-									new Vector2(0.875f,0.1875f), new Vector2(0.9375f,0.1875f)},
+                                    new Vector2(0.875f,0.1875f), new Vector2(0.9375f,0.1875f)},
 
 			/*GRASS TOP*/		{new Vector2(0.125f, 0.375f), new Vector2(0.1875f, 0.375f),
-									new Vector2(0.125f, 0.4375f), new Vector2(0.1875f, 0.4375f)},
+                                    new Vector2(0.125f, 0.4375f), new Vector2(0.1875f, 0.4375f)},
 			/*GRASS SIDE*/		{new Vector2(0.1875f, 0.9375f), new Vector2(0.25f, 0.9375f),
-									new Vector2(0.1875f, 1.0f), new Vector2(0.25f, 1.0f)}
+                                    new Vector2(0.1875f, 1.0f), new Vector2(0.25f, 1.0f)}
 			
 			// BUG: Tile sheet provided is broken and some tiles overlaps each other
 		};
 
-		readonly Vector2[,] _crackUVs = { 
+        readonly Vector2[,] _crackUVs = { 
 								// left-bottom, right-bottom, left-top, right-top
 			/*NOCRACK*/			{new Vector2(0.6875f,0f), new Vector2(0.75f,0f),
-									new Vector2(0.6875f,0.0625f), new Vector2(0.75f,0.0625f)},
+                                    new Vector2(0.6875f,0.0625f), new Vector2(0.75f,0.0625f)},
 			/*CRACK1*/			{new Vector2(0.0625f,0f), new Vector2(0.125f,0f),
-									new Vector2(0.0625f,0.0625f), new Vector2(0.125f,0.0625f)},
+                                    new Vector2(0.0625f,0.0625f), new Vector2(0.125f,0.0625f)},
 			/*CRACK2*/			{new Vector2(0.1875f,0f), new Vector2(0.25f,0f),
-									new Vector2(0.1875f,0.0625f), new Vector2(0.25f,0.0625f)},
+                                    new Vector2(0.1875f,0.0625f), new Vector2(0.25f,0.0625f)},
 			/*CRACK3*/			{new Vector2(0.3125f,0f), new Vector2(0.375f,0f),
-									new Vector2(0.3125f,0.0625f), new Vector2(0.375f,0.0625f)},
+                                    new Vector2(0.3125f,0.0625f), new Vector2(0.375f,0.0625f)},
 			/*CRACK4*/			{new Vector2(0.4375f,0f), new Vector2(0.5f,0f),
-									new Vector2(0.4375f,0.0625f), new Vector2(0.5f,0.0625f)}
-		};
+                                    new Vector2(0.4375f,0.0625f), new Vector2(0.5f,0.0625f)}
+        };
 
-		// calculation constants
-		//all possible vertices
-		static readonly Vector3 _p0 = new Vector3(-0.5f, -0.5f, 0.5f),
-								_p1 = new Vector3(0.5f, -0.5f, 0.5f),
-								_p2 = new Vector3(0.5f, -0.5f, -0.5f),
-								_p3 = new Vector3(-0.5f, -0.5f, -0.5f),
-								_p4 = new Vector3(-0.5f, 0.5f, 0.5f),
-								_p5 = new Vector3(0.5f, 0.5f, 0.5f),
-								_p6 = new Vector3(0.5f, 0.5f, -0.5f),
-								_p7 = new Vector3(-0.5f, 0.5f, -0.5f);
-		
-		static readonly Vector3[] _downNormals = {Vector3.down, Vector3.down, Vector3.down, Vector3.down},
-								  _upNormals = {Vector3.up, Vector3.up, Vector3.up, Vector3.up},
-								  _leftNormals = {Vector3.left, Vector3.left, Vector3.left, Vector3.left},
-								  _rightNormals = {Vector3.right, Vector3.right, Vector3.right, Vector3.right},
-								  _forwardNormals = {Vector3.forward, Vector3.forward, Vector3.forward, Vector3.forward},
-								  _backNormals = {Vector3.back, Vector3.back, Vector3.back, Vector3.back};
-		
-		public Block(BlockType type, Vector3 pos, GameObject p, Chunk o)
-		{
-			Type = type;
-			HealthType = HealthLevel.NoCrack;
-			CurrentHealth = _blockHealthMax[(int)_type]; // maximum health
-			Owner = o;
-			_parent = p;
-			Position = pos;
-		}
+        // calculation constants
+        //all possible vertices
+        static readonly Vector3 _p0 = new Vector3(-0.5f, -0.5f, 0.5f),
+                                _p1 = new Vector3(0.5f, -0.5f, 0.5f),
+                                _p2 = new Vector3(0.5f, -0.5f, -0.5f),
+                                _p3 = new Vector3(-0.5f, -0.5f, -0.5f),
+                                _p4 = new Vector3(-0.5f, 0.5f, 0.5f),
+                                _p5 = new Vector3(0.5f, 0.5f, 0.5f),
+                                _p6 = new Vector3(0.5f, 0.5f, -0.5f),
+                                _p7 = new Vector3(-0.5f, 0.5f, -0.5f);
 
-		public void Reset()
-		{
-			HealthType = HealthLevel.NoCrack;
-			CurrentHealth = _blockHealthMax[(int)Type];
-			Owner.Clean();
-			Owner.CreateMesh();
-		}
+        static readonly Vector3[] _downNormals = { Vector3.down, Vector3.down, Vector3.down, Vector3.down },
+                                  _upNormals = { Vector3.up, Vector3.up, Vector3.up, Vector3.up },
+                                  _leftNormals = { Vector3.left, Vector3.left, Vector3.left, Vector3.left },
+                                  _rightNormals = { Vector3.right, Vector3.right, Vector3.right, Vector3.right },
+                                  _forwardNormals = { Vector3.forward, Vector3.forward, Vector3.forward, Vector3.forward },
+                                  _backNormals = { Vector3.back, Vector3.back, Vector3.back, Vector3.back };
 
-		// BUG: If we build where we stand player falls into the block
-		public bool BuildBlock(BlockType type)
-		{
-			if (type == BlockType.Water)
-			{
-				Owner.MonoBehavior.StartCoroutine(Owner.MonoBehavior.Flow(
-					this, 
-					BlockType.Water,
-					_blockHealthMax[(int) BlockType.Water],
-					10));
-			}
-			else if (type == BlockType.Sand)
-			{
-				Owner.MonoBehavior.StartCoroutine(Owner.MonoBehavior.Drop(
-					this,
-					BlockType.Sand));
-			}
-			else
-			{
-				Type = type;
-				CurrentHealth = _blockHealthMax[(int)_type]; // maximum health
-				Owner.Clean();
-				Owner.CreateMesh();
-			}
-			
-			return true;
-		}
+        public Block(BlockType type, Vector3 localPos, GameObject p, Chunk o)
+        {
+            Type = type;
+            HealthType = HealthLevel.NoCrack;
+            CurrentHealth = _blockHealthMax[(int)_type]; // maximum health
+            Owner = o;
+            _parent = p;
+            LocalPosition = localPos;
+        }
 
-		/// <summary>
-		/// returns true if the block has been destroyed and false if it has not
-		/// </summary>
-		public bool HitBlock()
-		{
-			if (CurrentHealth == -1) return false;
-			CurrentHealth--;
-			HealthType++;
+        public void Reset()
+        {
+            HealthType = HealthLevel.NoCrack;
+            CurrentHealth = _blockHealthMax[(int)Type];
+            Owner.DestroyMeshAndCollider();
+            Owner.CreateMeshAndCollider();
+        }
 
-			// if the block was hit for the first time start the coroutine
-			if (CurrentHealth == _blockHealthMax[(int)Type] - 1)
-				Owner.MonoBehavior.StartCoroutine(Owner.MonoBehavior.HealBlock(Position));
+        // BUG: If we build where we stand player falls into the block
+        public bool BuildBlock(BlockType type)
+        {
+            if (type == BlockType.Water)
+            {
+                Owner.MonoBehavior.StartCoroutine(Owner.MonoBehavior.Flow(
+                    this,
+                    BlockType.Water,
+                    _blockHealthMax[(int)BlockType.Water],
+                    10));
+            }
+            else if (type == BlockType.Sand)
+            {
+                Owner.MonoBehavior.StartCoroutine(Owner.MonoBehavior.Drop(
+                    this,
+                    BlockType.Sand));
+            }
+            else
+            {
+                Type = type;
+                CurrentHealth = _blockHealthMax[(int)_type]; // maximum health
+                Owner.DestroyMeshAndCollider();
+                Owner.CreateMeshAndCollider();
+            }
 
-			if (CurrentHealth <= 0)
-			{
-				_type = BlockType.Air;
-				IsSolid = false;
-				HealthType = HealthLevel.NoCrack; // we change it to NoCrack because we don't want cracks to appear on air
-				Owner.Clean();
-				Owner.CreateMesh();
-				Owner.UpdateChunk();
-				return true;
-			}
+            return true;
+        }
 
-			Owner.Clean();
-			Owner.CreateMesh();
-			return false;
-		}
+        /// <summary>
+        /// returns true if the block has been destroyed and false if it has not
+        /// </summary>
+        public bool HitBlock()
+        {
+            if (CurrentHealth == -1) return false;
+            CurrentHealth--;
+            HealthType++;
 
-		void CreateQuad(Cubeside side)
-		{
-			// BUG: This could be moved one level higher because for all types but grass the result is always the same
-			int typeIndex;
-			if (Type == BlockType.Grass)
-			{
-				if (side == Cubeside.Top)
-					typeIndex = (int)BlockType.Grass;
-				else if (side == Cubeside.Bottom)
-					typeIndex = (int)BlockType.Dirt;
-				else // any side
-					typeIndex = (int)BlockType.Grass + 1;
-			}
-			else
-				typeIndex = (int)Type;
+            // if the block was hit for the first time start the coroutine
+            if (CurrentHealth == _blockHealthMax[(int)Type] - 1)
+                Owner.MonoBehavior.StartCoroutine(Owner.MonoBehavior.HealBlock(LocalPosition));
 
-			// all possible UVs
-			Vector2 uv00 = _blockUVs[typeIndex, 0],
-					uv10 = _blockUVs[typeIndex, 1],
-					uv01 = _blockUVs[typeIndex, 2],
-					uv11 = _blockUVs[typeIndex, 3];
+            if (CurrentHealth <= 0)
+            {
+                _type = BlockType.Air;
+                IsSolid = false;
+                HealthType = HealthLevel.NoCrack; // we change it to NoCrack because we don't want cracks to appear on air
+                Owner.DestroyMeshAndCollider();
+                Owner.CreateMeshAndCollider();
+                Owner.UpdateChunk();
+                return true;
+            }
+            
+            return false;
+        }
 
-			// second uvs - this holds cracks
-			// secondary uvs need to be stored in a List - this is required by the Unity engine
-			// set cracks - this need to be add with the correct order - why this order is different than above, I don't know
-			var suvs = new List<Vector2>
-			{
-				_crackUVs[(int) HealthType, 3],	// top right corner
+        void CreateQuad(Cubeside side)
+        {
+            // BUG: This could be moved one level higher because for all types but grass the result is always the same
+            int typeIndex;
+            if (Type == BlockType.Grass)
+            {
+                if (side == Cubeside.Top)
+                    typeIndex = (int)BlockType.Grass;
+                else if (side == Cubeside.Bottom)
+                    typeIndex = (int)BlockType.Dirt;
+                else // any side
+                    typeIndex = (int)BlockType.Grass + 1;
+            }
+            else
+                typeIndex = (int)Type;
+
+            // all possible UVs
+            Vector2 uv00 = _blockUVs[typeIndex, 0],
+                    uv10 = _blockUVs[typeIndex, 1],
+                    uv01 = _blockUVs[typeIndex, 2],
+                    uv11 = _blockUVs[typeIndex, 3];
+
+            // second uvs - this holds cracks
+            // secondary uvs need to be stored in a List - this is required by the Unity engine
+            // set cracks - this need to be add with the correct order - why this order is different than above, I don't know
+            var suvs = new List<Vector2>
+            {
+                _crackUVs[(int) HealthType, 3],	// top right corner
 				_crackUVs[(int) HealthType, 2],	// top left corner
 				_crackUVs[(int) HealthType, 0],	// bottom left corner
 				_crackUVs[(int) HealthType, 1]	// bottom right corner
 			};
 
-			// Normals are vectors projected from the polygon (triangle) at the angle of 90 degrees,
-			// they the engine which side it should treat as the side on which textures and shaders should be rendered.
-			// Verticies also can have their own normal and this is the case here so each vertex has its own normal vector.
-			var mesh = new Mesh();
-			switch (side)
-			{
-				case Cubeside.Bottom:
-					mesh.vertices = new[] { _p0, _p1, _p2, _p3 };
-					mesh.normals = _downNormals;
-					break;
-				case Cubeside.Top:
-					mesh.vertices = new[] { _p7, _p6, _p5, _p4 };
-					mesh.normals = _upNormals;
-					break;
-				case Cubeside.Left:
-					mesh.vertices = new[] { _p7, _p4, _p0, _p3 };
-					mesh.normals = _leftNormals;
-					break;
-				case Cubeside.Right:
-					mesh.vertices = new[] { _p5, _p6, _p2, _p1 };
-					mesh.normals = _rightNormals;
-					break;
-				case Cubeside.Front:
-					mesh.vertices = new[] { _p4, _p5, _p1, _p0 };
-					mesh.normals = _forwardNormals;
-					break;
-				case Cubeside.Back:
-					mesh.vertices = new[] { _p6, _p7, _p3, _p2 };
-					mesh.normals = _backNormals;
-					break;
-			}
-			
-			// Uvs maps the texture over the surface
-			mesh.uv = new[] { uv11, uv01, uv00, uv10 };
+            // Normals are vectors projected from the polygon (triangle) at the angle of 90 degrees,
+            // they the engine which side it should treat as the side on which textures and shaders should be rendered.
+            // Verticies also can have their own normal and this is the case here so each vertex has its own normal vector.
+            var mesh = new Mesh();
+            switch (side)
+            {
+                case Cubeside.Bottom:
+                    mesh.vertices = new[] { _p0, _p1, _p2, _p3 };
+                    mesh.normals = _downNormals;
+                    break;
+                case Cubeside.Top:
+                    mesh.vertices = new[] { _p7, _p6, _p5, _p4 };
+                    mesh.normals = _upNormals;
+                    break;
+                case Cubeside.Left:
+                    mesh.vertices = new[] { _p7, _p4, _p0, _p3 };
+                    mesh.normals = _leftNormals;
+                    break;
+                case Cubeside.Right:
+                    mesh.vertices = new[] { _p5, _p6, _p2, _p1 };
+                    mesh.normals = _rightNormals;
+                    break;
+                case Cubeside.Front:
+                    mesh.vertices = new[] { _p4, _p5, _p1, _p0 };
+                    mesh.normals = _forwardNormals;
+                    break;
+                case Cubeside.Back:
+                    mesh.vertices = new[] { _p6, _p7, _p3, _p2 };
+                    mesh.normals = _backNormals;
+                    break;
+            }
 
-			// channel 1 relates to the UV1 we set in the editor
-			mesh.SetUVs(1, suvs);
-			mesh.triangles = new[] { 3, 1, 0, 3, 2, 1 };
+            // Uvs maps the texture over the surface
+            mesh.uv = new[] { uv11, uv01, uv00, uv10 };
 
-			mesh.RecalculateBounds();
+            // channel 1 relates to the UV1 we set in the editor
+            mesh.SetUVs(1, suvs);
+            mesh.triangles = new[] { 3, 1, 0, 3, 2, 1 };
 
-			var quad = new GameObject("Quad");
-			quad.transform.position = Position;
-			quad.transform.parent = _parent.transform;
+            mesh.RecalculateBounds();
 
-			var meshFilter = (MeshFilter)quad.AddComponent(typeof(MeshFilter));
-			meshFilter.mesh = mesh;
-		}
+            var quad = new GameObject("Quad");
+            quad.transform.position = LocalPosition;
+            quad.transform.parent = _parent.transform;
 
-		// convert x, y or z to what it is in the neighboring block
-		int ConvertBlockIndexToLocal(int i)
-		{
-			if (i <= -1)
-				return World.ChunkSize + i;
-			if (i >= World.ChunkSize)
-				return i - World.ChunkSize;
-			return i;
-		}
+            var meshFilter = (MeshFilter)quad.AddComponent(typeof(MeshFilter));
+            meshFilter.mesh = mesh;
+        }
 
-		/// <summary>
-		/// Returns the block from the chunk
-		/// Returns null in case the chunk that the block supposed to be in does no exists
-		/// </summary>
-		public Block GetBlock(int x, int y, int z)
-		{
-			// block is in this chunk
-			if (x >= 0 && x < World.ChunkSize && 
-				y >= 0 && y < World.ChunkSize && 
-				z >= 0 && z < World.ChunkSize)
-				return Owner.GetBlock(x, y, z);
+        // convert x, y or z to what it is in the neighboring block
+        int ConvertBlockIndexToLocal(int i)
+        {
+            if (i <= -1)
+                return World.ChunkSize + i;
+            if (i >= World.ChunkSize)
+                return i - World.ChunkSize;
+            return i;
+        }
 
-			int newX = x, newY = y, newZ = z;
-			if (x < 0 || x >= World.ChunkSize)
-				newX = (x - (int)Position.x) * World.ChunkSize;
-			if (y < 0 || y >= World.ChunkSize)
-				newY = (y - (int)Position.y) * World.ChunkSize;
-			if (z < 0 || z >= World.ChunkSize)
-				newZ = (z - (int)Position.z) * World.ChunkSize;
+        /// <summary>
+        /// Returns the block from the chunk
+        /// Returns null in case the chunk that the block supposed to be in does no exists
+        /// </summary>
+        public Block GetBlock(int localX, int localY, int localZ)
+        {
+            // block is in this chunk
+            if (localX >= 0 && localX < World.ChunkSize &&
+                localY >= 0 && localY < World.ChunkSize &&
+                localZ >= 0 && localZ < World.ChunkSize)
+                return Owner.Blocks[localX, localY, localZ];
 
-			Vector3 neighbourChunkPos = _parent.transform.position + new Vector3(newX, newY, newZ);
+            // this chunk xyz
+            int thisChunkX, thisChunkY, thisChunkZ;
 
-			// the other chunk name based on its position
-			var chunkName = World.BuildChunkName(neighbourChunkPos);
+            // deterining the chuml
+            if (localX < 0)
+                thisChunkX = Owner.X - 1; // pod warunkiem że Owner.X istnieje
+            else if (localX >= World.ChunkSize)
+                thisChunkX = Owner.X + 1;
+            else
+                thisChunkX = Owner.X;
 
-			Chunk chunk;
-			if (World.Chunks.TryGetValue(chunkName, out chunk))
-				return chunk.GetBlock(
-                    ConvertBlockIndexToLocal(x),
-                    ConvertBlockIndexToLocal(y),
-                    ConvertBlockIndexToLocal(z)); // block is in the other chunk
-			
-			return null; // block is outside of the world
+            if (localY < 0)
+                thisChunkY = Owner.Y - 1; // pod warunkiem że Owner.Z istnieje
+            else if (localY >= World.ChunkSize)
+                thisChunkY = Owner.Y + 1;
+            else
+                thisChunkY = Owner.Y;
+
+            if (localZ < 0)
+                thisChunkZ = Owner.Z - 1; // pod warunkiem że Owner.Z istnieje
+            else if (localZ >= World.ChunkSize)
+                thisChunkZ = Owner.Z + 1;
+            else
+                thisChunkZ = Owner.Z;
+
+            if (localX < 0 || localX >= World.WorldSizeX 
+                || localY < 0 || localY >= World.WorldSizeY 
+                || localZ < 0 || localZ >= World.WorldSizeZ)
+            {
+                // coordinates point at out side of the world
+                return null; // block does not exist
+            }
+            
+            Chunk chunk = World.Chunks[thisChunkX, thisChunkY, thisChunkZ];
+			return chunk.Blocks[
+                ConvertBlockIndexToLocal(localX),
+                ConvertBlockIndexToLocal(localY),
+                ConvertBlockIndexToLocal(localZ)];
 		}
 
 		bool ShouldCreateQuad(int x, int y, int z)
@@ -329,21 +344,22 @@ namespace Assets.Scripts
 		{
 			if (Type == BlockType.Air) return;
 
-			int castedX = (int)Position.x,
-				castedY = (int)Position.y,
-				castedZ = (int)Position.z;
+            // local position coresponds to indexes in the table
+			int x = (int)LocalPosition.x,
+				y = (int)LocalPosition.y,
+				z = (int)LocalPosition.z;
 			
-			if (ShouldCreateQuad(castedX, castedY, castedZ + 1))
+			if (ShouldCreateQuad(x, y, z + 1))
 				CreateQuad(Cubeside.Front);
-			if (ShouldCreateQuad(castedX, castedY, castedZ - 1))
+			if (ShouldCreateQuad(x, y, z - 1))
 				CreateQuad(Cubeside.Back);
-			if (ShouldCreateQuad(castedX, castedY + 1, castedZ))
+			if (ShouldCreateQuad(x, y + 1, z))
 				CreateQuad(Cubeside.Top);
-			if (ShouldCreateQuad(castedX, castedY - 1, castedZ))
+			if (ShouldCreateQuad(x, y - 1, z))
 				CreateQuad(Cubeside.Bottom);
-			if (ShouldCreateQuad(castedX - 1, castedY, castedZ))
+			if (ShouldCreateQuad(x - 1, y, z))
 				CreateQuad(Cubeside.Left);
-			if (ShouldCreateQuad(castedX + 1, castedY, castedZ))
+			if (ShouldCreateQuad(x + 1, y, z))
 				CreateQuad(Cubeside.Right);
 		}
 	}
