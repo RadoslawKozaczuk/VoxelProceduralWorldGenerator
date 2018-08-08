@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 
 namespace Assets.Scripts
@@ -16,7 +18,8 @@ namespace Assets.Scripts
             Air
         }
         public enum HealthLevel { NoCrack, Crack1, Crack2, Crack3, Crack4 }
-        enum Cubeside { Bottom, Top, Left, Right, Front, Back }
+        [Flags]
+        enum Cubeside : byte { Top = 1, Bottom = 2, Left = 4, Right = 8, Front = 16, Back = 32 }
 
         BlockType _type;
         public BlockType Type
@@ -74,10 +77,8 @@ namespace Assets.Scripts
 			/*WATER*/			{new Vector2(0.875f,0.125f), new Vector2(0.9375f,0.125f),
                                     new Vector2(0.875f,0.1875f), new Vector2(0.9375f,0.1875f)},
 
-			/*GRASS TOP*/		{new Vector2(0.125f, 0.375f), new Vector2(0.1875f, 0.375f),
-                                    new Vector2(0.125f, 0.4375f), new Vector2(0.1875f, 0.4375f)},
-			/*GRASS SIDE*/		{new Vector2(0.1875f, 0.9375f), new Vector2(0.25f, 0.9375f),
-                                    new Vector2(0.1875f, 1.0f), new Vector2(0.25f, 1.0f)}
+			/*GRASS*/		    {new Vector2(0.125f, 0.375f), new Vector2(0.1875f, 0.375f),
+                                    new Vector2(0.125f, 0.4375f), new Vector2(0.1875f, 0.4375f)}
 			
 			// BUG: Tile sheet provided is broken and some tiles overlaps each other
 		};
@@ -97,7 +98,7 @@ namespace Assets.Scripts
         };
 
         // calculation constants
-        //all possible vertices
+        // all possible vertices
         static readonly Vector3 _p0 = new Vector3(-0.5f, -0.5f, 0.5f),
                                 _p1 = new Vector3(0.5f, -0.5f, 0.5f),
                                 _p2 = new Vector3(0.5f, -0.5f, -0.5f),
@@ -106,14 +107,7 @@ namespace Assets.Scripts
                                 _p5 = new Vector3(0.5f, 0.5f, 0.5f),
                                 _p6 = new Vector3(0.5f, 0.5f, -0.5f),
                                 _p7 = new Vector3(-0.5f, 0.5f, -0.5f);
-
-        static readonly Vector3[] _downNormals = { Vector3.down, Vector3.down, Vector3.down, Vector3.down },
-                                  _upNormals = { Vector3.up, Vector3.up, Vector3.up, Vector3.up },
-                                  _leftNormals = { Vector3.left, Vector3.left, Vector3.left, Vector3.left },
-                                  _rightNormals = { Vector3.right, Vector3.right, Vector3.right, Vector3.right },
-                                  _forwardNormals = { Vector3.forward, Vector3.forward, Vector3.forward, Vector3.forward },
-                                  _backNormals = { Vector3.back, Vector3.back, Vector3.back, Vector3.back };
-
+        
         public Block(BlockType type, Vector3 localPos, GameObject p, Chunk o)
         {
             Type = type;
@@ -186,89 +180,7 @@ namespace Assets.Scripts
             
             return false;
         }
-
-        void CreateQuad(Cubeside side)
-        {
-            // BUG: This could be moved one level higher because for all types but grass the result is always the same
-            int typeIndex;
-            if (Type == BlockType.Grass)
-            {
-                if (side == Cubeside.Top)
-                    typeIndex = (int)BlockType.Grass;
-                else if (side == Cubeside.Bottom)
-                    typeIndex = (int)BlockType.Dirt;
-                else // any side
-                    typeIndex = (int)BlockType.Grass + 1;
-            }
-            else
-                typeIndex = (int)Type;
-
-            // all possible UVs
-            Vector2 uv00 = _blockUVs[typeIndex, 0],
-                    uv10 = _blockUVs[typeIndex, 1],
-                    uv01 = _blockUVs[typeIndex, 2],
-                    uv11 = _blockUVs[typeIndex, 3];
-
-            // second uvs - this holds cracks
-            // secondary uvs need to be stored in a List - this is required by the Unity engine
-            // set cracks - this need to be add with the correct order - why this order is different than above, I don't know
-            var suvs = new List<Vector2>
-            {
-                _crackUVs[(int) HealthType, 3],	// top right corner
-				_crackUVs[(int) HealthType, 2],	// top left corner
-				_crackUVs[(int) HealthType, 0],	// bottom left corner
-				_crackUVs[(int) HealthType, 1]	// bottom right corner
-			};
-
-            // Normals are vectors projected from the polygon (triangle) at the angle of 90 degrees,
-            // they the engine which side it should treat as the side on which textures and shaders should be rendered.
-            // Verticies also can have their own normal and this is the case here so each vertex has its own normal vector.
-            var mesh = new Mesh();
-            switch (side)
-            {
-                case Cubeside.Bottom:
-                    mesh.vertices = new[] { _p0, _p1, _p2, _p3 };
-                    mesh.normals = _downNormals;
-                    break;
-                case Cubeside.Top:
-                    mesh.vertices = new[] { _p7, _p6, _p5, _p4 };
-                    mesh.normals = _upNormals;
-                    break;
-                case Cubeside.Left:
-                    mesh.vertices = new[] { _p7, _p4, _p0, _p3 };
-                    mesh.normals = _leftNormals;
-                    break;
-                case Cubeside.Right:
-                    mesh.vertices = new[] { _p5, _p6, _p2, _p1 };
-                    mesh.normals = _rightNormals;
-                    break;
-                case Cubeside.Front:
-                    mesh.vertices = new[] { _p4, _p5, _p1, _p0 };
-                    mesh.normals = _forwardNormals;
-                    break;
-                case Cubeside.Back:
-                    mesh.vertices = new[] { _p6, _p7, _p3, _p2 };
-                    mesh.normals = _backNormals;
-                    break;
-            }
-
-            // Uvs maps the texture over the surface
-            mesh.uv = new[] { uv11, uv01, uv00, uv10 };
-
-            // channel 1 relates to the UV1 we set in the editor
-            mesh.SetUVs(1, suvs);
-            mesh.triangles = new[] { 3, 1, 0, 3, 2, 1 };
-
-            mesh.RecalculateBounds();
-
-            var quad = new GameObject("Quad");
-            quad.transform.position = LocalPosition;
-            quad.transform.parent = _parent.transform;
-
-            var meshFilter = (MeshFilter)quad.AddComponent(typeof(MeshFilter));
-            meshFilter.mesh = mesh;
-        }
-
+        
         // convert x, y or z to what it is in the neighboring block
         int ConvertBlockIndexToLocal(int i)
         {
@@ -339,28 +251,261 @@ namespace Assets.Scripts
 
 			return !(target.IsSolid && IsSolid);
 		}
-
-		public void CreateQuads()
-		{
-			if (Type == BlockType.Air) return;
-
+        
+        public void CreateQuads()
+        {
+            if (Type == BlockType.Air) return;
+            
             // local position coresponds to indexes in the table
-			int x = (int)LocalPosition.x,
-				y = (int)LocalPosition.y,
-				z = (int)LocalPosition.z;
-			
-			if (ShouldCreateQuad(x, y, z + 1))
-				CreateQuad(Cubeside.Front);
-			if (ShouldCreateQuad(x, y, z - 1))
-				CreateQuad(Cubeside.Back);
-			if (ShouldCreateQuad(x, y + 1, z))
-				CreateQuad(Cubeside.Top);
-			if (ShouldCreateQuad(x, y - 1, z))
-				CreateQuad(Cubeside.Bottom);
-			if (ShouldCreateQuad(x - 1, y, z))
-				CreateQuad(Cubeside.Left);
-			if (ShouldCreateQuad(x + 1, y, z))
-				CreateQuad(Cubeside.Right);
-		}
-	}
+            int x = (int)LocalPosition.x,
+                y = (int)LocalPosition.y,
+                z = (int)LocalPosition.z;
+
+            Cubeside faces = 0;
+            var size = 0;
+            if (ShouldCreateQuad(x, y, z + 1)) { faces |= Cubeside.Front;  size += 4; }
+            if (ShouldCreateQuad(x, y, z - 1)) { faces |= Cubeside.Back;   size += 4; }
+            if (ShouldCreateQuad(x, y + 1, z)) { faces |= Cubeside.Top;    size += 4; }
+            if (ShouldCreateQuad(x, y - 1, z)) { faces |= Cubeside.Bottom; size += 4; }
+            if (ShouldCreateQuad(x - 1, y, z)) { faces |= Cubeside.Left;   size += 4; }
+            if (ShouldCreateQuad(x + 1, y, z)) { faces |= Cubeside.Right;  size += 4; }
+
+            // no faces means no mesh needed
+            if (faces == 0) return;
+
+            int typeIndex = (int)Type;
+            var differentTop = Type == BlockType.Grass;
+
+            // all possible UVs
+            // top uvs are used only if top side of the block is different
+            Vector2 uv00, uv10, uv01, uv11, uv00top, uv10top, uv01top, uv11top;
+            if (differentTop) // different top
+            {
+                var restIndex = typeIndex - 10;
+                uv00 = _blockUVs[restIndex, 0];
+                uv10 = _blockUVs[restIndex, 1];
+                uv01 = _blockUVs[restIndex, 2];
+                uv11 = _blockUVs[restIndex, 3];
+
+                uv00top = _blockUVs[typeIndex, 0];
+                uv10top = _blockUVs[typeIndex, 1];
+                uv01top = _blockUVs[typeIndex, 2];
+                uv11top = _blockUVs[typeIndex, 3];
+            }
+            else
+            {
+                uv00 = _blockUVs[typeIndex, 0];
+                uv10 = _blockUVs[typeIndex, 1];
+                uv01 = _blockUVs[typeIndex, 2];
+                uv11 = _blockUVs[typeIndex, 3];
+
+                uv00top = Vector3.zero;
+                uv10top = Vector3.zero;
+                uv01top = Vector3.zero;
+                uv11top = Vector3.zero;
+            }
+            
+            var suvs = new List<Vector2>(size);
+            var mesh = new Mesh();
+            var verticies = new Vector3[size];
+            var normals = new Vector3[size];
+            var uvs = new Vector2[size];
+            var triangles = new int[(int)(1.5f * size)];
+            var index = 0;
+            var triIndex = 0;
+
+            if (faces.HasFlag(Cubeside.Top))
+            {
+                CalculateTriangles(ref triangles, index, ref triIndex);
+                AddSuvs(suvs);
+
+                verticies[index] = _p7;
+                normals[index] = Vector3.up;
+                uvs[index] = differentTop ? uv11top : uv11;
+                index++;
+
+                verticies[index] = _p6;
+                normals[index] = Vector3.up;
+                uvs[index] = differentTop ? uv01top : uv01;
+                index++;
+
+                verticies[index] = _p5;
+                normals[index] = Vector3.up;
+                uvs[index] = differentTop ? uv00top : uv00;
+                index++;
+
+                verticies[index] = _p4;
+                normals[index] = Vector3.up;
+                uvs[index] = differentTop ? uv10top : uv10;
+                index++;
+            }
+
+            if (faces.HasFlag(Cubeside.Bottom))
+            {
+                CalculateTriangles(ref triangles, index, ref triIndex);
+                AddSuvs(suvs);
+
+                verticies[index] = _p0;
+                normals[index] = Vector3.down;
+                uvs[index] = uv11;
+                index++;
+
+                verticies[index] = _p1;
+                normals[index] = Vector3.down;
+                uvs[index] = uv01;
+                index++;
+
+                verticies[index] = _p2;
+                normals[index] = Vector3.down;
+                uvs[index] = uv00;
+                index++;
+
+                verticies[index] = _p3;
+                normals[index] = Vector3.down;
+                uvs[index] = uv10;
+                index++;
+            }
+
+            if (faces.HasFlag(Cubeside.Left))
+            {
+                CalculateTriangles(ref triangles, index, ref triIndex);
+                AddSuvs(suvs);
+
+                verticies[index] = _p7;
+                normals[index] = Vector3.left;
+                uvs[index] = uv11;
+                index++;
+
+                verticies[index] = _p4;
+                normals[index] = Vector3.left;
+                uvs[index] = uv01;
+                index++;
+
+                verticies[index] = _p0;
+                normals[index] = Vector3.left;
+                uvs[index] = uv00;
+                index++;
+
+                verticies[index] = _p3;
+                normals[index] = Vector3.left;
+                uvs[index] = uv10;
+                index++;
+            }
+
+            if (faces.HasFlag(Cubeside.Right))
+            {
+                CalculateTriangles(ref triangles, index, ref triIndex);
+                AddSuvs(suvs);
+
+                verticies[index] = _p5;
+                normals[index] = Vector3.right;
+                uvs[index] = uv11;
+                index++;
+
+                verticies[index] = _p6;
+                normals[index] = Vector3.right;
+                uvs[index] = uv01;
+                index++;
+
+                verticies[index] = _p2;
+                normals[index] = Vector3.right;
+                uvs[index] = uv00;
+                index++;
+
+                verticies[index] = _p1;
+                normals[index] = Vector3.right;
+                uvs[index] = uv10;
+                index++;
+            }
+
+            if (faces.HasFlag(Cubeside.Front))
+            {
+                CalculateTriangles(ref triangles, index, ref triIndex);
+                AddSuvs(suvs);
+
+                verticies[index] = _p4;
+                normals[index] = Vector3.forward;
+                uvs[index] = uv11;
+                index++;
+
+                verticies[index] = _p5;
+                normals[index] = Vector3.forward;
+                uvs[index] = uv01;
+                index++;
+
+                verticies[index] = _p1;
+                normals[index] = Vector3.forward;
+                uvs[index] = uv00;
+                index++;
+
+                verticies[index] = _p0;
+                normals[index] = Vector3.forward;
+                uvs[index] = uv10;
+                index++;
+            }
+
+            if (faces.HasFlag(Cubeside.Back))
+            {
+                CalculateTriangles(ref triangles, index, ref triIndex);
+                AddSuvs(suvs);
+
+                verticies[index] = _p6;
+                normals[index] = Vector3.back;
+                uvs[index] = uv11;
+                index++;
+
+                verticies[index] = _p7;
+                normals[index] = Vector3.back;
+                uvs[index] = uv01;
+                index++;
+
+                verticies[index] = _p3;
+                normals[index] = Vector3.back;
+                uvs[index] = uv00;
+                index++;
+
+                verticies[index] = _p2;
+                normals[index] = Vector3.back;
+                uvs[index] = uv10;
+                index++;
+            }
+            
+            mesh.vertices = verticies;
+            mesh.normals = normals;
+
+            // Uvs maps the texture over the surface
+            mesh.uv = uvs;
+            mesh.triangles = triangles;
+            mesh.SetUVs(1, suvs);
+
+            mesh.RecalculateBounds();
+
+            var cube = new GameObject("Quad");
+            cube.transform.position = LocalPosition;
+            cube.transform.parent = _parent.transform;
+
+            var meshFilter = (MeshFilter)cube.AddComponent(typeof(MeshFilter));
+            meshFilter.mesh = mesh;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        void CalculateTriangles(ref int[] triangles, int index, ref int triIndex)
+        {
+            triangles[triIndex++] = index + 3;
+            triangles[triIndex++] = index + 1;
+            triangles[triIndex++] = index;
+            triangles[triIndex++] = index + 3;
+            triangles[triIndex++] = index + 2;
+            triangles[triIndex++] = index + 1;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        void AddSuvs(List<Vector2> suvs)
+        {
+            suvs.Add(_crackUVs[(int)HealthType, 3]); // top right corner
+            suvs.Add(_crackUVs[(int)HealthType, 2]); // top left corner
+			suvs.Add(_crackUVs[(int)HealthType, 0]); // bottom left corner
+            suvs.Add(_crackUVs[(int)HealthType, 1]); // bottom right corner
+        }
+    }
 }

@@ -169,8 +169,7 @@ namespace Assets.Scripts
                         var b = Blocks[x, y, z];
                         if (b.Type == Block.BlockType.Sand)
                             MonoBehavior.StartCoroutine(MonoBehavior.Drop(b, Block.BlockType.Sand));
-                    }
-                        
+                    }  
         }
 
         public void RecreateMeshAndCollider()
@@ -197,8 +196,9 @@ namespace Assets.Scripts
             for (var z = 0; z < World.ChunkSize; z++)
                 for (var y = 0; y < World.ChunkSize; y++)
                     for (var x = 0; x < World.ChunkSize; x++)
-                        Blocks[x, y, z].CreateQuads();
+                            Blocks[x, y, z].CreateQuads();
 
+            
             CombineQuads(Terrain.gameObject, TerrainMaterial);
 
             // adding collision

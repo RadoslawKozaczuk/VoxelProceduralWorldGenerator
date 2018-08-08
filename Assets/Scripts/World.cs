@@ -1,7 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using UnityEngine;
-using UnityEngine.UI;
 
 namespace Assets.Scripts
 {
@@ -12,18 +12,19 @@ namespace Assets.Scripts
 
         public uint QueueSize;
         public bool UseJobSystem = true;
+        public bool ActivatePlayer = true;
 
 		public GameObject Player;
 		public Material TextureAtlas; 
 		public Material FluidTexture;
 		public const int ColumnHeight = 3; // number of chunks in column
-		public const int ChunkSize = 10; // number of blocks in x, y and z (32 is safe and recomended)
+		public const int ChunkSize = 16; // number of blocks in x, y and z (32 is safe and recomended)
 
         public const int WorldSizeX = 5;
-        public const int WorldSizeY = 10; // height
+        public const int WorldSizeY = 5; // height
         public const int WorldSizeZ = 5;
         
-        public static CoroutineQueue Queue;
+        public static CoroutineQueue Queue; 
 		public static uint MaxCoroutines = 1000;
 		
 		public const int Radius = 3; // radius tell us how many chunks around the layer needs to be generated
@@ -31,16 +32,14 @@ namespace Assets.Scripts
         
         public static Chunk[,,] Chunks = new Chunk[WorldSizeX, WorldSizeY, WorldSizeZ];
         
-        public Slider LoadingAmount;
 		public Camera MainCamera;
-		public Button PlayButton;
 
 		public int Posx;
 		public int Posz;
-        
+
 		void Start()
 		{
-			Vector3 playerPos = Player.transform.position;
+            Vector3 playerPos = Player.transform.position;
 			Player.transform.position = new Vector3(
 				playerPos.x,
 				Utils.GenerateHeight(playerPos.x, playerPos.z) + 1,
@@ -64,14 +63,14 @@ namespace Assets.Scripts
         void Update()
 		{
             QueueSize = Queue.NumActive;
-			
+
             // in final version it should wait for the world genration to end
-			if (!Player.activeSelf)
-			{
-				Player.SetActive(true);
-			}
-			
-			Queue.Run(DrawChunks());
+            if (ActivatePlayer && !Player.activeSelf)
+            {
+                Player.SetActive(true);
+            }
+
+            Queue.Run(DrawChunks());
 		}
         
 		public static string BuildChunkFileName(Vector3 v)
