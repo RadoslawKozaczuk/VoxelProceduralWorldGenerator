@@ -54,9 +54,7 @@ public class ExperimentalMethod : MonoBehaviour
         DrawCube(block);
         // render the shit out of it
     }
-
-    // how the fuk can I generate 2 cubes 
-
+    
     void DrawCube(BlockStruct block)
     {
         int typeIndex = (int)block.Type;

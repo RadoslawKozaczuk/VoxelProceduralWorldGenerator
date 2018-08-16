@@ -274,37 +274,6 @@ namespace Assets.Scripts
             if (faces == 0) return;
 
             int typeIndex = (int)Type;
-            var differentTop = Type == BlockType.Grass;
-
-            // all possible UVs
-            // top uvs are used only if top side of the block is different
-            Vector2 uv00, uv10, uv01, uv11, uv00top, uv10top, uv01top, uv11top;
-            if (differentTop) // different top
-            {
-                var restIndex = typeIndex - 10;
-                uv00 = _blockUVs[restIndex, 0];
-                uv10 = _blockUVs[restIndex, 1];
-                uv01 = _blockUVs[restIndex, 2];
-                uv11 = _blockUVs[restIndex, 3];
-
-                uv00top = _blockUVs[typeIndex, 0];
-                uv10top = _blockUVs[typeIndex, 1];
-                uv01top = _blockUVs[typeIndex, 2];
-                uv11top = _blockUVs[typeIndex, 3];
-            }
-            else
-            {
-                uv00 = _blockUVs[typeIndex, 0];
-                uv10 = _blockUVs[typeIndex, 1];
-                uv01 = _blockUVs[typeIndex, 2];
-                uv11 = _blockUVs[typeIndex, 3];
-
-                uv00top = Vector3.zero;
-                uv10top = Vector3.zero;
-                uv01top = Vector3.zero;
-                uv11top = Vector3.zero;
-            }
-            
             var suvs = new List<Vector2>(size);
             var mesh = new Mesh();
             var verticies = new Vector3[size];
@@ -313,161 +282,102 @@ namespace Assets.Scripts
             var triangles = new int[(int)(1.5f * size)];
             var index = 0;
             var triIndex = 0;
-
-            if (faces.HasFlag(Cubeside.Top))
+            
+            var differentTop = Type == BlockType.Grass;
+            // all possible UVs
+            // top uvs are used only if top side of the block is different
+            Vector2 uv00, uv10, uv01, uv11;
+            if (differentTop) // different top
             {
-                CalculateTriangles(ref triangles, index, ref triIndex);
-                AddSuvs(suvs);
+                // typeIndex in this case referes only to the top side
+                Vector2 uv00top = _blockUVs[typeIndex, 0],
+                        uv10top = _blockUVs[typeIndex, 1],
+                        uv01top = _blockUVs[typeIndex, 2],
+                        uv11top = _blockUVs[typeIndex, 3];
 
-                verticies[index] = _p7;
-                normals[index] = Vector3.up;
-                uvs[index] = differentTop ? uv11top : uv11;
-                index++;
-
-                verticies[index] = _p6;
-                normals[index] = Vector3.up;
-                uvs[index] = differentTop ? uv01top : uv01;
-                index++;
-
-                verticies[index] = _p5;
-                normals[index] = Vector3.up;
-                uvs[index] = differentTop ? uv00top : uv00;
-                index++;
-
-                verticies[index] = _p4;
-                normals[index] = Vector3.up;
-                uvs[index] = differentTop ? uv10top : uv10;
-                index++;
+                // rest sides have to be determined
+                var restIndex = typeIndex - 10;
+                uv00 = _blockUVs[restIndex, 0];
+                uv10 = _blockUVs[restIndex, 1];
+                uv01 = _blockUVs[restIndex, 2];
+                uv11 = _blockUVs[restIndex, 3];
+                
+                if (faces.HasFlag(Cubeside.Top))
+                {
+                    AddQuadComponents(ref index,
+                        ref normals, Vector3.up,
+                        ref uvs, uv11top, uv01top, uv00top, uv10top,
+                        ref verticies, _p7, _p6, _p5, _p4,
+                        suvs,
+                        ref triangles, ref triIndex);
+                }
             }
+            else
+            {
+                uv00 = _blockUVs[typeIndex, 0];
+                uv10 = _blockUVs[typeIndex, 1];
+                uv01 = _blockUVs[typeIndex, 2];
+                uv11 = _blockUVs[typeIndex, 3];
 
+                if (faces.HasFlag(Cubeside.Top))
+                {
+                    AddQuadComponents(ref index,
+                        ref normals, Vector3.up,
+                        ref uvs, uv11, uv01, uv00, uv10,
+                        ref verticies, _p7, _p6, _p5, _p4,
+                        suvs,
+                        ref triangles, ref triIndex);
+                }
+            }
+            
             if (faces.HasFlag(Cubeside.Bottom))
             {
-                CalculateTriangles(ref triangles, index, ref triIndex);
-                AddSuvs(suvs);
-
-                verticies[index] = _p0;
-                normals[index] = Vector3.down;
-                uvs[index] = uv11;
-                index++;
-
-                verticies[index] = _p1;
-                normals[index] = Vector3.down;
-                uvs[index] = uv01;
-                index++;
-
-                verticies[index] = _p2;
-                normals[index] = Vector3.down;
-                uvs[index] = uv00;
-                index++;
-
-                verticies[index] = _p3;
-                normals[index] = Vector3.down;
-                uvs[index] = uv10;
-                index++;
+                AddQuadComponents(ref index,
+                    ref normals, Vector3.down,
+                    ref uvs, uv11, uv01, uv00, uv10,
+                    ref verticies, _p0, _p1, _p2, _p3,
+                    suvs,
+                    ref triangles, ref triIndex);
             }
 
             if (faces.HasFlag(Cubeside.Left))
             {
-                CalculateTriangles(ref triangles, index, ref triIndex);
-                AddSuvs(suvs);
-
-                verticies[index] = _p7;
-                normals[index] = Vector3.left;
-                uvs[index] = uv11;
-                index++;
-
-                verticies[index] = _p4;
-                normals[index] = Vector3.left;
-                uvs[index] = uv01;
-                index++;
-
-                verticies[index] = _p0;
-                normals[index] = Vector3.left;
-                uvs[index] = uv00;
-                index++;
-
-                verticies[index] = _p3;
-                normals[index] = Vector3.left;
-                uvs[index] = uv10;
-                index++;
+                AddQuadComponents(ref index,
+                    ref normals, Vector3.left,
+                    ref uvs, uv11, uv01, uv00, uv10,
+                    ref verticies, _p7, _p4, _p0, _p3,
+                    suvs,
+                    ref triangles, ref triIndex);
             }
 
             if (faces.HasFlag(Cubeside.Right))
             {
-                CalculateTriangles(ref triangles, index, ref triIndex);
-                AddSuvs(suvs);
-
-                verticies[index] = _p5;
-                normals[index] = Vector3.right;
-                uvs[index] = uv11;
-                index++;
-
-                verticies[index] = _p6;
-                normals[index] = Vector3.right;
-                uvs[index] = uv01;
-                index++;
-
-                verticies[index] = _p2;
-                normals[index] = Vector3.right;
-                uvs[index] = uv00;
-                index++;
-
-                verticies[index] = _p1;
-                normals[index] = Vector3.right;
-                uvs[index] = uv10;
-                index++;
+                AddQuadComponents(ref index,
+                    ref normals, Vector3.right,
+                    ref uvs, uv11, uv01, uv00, uv10,
+                    ref verticies, _p5, _p6, _p2, _p1,
+                    suvs,
+                    ref triangles, ref triIndex);
             }
 
             if (faces.HasFlag(Cubeside.Front))
             {
-                CalculateTriangles(ref triangles, index, ref triIndex);
-                AddSuvs(suvs);
-
-                verticies[index] = _p4;
-                normals[index] = Vector3.forward;
-                uvs[index] = uv11;
-                index++;
-
-                verticies[index] = _p5;
-                normals[index] = Vector3.forward;
-                uvs[index] = uv01;
-                index++;
-
-                verticies[index] = _p1;
-                normals[index] = Vector3.forward;
-                uvs[index] = uv00;
-                index++;
-
-                verticies[index] = _p0;
-                normals[index] = Vector3.forward;
-                uvs[index] = uv10;
-                index++;
+                AddQuadComponents(ref index,
+                    ref normals, Vector3.forward,
+                    ref uvs, uv11, uv01, uv00, uv10,
+                    ref verticies, _p4, _p5, _p1, _p0,
+                    suvs,
+                    ref triangles, ref triIndex);
             }
 
             if (faces.HasFlag(Cubeside.Back))
             {
-                CalculateTriangles(ref triangles, index, ref triIndex);
-                AddSuvs(suvs);
-
-                verticies[index] = _p6;
-                normals[index] = Vector3.back;
-                uvs[index] = uv11;
-                index++;
-
-                verticies[index] = _p7;
-                normals[index] = Vector3.back;
-                uvs[index] = uv01;
-                index++;
-
-                verticies[index] = _p3;
-                normals[index] = Vector3.back;
-                uvs[index] = uv00;
-                index++;
-
-                verticies[index] = _p2;
-                normals[index] = Vector3.back;
-                uvs[index] = uv10;
-                index++;
+                AddQuadComponents(ref index, 
+                    ref normals, Vector3.back, 
+                    ref uvs, uv11, uv01, uv00, uv10, 
+                    ref verticies, _p6, _p7, _p3, _p2,
+                    suvs,
+                    ref triangles, ref triIndex);
             }
             
             mesh.vertices = verticies;
@@ -487,25 +397,46 @@ namespace Assets.Scripts
             var meshFilter = (MeshFilter)cube.AddComponent(typeof(MeshFilter));
             meshFilter.mesh = mesh;
         }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        void CalculateTriangles(ref int[] triangles, int index, ref int triIndex)
+        
+        void AddQuadComponents(ref int index, ref Vector3[] normals, Vector3 normal, 
+            ref Vector2[] uvs, Vector2 uv11, Vector2 uv01, Vector2 uv00, Vector2 uv10,
+            ref Vector3[] verticies, Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p4,
+            List<Vector2> suvs,
+            ref int[] triangles, ref int triIndex)
         {
+            // add normals
+            normals[index] = normal;
+            normals[index + 1] = normal;
+            normals[index + 2] = normal;
+            normals[index + 3] = normal;
+
+            // add uvs
+            uvs[index] = uv11;
+            uvs[index + 1] = uv01;
+            uvs[index + 2] = uv00;
+            uvs[index + 3] = uv10;
+            
+            // add verticies
+            verticies[index] = p0;
+            verticies[index + 1] = p1;
+            verticies[index + 2] = p2;
+            verticies[index + 3] = p4;
+            
+            // add suvs
+            suvs.Add(_crackUVs[(int)HealthType, 3]); // top right corner
+            suvs.Add(_crackUVs[(int)HealthType, 2]); // top left corner
+            suvs.Add(_crackUVs[(int)HealthType, 0]); // bottom left corner
+            suvs.Add(_crackUVs[(int)HealthType, 1]); // bottom right corner
+
+            // add triangles
             triangles[triIndex++] = index + 3;
             triangles[triIndex++] = index + 1;
             triangles[triIndex++] = index;
             triangles[triIndex++] = index + 3;
             triangles[triIndex++] = index + 2;
             triangles[triIndex++] = index + 1;
-        }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        void AddSuvs(List<Vector2> suvs)
-        {
-            suvs.Add(_crackUVs[(int)HealthType, 3]); // top right corner
-            suvs.Add(_crackUVs[(int)HealthType, 2]); // top left corner
-			suvs.Add(_crackUVs[(int)HealthType, 0]); // bottom left corner
-            suvs.Add(_crackUVs[(int)HealthType, 1]); // bottom right corner
+            index += 4;
         }
     }
 }
