@@ -1,4 +1,5 @@
 ﻿using System.Collections;
+using System.Diagnostics;
 using UnityEngine;
 
 namespace Assets.Scripts
@@ -12,10 +13,10 @@ namespace Assets.Scripts
         public bool ActivatePlayer = true;
 
 		public GameObject Player;
-		public Material TextureAtlas; 
+		public Material TextureAtlas;
 		public Material FluidTexture;
 		public const int ChunkSize = 32; // number of blocks in x, y and z
-
+        
         public const int WorldSizeX = 7;
         public const int WorldSizeY = 4; // height
         public const int WorldSizeZ = 7;
@@ -30,12 +31,18 @@ namespace Assets.Scripts
 		public int Posx;
 		public int Posz;
 
-		void Start()
+
+        public static Stopwatch sw = new Stopwatch();
+        public static int numChunks = 0;
+        public static long milisec = 0;
+
+        void Start()
 		{
+            sw.Start();
             Vector3 playerPos = Player.transform.position;
 			Player.transform.position = new Vector3(
 				playerPos.x,
-				Utils.GenerateHeight(playerPos.x, playerPos.z) + 1,
+				TerrainGenerator.GenerateHeight(playerPos.x, playerPos.z) + 1,
 				playerPos.z);
 
 			// to be sure player won't fall through the world that hasn't been build yet
@@ -87,15 +94,18 @@ namespace Assets.Scripts
                     {
                         Chunk c = Chunks[x, y, z];
                         if (c.Status == Chunk.ChunkStatus.NotInitialized)
-                            c.CreateMeshAndCollider();
+                            c.CreateChunkObject();
                         else if (c.Status == Chunk.ChunkStatus.NeedToBeRedrawn)
                         {
                             c.DestroyMeshAndCollider();
-                            c.CreateMeshAndCollider();
+                            c.CreateChunkObject();
                         }
 
                         yield return null;
                     }
+            
+            sw.Stop();
+            UnityEngine.Debug.Log("It took " + sw.ElapsedMilliseconds + "ms to create the whole world");
         }
 	}
 }

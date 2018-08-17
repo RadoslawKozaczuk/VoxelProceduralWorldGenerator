@@ -6,7 +6,7 @@ namespace Assets.Scripts
 	{
 		public GameObject Cam;
 		const float AttackRange = 4.0f;
-		Block.BlockType _buildBlockType = Block.BlockType.Stone;
+		BlockType _buildBlockType = BlockType.Stone;
         
 		// Update is called once per frame
 		void Update()
@@ -56,58 +56,59 @@ namespace Assets.Scripts
             int bly = (int)hitBlock.y - chunkY * World.ChunkSize;
             int blz = (int)hitBlock.z - chunkZ * World.ChunkSize;
             
-            Block b = hitc.Blocks[blx, bly, blz];
+            //Block b = hitc.Blocks[blx, bly, blz];
             
-			bool update = Input.GetMouseButtonDown(0) 
-				? b.HitBlock() // returns true if destroyed
-				: b.BuildBlock(_buildBlockType); // always returns true
+            // temporary commented out
+			//bool update = Input.GetMouseButtonDown(0) 
+			//	? b.HitBlock() // returns true if destroyed
+			//	: b.BuildBlock(_buildBlockType); // always returns true
 
-			if (!update) return;
+			//if (!update) return;
 
 			hitc.Changed = true;
-			RedrawNeighbours(b.LocalPosition, chunkX, chunkY, chunkZ);
+			//RedrawNeighbours(b.LocalPosition, chunkX, chunkY, chunkZ);
 		}
 
 		void CheckForBuildBlockType()
 		{
 			if (Input.GetKeyDown("1"))
 			{
-				_buildBlockType = Block.BlockType.Grass;
+				_buildBlockType = BlockType.Grass;
 				Debug.Log("Change build block type to Grass");
 			}
 			else if (Input.GetKeyDown("2"))
 			{
-				_buildBlockType = Block.BlockType.Dirt;
+				_buildBlockType = BlockType.Dirt;
 				Debug.Log("Change build block type to Dirt");
 			}
 			else if (Input.GetKeyDown("3"))
 			{
-				_buildBlockType = Block.BlockType.Stone;
+				_buildBlockType = BlockType.Stone;
 				Debug.Log("Change build block type to Stone");
 			}
 			else if (Input.GetKeyDown("4"))
 			{
-				_buildBlockType = Block.BlockType.Diamond;
+				_buildBlockType = BlockType.Diamond;
 				Debug.Log("Change build block type to Diamond");
 			}
 			else if (Input.GetKeyDown("5"))
 			{
-				_buildBlockType = Block.BlockType.Bedrock;
+				_buildBlockType = BlockType.Bedrock;
 				Debug.Log("Change build block type to Bedrock");
 			}
 			else if (Input.GetKeyDown("6"))
 			{
-				_buildBlockType = Block.BlockType.Redstone;
+				_buildBlockType = BlockType.Redstone;
 				Debug.Log("Change build block type to Redstone");
 			}
 			else if (Input.GetKeyDown("7"))
 			{
-				_buildBlockType = Block.BlockType.Sand;
+				_buildBlockType = BlockType.Sand;
 				Debug.Log("Change build block type to Sand");
 			}
 			else if (Input.GetKeyDown("8"))	
 			{
-				_buildBlockType = Block.BlockType.Water;
+				_buildBlockType = BlockType.Water;
 				Debug.Log("Change build block type to Water");
 			}
 		}
