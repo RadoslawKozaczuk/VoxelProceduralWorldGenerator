@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Runtime.Serialization.Formatters.Binary;
 using Unity.Collections;
@@ -154,10 +155,7 @@ namespace Assets.Scripts
             // BUG: This is extremely slow
             //TextureScroller = FluidObject.AddComponent<UVScroller>();
             
-            if (_worldReference.UseJobSystem)
-                BuildChunkTurbo();
-            else
-                BuildChunkOld();
+            BuildChunk();
         }
 
         public void UpdateChunk()
@@ -193,23 +191,101 @@ namespace Assets.Scripts
 
         public void CreateMeshAndCollider()
         {
+            // Determining mesh size
+            int size = 0, waterSize = 0;
             for (var z = 0; z < World.ChunkSize; z++)
                 for (var y = 0; y < World.ChunkSize; y++)
                     for (var x = 0; x < World.ChunkSize; x++)
-                            Blocks[x, y, z].CreateQuads();
+                        Blocks[x, y, z].CalculateMeshSize(ref size, ref waterSize);
 
+            var mesh = new Mesh();
+            var uvs = new Vector2[size];
+            var suvs = new List<Vector2>(size);
+            var verticies = new Vector3[size];
+            var normals = new Vector3[size];
+            var triangles = new int[(int)(1.5f * size)];
+            var index = 0;
+            var triIndex = 0;
+
+            var waterMesh = new Mesh();
+            var waterUvs = new Vector2[waterSize];
+            var waterSuvs = new List<Vector2>(waterSize);
+            var waterVerticies = new Vector3[waterSize];
+            var waterNormals = new Vector3[waterSize];
+            var waterTriangles = new int[(int)(1.5f * waterSize)];
+            var waterIndex = 0;
+            var waterTriIndex = 0;
+
+            for (var z = 0; z < World.ChunkSize; z++)
+                for (var y = 0; y < World.ChunkSize; y++)
+                    for (var x = 0; x < World.ChunkSize; x++)
+                    {
+                        var b = Blocks[x, y, z];
+
+                        if (b.Faces == 0 || b.Type == Block.BlockType.Air)
+                            continue;
+
+                        if(b.Type == Block.BlockType.Water)
+                            Blocks[x, y, z].CreateQuads(ref waterIndex, ref waterTriIndex,
+                                                        ref waterVerticies, ref waterNormals, ref waterUvs, ref waterSuvs, ref waterTriangles,
+                                                        new Vector3(x, y, z));
+                        else
+                            Blocks[x, y, z].CreateQuads(ref index, ref triIndex,
+                                                        ref verticies, ref normals, ref uvs, ref suvs, ref triangles,
+                                                        new Vector3(x, y, z));
+                    }
+
+            var chunkPosition = new Vector3(X * World.ChunkSize, Y * World.ChunkSize, Z * World.ChunkSize);
+
+            // Create terrain mesh
+            if (size > 0)
+            {
+                mesh.vertices = verticies;
+                mesh.normals = normals;
+                mesh.uv = uvs; // Uvs maps the texture over the surface
+                mesh.triangles = triangles;
+                mesh.SetUVs(1, suvs); // secondary uvs
+                mesh.RecalculateBounds();
+
+                var chunk = new GameObject("Chunk");
+                chunk.transform.position = chunkPosition;
+                chunk.transform.parent = Terrain.transform;
+
+                var renderer = chunk.gameObject.AddComponent(typeof(MeshRenderer)) as MeshRenderer;
+                renderer.material = TerrainMaterial;
+
+                var meshFilter = (MeshFilter)chunk.AddComponent(typeof(MeshFilter));
+                meshFilter.mesh = mesh;
+
+                var collider = Terrain.gameObject.AddComponent(typeof(MeshCollider)) as MeshCollider;
+                collider.sharedMesh = mesh;
+            }
             
-            CombineQuads(Terrain.gameObject, TerrainMaterial);
+            // Create water mesh
+            if(waterSize > 0)
+            {
+                waterMesh.vertices = waterVerticies;
+                waterMesh.normals = waterNormals;
+                waterMesh.uv = waterUvs; // Uvs maps the texture over the surface
+                waterMesh.triangles = waterTriangles;
+                waterMesh.SetUVs(1, waterSuvs); // secondary uvs
+                waterMesh.RecalculateBounds();
 
-            // adding collision
-            var collider = Terrain.gameObject.AddComponent(typeof(MeshCollider)) as MeshCollider;
-            collider.sharedMesh = Terrain.transform.GetComponent<MeshFilter>().mesh;
+                var waterChunk = new GameObject("WaterChunk");
+                waterChunk.transform.position = chunkPosition;
+                waterChunk.transform.parent = Water.transform;
 
-            CombineQuads(Water.gameObject, WaterMaterial);
+                var waterRenderer = waterChunk.gameObject.AddComponent(typeof(MeshRenderer)) as MeshRenderer;
+                waterRenderer.material = WaterMaterial;
+
+                var waterMeshFilter = (MeshFilter)waterChunk.AddComponent(typeof(MeshFilter));
+                waterMeshFilter.mesh = waterMesh;
+            }
+            
             Status = ChunkStatus.Created;
         }
 
-        void BuildChunkTurbo()
+        void BuildChunk()
         {
             //bool dataFromFile = Load();
             Blocks = new Block[World.ChunkSize, World.ChunkSize, World.ChunkSize];
@@ -248,49 +324,10 @@ namespace Assets.Scripts
                             ? Water.gameObject
                             : Terrain.gameObject;
 
-                        Blocks[x, y, z] = new Block(type, pos, gameObject, this);
+                        Blocks[x, y, z] = new Block(type, pos, this);
                     }
 
             AddTrees();
-
-            // chunk just has been created and it is ready to be drawn
-            Status = ChunkStatus.NotInitialized;
-        }
-        
-        void BuildChunkOld()
-        {
-            bool dataFromFile = Load();
-            Blocks = new Block[World.ChunkSize, World.ChunkSize, World.ChunkSize];
-
-            // create terrain
-            for (var z = 0; z < World.ChunkSize; z++)
-                for (var y = 0; y < World.ChunkSize; y++)
-                    for (var x = 0; x < World.ChunkSize; x++)
-                    {
-                        var pos = new Vector3(x, y, z);
-                        
-                        Block.BlockType type;
-                        if (dataFromFile)
-                        {
-                            type = _blockData.BlockTypes[x, y, z];
-                        }
-                        else
-                        {
-                            int worldX = (int)(x + Terrain.transform.position.x);
-                            int worldY = (int)(y + Terrain.transform.position.y);
-                            int worldZ = (int)(z + Terrain.transform.position.z);
-                            type = DetermineType(worldX, worldY, worldZ);
-                        }
-                        
-                        GameObject gameObject = type == Block.BlockType.Water
-                            ? Water.gameObject
-                            : Terrain.gameObject;
-
-                        Blocks[x, y, z] = new Block(type, pos, gameObject, this);
-                    }
-
-            if (!dataFromFile)
-                AddTrees();
 
             // chunk just has been created and it is ready to be drawn
             Status = ChunkStatus.NotInitialized;
@@ -349,27 +386,6 @@ namespace Assets.Scripts
 
             return true;
         }
-
-        void InformSurroundingChunks(int x, int y, int z)
-        {
-            if (x > 0)
-                World.Chunks[x - 1, y, z].Status = ChunkStatus.NeedToBeRedrawn;
-
-            if (x < World.WorldSizeX - 1)
-                World.Chunks[x + 1, y, z].Status = ChunkStatus.NeedToBeRedrawn;
-
-            if (y > 0)
-                World.Chunks[x, y - 1, z].Status = ChunkStatus.NeedToBeRedrawn;
-
-            if (y < World.WorldSizeY - 1)
-                World.Chunks[x, y + 1, z].Status = ChunkStatus.NeedToBeRedrawn;
-
-            if (z > 0)
-                World.Chunks[x, y, z - 1].Status = ChunkStatus.NeedToBeRedrawn;
-
-            if (z < World.WorldSizeZ - 1)
-                World.Chunks[x, y, z + 1].Status = ChunkStatus.NeedToBeRedrawn;
-        }
         
         public static Block.BlockType DetermineType(int worldX, int worldY, int worldZ)
         {
@@ -414,42 +430,7 @@ namespace Assets.Scripts
                         Blocks[x + i, y + k, z + j].Type = Block.BlockType.Leaves;
             Blocks[x, y + 5, z].Type = Block.BlockType.Leaves;
         }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="obj">Any game object that have all of the quads attached to it</param>
-        /// <param name="mat"></param>
-        void CombineQuads(GameObject obj, Material mat)
-        {
-            //1. Combine all children meshes
-            var meshFilters = obj.GetComponentsInChildren<MeshFilter>();
-            var combine = new CombineInstance[meshFilters.Length];
-
-            var i = 0;
-            while (i < meshFilters.Length)
-            {
-                combine[i].mesh = meshFilters[i].sharedMesh;
-                combine[i].transform = meshFilters[i].transform.localToWorldMatrix;
-                i++;
-            }
-
-            //2. Create a new mesh on the parent object
-            var mf = (MeshFilter)obj.gameObject.AddComponent(typeof(MeshFilter));
-            mf.mesh = new Mesh();
-
-            //3. Add combined meshes on children as the parent's mesh
-            mf.mesh.CombineMeshes(combine);
-
-            //4. Create a renderer for the parent
-            var renderer = obj.gameObject.AddComponent(typeof(MeshRenderer)) as MeshRenderer;
-            renderer.material = mat;
-
-            //5. Delete all uncombined children
-            foreach (Transform quad in Terrain.transform)
-                UnityEngine.Object.Destroy(quad.gameObject);
-        }
-
+        
         bool Load()
         {
             string chunkFile = World.BuildChunkFileName(Terrain.transform.position);
@@ -461,7 +442,6 @@ namespace Assets.Scripts
             _blockData = (BlockData)bf.Deserialize(file);
             file.Close();
 
-            // Debug.Log("Loading chunk from file: " + chunkFile);
             return true;
         }
 
@@ -477,8 +457,6 @@ namespace Assets.Scripts
             _blockData = new BlockData(Blocks);
             bf.Serialize(file, _blockData);
             file.Close();
-            
-            //Debug.Log("Saving chunk from file: " + chunkFile);
         }
     }
 }

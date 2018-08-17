@@ -1,6 +1,4 @@
 ﻿using System.Collections;
-using System.Collections.Generic;
-using System.Diagnostics;
 using UnityEngine;
 
 namespace Assets.Scripts
@@ -11,24 +9,19 @@ namespace Assets.Scripts
         public Transform WaterParent;
 
         public uint QueueSize;
-        public bool UseJobSystem = true;
         public bool ActivatePlayer = true;
 
 		public GameObject Player;
 		public Material TextureAtlas; 
 		public Material FluidTexture;
-		public const int ColumnHeight = 3; // number of chunks in column
-		public const int ChunkSize = 16; // number of blocks in x, y and z (32 is safe and recomended)
+		public const int ChunkSize = 32; // number of blocks in x, y and z
 
-        public const int WorldSizeX = 5;
-        public const int WorldSizeY = 5; // height
-        public const int WorldSizeZ = 5;
+        public const int WorldSizeX = 7;
+        public const int WorldSizeY = 4; // height
+        public const int WorldSizeZ = 7;
         
         public static CoroutineQueue Queue; 
 		public static uint MaxCoroutines = 1000;
-		
-		public const int Radius = 3; // radius tell us how many chunks around the layer needs to be generated
-		public static List<int> ToRemove = new List<int>();
         
         public static Chunk[,,] Chunks = new Chunk[WorldSizeX, WorldSizeY, WorldSizeZ];
         
@@ -54,10 +47,6 @@ namespace Assets.Scripts
                 for (int z = 0; z < WorldSizeZ; z++)
                     for (int y = 0; y < WorldSizeY; y++)
                         BuildChunkAt(x, y, z);
-
-            // BUG: It doesn't really work as intended 
-            // For some reason recreated chunks lose their transparency
-            //InformSurroundingChunks(x, y, z);
         }
 
         void Update()
@@ -66,9 +55,7 @@ namespace Assets.Scripts
 
             // in final version it should wait for the world genration to end
             if (ActivatePlayer && !Player.activeSelf)
-            {
                 Player.SetActive(true);
-            }
 
             Queue.Run(DrawChunks());
 		}
@@ -77,7 +64,7 @@ namespace Assets.Scripts
 		{
 			return Application.persistentDataPath + "/savedata/Chunk_" 
 												  + (int) v.x + "_" + (int) v.y + "_" + (int) v.z + "_" 
-												  + ChunkSize + "_" + Radius + ".dat";
+												  + ChunkSize + ".dat";
 		}
 
         public static int BuildChunkName(int x, int y, int z) 

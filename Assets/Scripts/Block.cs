@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 using UnityEngine;
 
 namespace Assets.Scripts
@@ -19,7 +18,7 @@ namespace Assets.Scripts
         }
         public enum HealthLevel { NoCrack, Crack1, Crack2, Crack3, Crack4 }
         [Flags]
-        enum Cubeside : byte { Top = 1, Bottom = 2, Left = 4, Right = 8, Front = 16, Back = 32 }
+        public enum Cubeside : byte { Top = 1, Bottom = 2, Left = 4, Right = 8, Front = 16, Back = 32 }
 
         BlockType _type;
         public BlockType Type
@@ -37,6 +36,7 @@ namespace Assets.Scripts
         public bool IsSolid;
         public readonly Chunk Owner;
         public Vector3 LocalPosition;
+        public Cubeside Faces;
 
         // current health as a number of hit points
         public int CurrentHealth; // start set to maximum health the block can be
@@ -48,9 +48,7 @@ namespace Assets.Scripts
 			3, // grass
 			0  // air
 		}; // -1 means the block cannot be destroyed
-
-        readonly GameObject _parent;
-
+        
         // assumptions used:
         // coordination start left down corner
         readonly Vector2[,] _blockUVs = { 
@@ -108,13 +106,12 @@ namespace Assets.Scripts
                                 _p6 = new Vector3(0.5f, 0.5f, -0.5f),
                                 _p7 = new Vector3(-0.5f, 0.5f, -0.5f);
         
-        public Block(BlockType type, Vector3 localPos, GameObject p, Chunk o)
+        public Block(BlockType type, Vector3 localPos, Chunk o)
         {
             Type = type;
             HealthType = HealthLevel.NoCrack;
             CurrentHealth = _blockHealthMax[(int)_type]; // maximum health
             Owner = o;
-            _parent = p;
             LocalPosition = localPos;
         }
 
@@ -125,8 +122,7 @@ namespace Assets.Scripts
             Owner.DestroyMeshAndCollider();
             Owner.CreateMeshAndCollider();
         }
-
-        // BUG: If we build where we stand player falls into the block
+        
         public bool BuildBlock(BlockType type)
         {
             if (type == BlockType.Water)
@@ -252,7 +248,7 @@ namespace Assets.Scripts
 			return !(target.IsSolid && IsSolid);
 		}
         
-        public void CreateQuads()
+        public void CalculateMeshSize(ref int terrainMeshSize, ref int waterMeshSize)
         {
             if (Type == BlockType.Air) return;
             
@@ -261,27 +257,25 @@ namespace Assets.Scripts
                 y = (int)LocalPosition.y,
                 z = (int)LocalPosition.z;
 
-            Cubeside faces = 0;
             var size = 0;
-            if (ShouldCreateQuad(x, y, z + 1)) { faces |= Cubeside.Front;  size += 4; }
-            if (ShouldCreateQuad(x, y, z - 1)) { faces |= Cubeside.Back;   size += 4; }
-            if (ShouldCreateQuad(x, y + 1, z)) { faces |= Cubeside.Top;    size += 4; }
-            if (ShouldCreateQuad(x, y - 1, z)) { faces |= Cubeside.Bottom; size += 4; }
-            if (ShouldCreateQuad(x - 1, y, z)) { faces |= Cubeside.Left;   size += 4; }
-            if (ShouldCreateQuad(x + 1, y, z)) { faces |= Cubeside.Right;  size += 4; }
+            if (ShouldCreateQuad(x, y, z + 1)) { Faces |= Cubeside.Front; size += 4; }
+            if (ShouldCreateQuad(x, y, z - 1)) { Faces |= Cubeside.Back; size += 4; }
+            if (ShouldCreateQuad(x, y + 1, z)) { Faces |= Cubeside.Top; size += 4; }
+            if (ShouldCreateQuad(x, y - 1, z)) { Faces |= Cubeside.Bottom; size += 4; }
+            if (ShouldCreateQuad(x - 1, y, z)) { Faces |= Cubeside.Left; size += 4; }
+            if (ShouldCreateQuad(x + 1, y, z)) { Faces |= Cubeside.Right; size += 4; }
 
-            // no faces means no mesh needed
-            if (faces == 0) return;
+            if (Type == BlockType.Water)
+                waterMeshSize += size;
+            else
+                terrainMeshSize += size;
+        }
 
+        public void CreateQuads(ref int index, ref int triIndex,
+            ref Vector3[] verticies, ref Vector3[] normals, ref Vector2[] uvs, ref List<Vector2> suvs, ref int[] triangles,
+            Vector3 offset)
+        {
             int typeIndex = (int)Type;
-            var suvs = new List<Vector2>(size);
-            var mesh = new Mesh();
-            var verticies = new Vector3[size];
-            var normals = new Vector3[size];
-            var uvs = new Vector2[size];
-            var triangles = new int[(int)(1.5f * size)];
-            var index = 0;
-            var triIndex = 0;
             
             var differentTop = Type == BlockType.Grass;
             // all possible UVs
@@ -302,12 +296,12 @@ namespace Assets.Scripts
                 uv01 = _blockUVs[restIndex, 2];
                 uv11 = _blockUVs[restIndex, 3];
                 
-                if (faces.HasFlag(Cubeside.Top))
+                if (Faces.HasFlag(Cubeside.Top))
                 {
                     AddQuadComponents(ref index,
                         ref normals, Vector3.up,
                         ref uvs, uv11top, uv01top, uv00top, uv10top,
-                        ref verticies, _p7, _p6, _p5, _p4,
+                        ref verticies, _p7 + offset, _p6 + offset, _p5 + offset, _p4 + offset,
                         suvs,
                         ref triangles, ref triIndex);
                 }
@@ -319,83 +313,66 @@ namespace Assets.Scripts
                 uv01 = _blockUVs[typeIndex, 2];
                 uv11 = _blockUVs[typeIndex, 3];
 
-                if (faces.HasFlag(Cubeside.Top))
+                if (Faces.HasFlag(Cubeside.Top))
                 {
                     AddQuadComponents(ref index,
                         ref normals, Vector3.up,
                         ref uvs, uv11, uv01, uv00, uv10,
-                        ref verticies, _p7, _p6, _p5, _p4,
+                        ref verticies, _p7 + offset, _p6 + offset, _p5 + offset, _p4 + offset,
                         suvs,
                         ref triangles, ref triIndex);
                 }
             }
             
-            if (faces.HasFlag(Cubeside.Bottom))
+            if (Faces.HasFlag(Cubeside.Bottom))
             {
                 AddQuadComponents(ref index,
                     ref normals, Vector3.down,
                     ref uvs, uv11, uv01, uv00, uv10,
-                    ref verticies, _p0, _p1, _p2, _p3,
+                    ref verticies, _p0 + offset, _p1 + offset, _p2 + offset, _p3 + offset,
                     suvs,
                     ref triangles, ref triIndex);
             }
 
-            if (faces.HasFlag(Cubeside.Left))
+            if (Faces.HasFlag(Cubeside.Left))
             {
                 AddQuadComponents(ref index,
                     ref normals, Vector3.left,
                     ref uvs, uv11, uv01, uv00, uv10,
-                    ref verticies, _p7, _p4, _p0, _p3,
+                    ref verticies, _p7 + offset, _p4 + offset, _p0 + offset, _p3 + offset,
                     suvs,
                     ref triangles, ref triIndex);
             }
 
-            if (faces.HasFlag(Cubeside.Right))
+            if (Faces.HasFlag(Cubeside.Right))
             {
                 AddQuadComponents(ref index,
                     ref normals, Vector3.right,
                     ref uvs, uv11, uv01, uv00, uv10,
-                    ref verticies, _p5, _p6, _p2, _p1,
+                    ref verticies, _p5 + offset, _p6 + offset, _p2 + offset, _p1 + offset,
                     suvs,
                     ref triangles, ref triIndex);
             }
 
-            if (faces.HasFlag(Cubeside.Front))
+            if (Faces.HasFlag(Cubeside.Front))
             {
                 AddQuadComponents(ref index,
                     ref normals, Vector3.forward,
                     ref uvs, uv11, uv01, uv00, uv10,
-                    ref verticies, _p4, _p5, _p1, _p0,
+                    ref verticies, _p4 + offset, _p5 + offset, _p1 + offset, _p0 + offset,
                     suvs,
                     ref triangles, ref triIndex);
             }
 
-            if (faces.HasFlag(Cubeside.Back))
+            if (Faces.HasFlag(Cubeside.Back))
             {
                 AddQuadComponents(ref index, 
                     ref normals, Vector3.back, 
                     ref uvs, uv11, uv01, uv00, uv10, 
-                    ref verticies, _p6, _p7, _p3, _p2,
+                    ref verticies, _p6 + offset, _p7 + offset, _p3 + offset, _p2 + offset,
                     suvs,
                     ref triangles, ref triIndex);
             }
-            
-            mesh.vertices = verticies;
-            mesh.normals = normals;
-
-            // Uvs maps the texture over the surface
-            mesh.uv = uvs;
-            mesh.triangles = triangles;
-            mesh.SetUVs(1, suvs);
-
-            mesh.RecalculateBounds();
-
-            var cube = new GameObject("Quad");
-            cube.transform.position = LocalPosition;
-            cube.transform.parent = _parent.transform;
-
-            var meshFilter = (MeshFilter)cube.AddComponent(typeof(MeshFilter));
-            meshFilter.mesh = mesh;
         }
         
         void AddQuadComponents(ref int index, ref Vector3[] normals, Vector3 normal, 
