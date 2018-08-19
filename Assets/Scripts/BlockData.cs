@@ -9,7 +9,7 @@ public enum BlockType : byte
 }
 
 [Flags]
-public enum Cubeside : byte { Top = 1, Bottom = 2, Left = 4, Right = 8, Front = 16, Back = 32 }
+public enum Cubeside : byte { Right = 1, Left = 2, Top = 4, Bottom = 8, Front = 16, Back = 32 }
 
 public enum HealthLevel : byte { NoCrack, Crack1, Crack2, Crack3, Crack4 }
 

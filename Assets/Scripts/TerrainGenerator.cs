@@ -8,8 +8,6 @@ public class TerrainGenerator
     struct BlockTypeJob : IJobParallelFor
     {
         [ReadOnly]
-        public NativeArray<int> Indexes;
-        [ReadOnly]
         public float ChunkPosX;
         [ReadOnly]
         public float ChunkPosY;
@@ -24,7 +22,7 @@ public class TerrainGenerator
         public void Execute(int i)
         {
             // deflattenization - extract coords from the index
-            var index = Indexes[i];
+            var index = i;
             var z = index / (ChunkSize * ChunkSize);
             index -= z * ChunkSize * ChunkSize;
 
@@ -36,6 +34,90 @@ public class TerrainGenerator
             Result[i] = DetermineType((int)(x + ChunkPosX), (int)(y + ChunkPosY), (int)(z + ChunkPosZ));
         }
     }
+
+    /* parallel version - too slow atm due to mandatory data flattenization - too bad Unity does not support 3-dim tables
+    struct CubesideJob : IJobParallelFor
+    {
+        [ReadOnly]
+        public NativeArray<BlockType> Types;
+        [ReadOnly]
+        public int ChunkSize;
+        [ReadOnly]
+        public int ChunkSizeSquared;
+        [ReadOnly]
+        public int ChunkSizeCubed;
+
+        // result
+        public NativeArray<Cubeside> Result;
+
+        public void Execute(int i)
+        {
+            var t = Types[i];
+            
+            if (i % ChunkSize == 0) // left boundaries check (x-axis)
+            {
+                if (t != BlockType.Air && t != BlockType.Water)
+                    Result[i] |= Cubeside.Left;
+            }
+            else if (QuadVisibilityCheck(t, Types[i - 1])) // left standard check
+                Result[i] |= Cubeside.Left;
+            
+            if ((i + 1) % ChunkSize == 0) // right boundaries check
+            {
+                if (t != BlockType.Air && t != BlockType.Water)
+                    Result[i] |= Cubeside.Right;
+            }
+            else if (QuadVisibilityCheck(t, Types[i + 1])) // right standard check
+                Result[i] |= Cubeside.Right;
+
+            // bottom boundaries check (y-axis)
+            var bottomCheck = false;
+            for (int y = 0; y < ChunkSize; y++)
+                if (i >= y * ChunkSizeSquared && i < (y * ChunkSize + 1) * ChunkSize)
+                {
+                    Result[i] |= Cubeside.Bottom;
+                    bottomCheck = true;
+                    break;
+                }
+
+            // bottom standard check
+            if(!bottomCheck && QuadVisibilityCheck(t, Types[i - ChunkSize]))
+                Result[i] |= Cubeside.Bottom;
+
+            // top boundaries check
+            var topCheck = false;
+            for (int y = 0; y < ChunkSize; y++)
+                if (i >= y * ChunkSizeSquared + ChunkSizeSquared - ChunkSize && i < (y * ChunkSize + 1) * ChunkSize + ChunkSizeSquared - ChunkSize)
+                {
+                    Result[i] |= Cubeside.Top;
+                    topCheck = true;
+                    break;
+                }
+
+            // top standard check
+            if (!topCheck && QuadVisibilityCheck(t, Types[i + ChunkSize]))
+                Result[i] |= Cubeside.Top;
+
+            // back boundaries check(z - axis)
+            if (i < ChunkSizeSquared)
+            {
+                if (t != BlockType.Air && t != BlockType.Water)
+                    Result[i] |= Cubeside.Back;
+            }
+            else if (QuadVisibilityCheck(t, Types[i - ChunkSizeSquared])) // back standard check
+                Result[i] |= Cubeside.Back;
+
+            // front boundaries check
+            if (i >= ChunkSizeCubed - ChunkSizeSquared && i < ChunkSizeCubed)
+            {
+                if (t != BlockType.Air && t != BlockType.Water)
+                    Result[i] |= Cubeside.Front;
+            }
+            else if (QuadVisibilityCheck(t, Types[i + ChunkSizeSquared])) // front standard check
+                Result[i] |= Cubeside.Front;
+        }
+    }
+    */
 
     #region Constants
     // caves should be more erratic so has to be a higher number
@@ -77,64 +159,46 @@ public class TerrainGenerator
     const int OctavesBedrock = 2;
     const float PersistenceBedrock = 0.5f;
     #endregion
-
-    // parallelism
-    static BlockTypeJob _typeJob;
-    static JobHandle _typeJobHandle;
-    public static readonly int[] TypeJobIndexes = InitializeJobIndexes();
-    public static int[] InitializeJobIndexes()
-    {
-        var size = World.ChunkSize * World.ChunkSize * World.ChunkSize;
-        var table = new int[size];
-        for (int i = 0; i < size; i++)
-            table[i] = i;
-        return table;
-    }
-
+    
     public static BlockData[,,] BuildChunk(Vector3 chunkPosition)
     {
-        //bool dataFromFile = Load();
         var blocks = new BlockData[World.ChunkSize, World.ChunkSize, World.ChunkSize];
 
+        CalculateBlockTypes(ref blocks, chunkPosition);
+        AddTrees(ref blocks, chunkPosition);
+
+        return blocks;
+    }
+    
+    static void CalculateBlockTypes(ref BlockData[,,] blocks, Vector3 chunkPosition)
+    {
         // output data
         var types = new BlockType[World.ChunkSize * World.ChunkSize * World.ChunkSize];
 
-        _typeJob = new BlockTypeJob()
+        var _typeJob = new BlockTypeJob()
         {
-            // input data
+            // input
             ChunkPosX = chunkPosition.x,
             ChunkPosY = chunkPosition.y,
             ChunkPosZ = chunkPosition.z,
             ChunkSize = World.ChunkSize,
-            Indexes = new NativeArray<int>(TypeJobIndexes, Allocator.TempJob),
+
+            // output
             Result = new NativeArray<BlockType>(types, Allocator.TempJob)
         };
 
-        // schedule jobs (as many as TypeJobIndexes.Length)
-        _typeJobHandle = _typeJob.Schedule(TypeJobIndexes.Length, 5);
+        var _typeJobHandle = _typeJob.Schedule(World.ChunkSize * World.ChunkSize * World.ChunkSize, 8);
         _typeJobHandle.Complete();
-
         _typeJob.Result.CopyTo(types);
 
-        // clean up
-        _typeJob.Indexes.Dispose();
+        // cleanup
         _typeJob.Result.Dispose();
 
+        // output deflattenization
         for (var z = 0; z < World.ChunkSize; z++)
             for (var y = 0; y < World.ChunkSize; y++)
                 for (var x = 0; x < World.ChunkSize; x++)
-                {
-                    var pos = new Vector3(x, y, z);
-                    var type = types[x + y * World.ChunkSize + z * World.ChunkSize * World.ChunkSize];
-
-                    blocks[x, y, z] = new BlockData { Type = type };
-                }
-
-        // I will add it later
-        AddTrees(ref blocks, chunkPosition);
-
-        // chunk just has been created and it is ready to be drawn
-        return blocks;
+                    blocks[x, y, z].Type = types[x + y * World.ChunkSize + z * World.ChunkSize * World.ChunkSize];
     }
     
     static void AddTrees(ref BlockData[,,] blocks, Vector3 chunkPosition)
@@ -194,7 +258,7 @@ public class TerrainGenerator
         blocks[x, y + 5, z].Type = BlockType.Leaves;
     }
 
-    public static BlockType DetermineType(int worldX, int worldY, int worldZ)
+    static BlockType DetermineType(int worldX, int worldY, int worldZ)
     {
         BlockType type;
 

@@ -15,11 +15,11 @@ namespace Assets.Scripts
 		public GameObject Player;
 		public Material TextureAtlas;
 		public Material FluidTexture;
-		public const int ChunkSize = 32; // number of blocks in x, y and z
-        
-        public const int WorldSizeX = 7;
-        public const int WorldSizeY = 4; // height
-        public const int WorldSizeZ = 7;
+        public const int ChunkSize = 32; //32; // number of blocks in x, y and z
+
+        public const int WorldSizeX = 7; // 7;
+        public const int WorldSizeY = 4; // 4; // height
+        public const int WorldSizeZ = 7; // 7;
         
         public static CoroutineQueue Queue; 
 		public static uint MaxCoroutines = 1000;
@@ -30,8 +30,7 @@ namespace Assets.Scripts
 
 		public int Posx;
 		public int Posz;
-
-
+        
         public static Stopwatch sw = new Stopwatch();
         public static int numChunks = 0;
         public static long milisec = 0;
