@@ -273,15 +273,20 @@ public class TerrainGenerator
             else
                 type = BlockType.Stone;
         }
-        else if (worldY == GenerateHeight(worldX, worldZ))
-            type = BlockType.Grass;
-        else if (worldY <= GenerateHeight(worldX, worldZ))
-            type = BlockType.Dirt;
-        else if (worldY <= WaterLevel)
-            type = BlockType.Water;
         else
-            type = BlockType.Air;
+        {
+            var height = GenerateHeight(worldX, worldZ);
+            if (worldY == height)
+                type = BlockType.Grass;
+            else if (worldY < height)
+                type = BlockType.Dirt;
+            else if (worldY <= WaterLevel)
+                type = BlockType.Water;
+            else
+                type = BlockType.Air;
+        }
 
+        // BUG: caves are sometimes generated under or next to water 
         // generate caves
         if (type != BlockType.Water && FractalFunc(worldX, worldY, worldZ, CaveSmooth, CaveOctaves) < CaveProbability)
             type = BlockType.Air;

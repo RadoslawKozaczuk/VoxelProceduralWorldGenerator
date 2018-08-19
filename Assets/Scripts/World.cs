@@ -1,5 +1,4 @@
-﻿using System.Collections;
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using UnityEngine;
 
 namespace Assets.Scripts
@@ -8,8 +7,7 @@ namespace Assets.Scripts
 	{
         public Transform TerrainParent;
         public Transform WaterParent;
-
-        public uint QueueSize;
+        
         public bool ActivatePlayer = true;
 
 		public GameObject Player;
@@ -20,9 +18,6 @@ namespace Assets.Scripts
         public const int WorldSizeX = 7; // 7;
         public const int WorldSizeY = 4; // 4; // height
         public const int WorldSizeZ = 7; // 7;
-        
-        public static CoroutineQueue Queue; 
-		public static uint MaxCoroutines = 1000;
         
         public static Chunk[,,] Chunks = new Chunk[WorldSizeX, WorldSizeY, WorldSizeZ];
         
@@ -46,46 +41,39 @@ namespace Assets.Scripts
 
 			// to be sure player won't fall through the world that hasn't been build yet
 			Player.SetActive(false);
-            
-			Queue = new CoroutineQueue(MaxCoroutines, StartCoroutine);
 
-            for (int x = 0; x < WorldSizeX; x++)
-                for (int z = 0; z < WorldSizeZ; z++)
-                    for (int y = 0; y < WorldSizeY; y++)
-                        BuildChunkAt(x, y, z);
+            BuildChunks();
+            DrawChunks();
         }
 
         void Update()
 		{
-            QueueSize = Queue.NumActive;
-
             // in final version it should wait for the world genration to end
             if (ActivatePlayer && !Player.activeSelf)
                 Player.SetActive(true);
-
-            Queue.Run(DrawChunks());
 		}
         
-		public static string BuildChunkFileName(Vector3 v)
-		{
-			return Application.persistentDataPath + "/savedata/Chunk_" 
-												  + (int) v.x + "_" + (int) v.y + "_" + (int) v.z + "_" 
-												  + ChunkSize + ".dat";
-		}
+		public static string BuildChunkFileName(Vector3 v) => 
+            Application.persistentDataPath + "/savedata/Chunk_" 
+            + (int) v.x + "_" + (int) v.y + "_" + (int) v.z + "_" + ChunkSize + ".dat";
 
-        public static int BuildChunkName(int x, int y, int z) 
-            => WorldSizeY * WorldSizeY * y + WorldSizeZ * z + x;
+        public static int BuildChunkName(int x, int y, int z) => WorldSizeY * WorldSizeY * y + WorldSizeZ * z + x;
 
-        void BuildChunkAt(int x, int y, int z)
+        void BuildChunks()
         {
-            var chunkPosition = new Vector3(x * ChunkSize, y * ChunkSize, z * ChunkSize);
-            var chunkName = BuildChunkName(x, y, z);
+            for (int x = 0; x < WorldSizeX; x++)
+                for (int z = 0; z < WorldSizeZ; z++)
+                    for (int y = 0; y < WorldSizeY; y++)
+                    {
+                        var chunkPosition = new Vector3(x * ChunkSize, y * ChunkSize, z * ChunkSize);
+                        var chunkName = BuildChunkName(x, y, z);
 
-            var c = new Chunk(chunkPosition, TextureAtlas, FluidTexture, chunkName, this, x, y, z);
-            Chunks[x, y, z] = c;
+                        var c = new Chunk(chunkPosition, TextureAtlas, FluidTexture, chunkName, this, x, y, z);
+                        Chunks[x, y, z] = c;
+                    }
         }
         
-        IEnumerator DrawChunks()
+        void DrawChunks()
         {
             for (int x = 0; x < WorldSizeX; x++)
                 for (int z = 0; z < WorldSizeZ; z++)
@@ -99,8 +87,6 @@ namespace Assets.Scripts
                             c.DestroyMeshAndCollider();
                             c.CreateChunkObject();
                         }
-
-                        yield return null;
                     }
             
             sw.Stop();

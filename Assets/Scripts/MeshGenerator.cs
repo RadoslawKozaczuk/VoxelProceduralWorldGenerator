@@ -258,7 +258,7 @@ public class MeshGenerator
                 {
                     if (y == chunkSize - 1 || blocks[x, y + 1, z].Type == BlockType.Air)
                     {
-                        blocks[x, y, z].Faces |= Cubeside.Front;
+                        blocks[x, y, z].Faces |= Cubeside.Top;
                         waterMeshSize += 4;
                     }
                 }
@@ -285,7 +285,7 @@ public class MeshGenerator
                 {
                     if (y == chunkSize - 1 || blocks[0, y + 1, z].Type == BlockType.Air)
                     {
-                        blocks[0, y, z].Faces |= Cubeside.Front;
+                        blocks[0, y, z].Faces |= Cubeside.Top;
                         waterMeshSize += 4;
                     }
                 }
@@ -311,7 +311,7 @@ public class MeshGenerator
 
                 if (type == BlockType.Water)
                 {
-                    blocks[x, y, z].Faces |= Cubeside.Front;
+                    blocks[x, y, z].Faces |= Cubeside.Top;
                     waterMeshSize += 4;
                 }
                 else if (type != BlockType.Air)
@@ -337,7 +337,7 @@ public class MeshGenerator
                 {
                     if (blocks[x, 1, z].Type == BlockType.Air)
                     {
-                        blocks[x, 0, z].Faces |= Cubeside.Front;
+                        blocks[x, 0, z].Faces |= Cubeside.Top;
                         waterMeshSize += 4;
                     }
                 }
@@ -365,7 +365,7 @@ public class MeshGenerator
                 {
                     if (blocks[x, y + 1, z].Type == BlockType.Air)
                     {
-                        blocks[x, y, z].Faces |= Cubeside.Front;
+                        blocks[x, y, z].Faces |= Cubeside.Top;
                         waterMeshSize += 4;
                     }
                 }
@@ -391,7 +391,7 @@ public class MeshGenerator
                 {
                     if (blocks[x, y + 1, 0].Type == BlockType.Air)
                     {
-                        blocks[x, y, 0].Faces |= Cubeside.Back;
+                        blocks[x, y, 0].Faces |= Cubeside.Top;
                         waterMeshSize += 4;
                     }
                 }
