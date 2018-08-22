@@ -15,9 +15,9 @@ namespace Assets.Scripts
 		public Material FluidTexture;
         public const int ChunkSize = 32; //32; // number of blocks in x, y and z
 
-        public const int WorldSizeX = 7; // 7;
-        public const int WorldSizeY = 4; // 4; // height
-        public const int WorldSizeZ = 7; // 7;
+        [SerializeField] public const int WorldSizeX = 7; // 7;
+        [SerializeField] public const int WorldSizeY = 4; // 4; // height
+        [SerializeField] public const int WorldSizeZ = 7; // 7;
         
         public static Chunk[,,] Chunks = new Chunk[WorldSizeX, WorldSizeY, WorldSizeZ];
         
@@ -53,6 +53,21 @@ namespace Assets.Scripts
                 Player.SetActive(true);
 		}
         
+        public static bool TryGetBlockFromChunk(int chunkX, int chunkY, int chunkZ, int blockX, int blockY, int blockZ, out BlockData block)
+        {
+            if (chunkX >= WorldSizeX || chunkX < 0 
+                || chunkY >= WorldSizeY || chunkY < 0 
+                || chunkZ >= WorldSizeZ || chunkZ < 0)
+            {
+                // we are outside of the world!
+                block = new BlockData(); // dummy data
+                return false;
+            }
+
+            block = Chunks[chunkX, chunkY, chunkZ].Blocks[blockX, blockY, blockZ];
+            return true;
+        }
+
 		public static string BuildChunkFileName(Vector3 v) => 
             Application.persistentDataPath + "/savedata/Chunk_" 
             + (int) v.x + "_" + (int) v.y + "_" + (int) v.z + "_" + ChunkSize + ".dat";
@@ -68,7 +83,8 @@ namespace Assets.Scripts
                         var chunkPosition = new Vector3(x * ChunkSize, y * ChunkSize, z * ChunkSize);
                         var chunkName = BuildChunkName(x, y, z);
 
-                        var c = new Chunk(chunkPosition, TextureAtlas, FluidTexture, chunkName, this, x, y, z);
+                        var c = new Chunk(chunkPosition, TextureAtlas, FluidTexture, chunkName, this, new Vector3Int(x, y, z));
+                        c.Blocks = TerrainGenerator.BuildChunk(chunkPosition);
                         Chunks[x, y, z] = c;
                     }
         }

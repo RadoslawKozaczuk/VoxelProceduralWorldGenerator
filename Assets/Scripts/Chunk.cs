@@ -36,9 +36,7 @@ namespace Assets.Scripts
         public BlockData[,,] Blocks;
 
         public int ChunkName;
-        public int X;
-        public int Y;
-        public int Z;
+        public Vector3Int Coord;
 
         public ChunkMonoBehavior MonoBehavior;
         public UVScroller TextureScroller;
@@ -55,12 +53,10 @@ namespace Assets.Scripts
 			0  // air
 		}; // -1 means the block cannot be destroyed
         
-        public Chunk(Vector3 position, Material chunkMaterial, Material transparentMaterial, int chunkKey, World worldReference, int x, int y, int z)
+        public Chunk(Vector3 position, Material chunkMaterial, Material transparentMaterial, int chunkKey, World worldReference, Vector3Int coord)
         {
             ChunkName = chunkKey;
-            X = x;
-            Y = y;
-            Z = z;
+            Coord = coord;
 
             Terrain = new GameObject(chunkKey.ToString());
             Terrain.transform.position = position;
@@ -77,8 +73,7 @@ namespace Assets.Scripts
 
             // BUG: This is extremely slow
             //TextureScroller = FluidObject.AddComponent<UVScroller>();
-            
-            BuildChunk();
+            Status = ChunkStatus.NotInitialized;
         }
 
         public void UpdateChunk()
@@ -114,10 +109,10 @@ namespace Assets.Scripts
 
         public void CreateChunkObject()
         {
-            var chunkPosition = new Vector3(X * World.ChunkSize, Y * World.ChunkSize, Z * World.ChunkSize);
+            var chunkPosition = new Vector3(Coord.x * World.ChunkSize, Coord.y * World.ChunkSize, Coord.z * World.ChunkSize);
 
             Mesh mesh, waterMesh;
-            MeshGenerator.CreateMeshes(ref Blocks, out mesh, out waterMesh);
+            MeshGenerator.CreateMeshes(ref Blocks, Coord, out mesh, out waterMesh);
 
             // Create terrain object
             if (mesh != null)
@@ -151,13 +146,6 @@ namespace Assets.Scripts
             }
             
             Status = ChunkStatus.Created;
-        }
-
-        void BuildChunk()
-        {
-            //bool dataFromFile = Load();
-            Blocks = TerrainGenerator.BuildChunk(Terrain.transform.position);
-            Status = ChunkStatus.NotInitialized;
         }
         
         bool Load()
