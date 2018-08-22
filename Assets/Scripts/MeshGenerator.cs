@@ -296,13 +296,9 @@ public class MeshGenerator
                     var type = blocks[x, y, z].Type;
 
                     if (type == BlockType.Water)
-                    {
                         WaterInterChunkCheck(ref blocks, chunkCoord, new Vector3Int(x, y, z), ref waterMeshSize);
-                    }
                     else if (type != BlockType.Air)
-                    {
                         PerformInterChunkCheck(ref blocks, chunkCoord, new Vector3Int(x, y, z), ref terrainMeshSize);
-                    }
                 }
 
         // top and bottom rectangles boundaries check
@@ -314,13 +310,9 @@ public class MeshGenerator
                     var type = blocks[x, y, z].Type;
 
                     if (type == BlockType.Water)
-                    {
                         WaterInterChunkCheck(ref blocks, chunkCoord, new Vector3Int(x, y, z), ref waterMeshSize);
-                    }
                     else if (type != BlockType.Air)
-                    {
                         PerformInterChunkCheck(ref blocks, chunkCoord, new Vector3Int(x, y, z), ref terrainMeshSize);
-                    }
                 }
 
         // front and back intarnal squares boundaries check
@@ -331,13 +323,9 @@ public class MeshGenerator
                     var type = blocks[x, y, z].Type;
 
                     if (type == BlockType.Water)
-                    {
                         WaterInterChunkCheck(ref blocks, chunkCoord, new Vector3Int(x, y, z), ref waterMeshSize);
-                    }
                     else if (type != BlockType.Air)
-                    {
                         PerformInterChunkCheck(ref blocks, chunkCoord, new Vector3Int(x, y, z), ref terrainMeshSize);
-                    }
                 }
     }
 
