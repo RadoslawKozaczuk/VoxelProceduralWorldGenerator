@@ -192,6 +192,14 @@ Prefab:
       propertyPath: m_Enabled
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 11400000, guid: 5e9e851c0e142814dac026a256ba2ac0, type: 2}
+      propertyPath: m_FootstepSounds.Array.data[0]
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 11400000, guid: 5e9e851c0e142814dac026a256ba2ac0, type: 2}
+      propertyPath: m_FootstepSounds.Array.data[1]
+      value: 
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 5e9e851c0e142814dac026a256ba2ac0, type: 2}
   m_IsPrefabAsset: 0
@@ -423,11 +431,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   TerrainParent: {fileID: 350537351}
   WaterParent: {fileID: 1304138699}
-  QueueSize: 0
   ActivatePlayer: 0
   Player: {fileID: 1746416011}
   TextureAtlas: {fileID: 2100000, guid: 0beff685461bd4744bc433ab1599a347, type: 2}
-  FluidTexture: {fileID: 2100000, guid: e3914047708501e41b8bbb5503e97017, type: 2}
+  FluidTexture: {fileID: 2100000, guid: c40c0017d3704914db1e95d92cdb03a4, type: 2}
   MainCamera: {fileID: 1698775129}
   Posx: 0
   Posz: 0

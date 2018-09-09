@@ -38,19 +38,18 @@ namespace Assets.Scripts
 				playerPos.x,
 				TerrainGenerator.GenerateHeight(playerPos.x, playerPos.z) + 1,
 				playerPos.z);
-
-			// to be sure player won't fall through the world that hasn't been build yet
-			Player.SetActive(false);
-
+            
             BuildChunks();
             DrawChunks();
+
+            // in final version it should wait for the world genration to end
+            if (ActivatePlayer)
+                Player.SetActive(true);
         }
 
         void Update()
 		{
-            // in final version it should wait for the world genration to end
-            if (ActivatePlayer && !Player.activeSelf)
-                Player.SetActive(true);
+            
 		}
         
         public static bool TryGetBlockFromChunk(int chunkX, int chunkY, int chunkZ, int blockX, int blockY, int blockZ, out BlockData block)
