@@ -15,9 +15,9 @@ namespace Assets.Scripts
 		public Material FluidTexture;
         public const int ChunkSize = 32; //32; // number of blocks in x, y and z
 
-        [SerializeField] public const int WorldSizeX = 7; // 7;
-        [SerializeField] public const int WorldSizeY = 4; // 4; // height
-        [SerializeField] public const int WorldSizeZ = 7; // 7;
+        [SerializeField] public const int WorldSizeX = 5; // 7;
+        [SerializeField] public const int WorldSizeY = 3; // 4; // height
+        [SerializeField] public const int WorldSizeZ = 5; // 7;
         
         public static Chunk[,,] Chunks = new Chunk[WorldSizeX, WorldSizeY, WorldSizeZ];
         

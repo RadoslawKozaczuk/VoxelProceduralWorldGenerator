@@ -2,6 +2,10 @@
 	Properties {
 		_Color ("Color", Color) = (1,1,1,1)
 		_MainTex ("Albedo (RGB)", 2D) = "white" {}
+		// FlowMap doesn't need a separate UV tiling and offset so we give it the NoScaleOffset attribute. 
+		// The default is that there is no flow, which corresponds to a black texture.
+		// Additionally we store noise in the A channel.
+		[NoScaleOffset] _FlowMap("Flow (RG, A noise)", 2D) = "black" {}
 		_WaterFogColor("Water Fog Color", Color) = (0, 0, 0, 0)
 		_WaterFogDensity("Water Fog Density", Range(0, 2)) = 0.1
 		_Glossiness ("Smoothness", Range(0,1)) = 0.5
@@ -26,7 +30,9 @@
 		// Use shader model 3.0 target, to get nicer looking lighting
 		#pragma target 3.0
 
-		sampler2D _MainTex, _CameraDepthTexture, _WaterBackground;
+		#include "Flow.cginc"
+
+		sampler2D _MainTex, _CameraDepthTexture, _WaterBackground, _FlowMap;
 		float4 _CameraDepthTexture_TexelSize;
 		float3 _WaterFogColor;
 		float _WaterFogDensity;
@@ -87,16 +93,24 @@
 		}
 
 		void surf (Input IN, inout SurfaceOutputStandard o) {
+			float2 flowVector = tex2D(_FlowMap, IN.uv_MainTex).rg 
+				* 2 - 1; // the vector is encoded the same way as in a normal map. We have to manually decode it
+
+			float noise = tex2D(_FlowMap, IN.uv_MainTex).a;
+			float time = _Time.y + noise; // the current time in Unity is available via _Time.y
+			float3 uvw = FlowUVW(IN.uv_MainTex, flowVector, time);
+			
 			// Albedo comes from a texture tinted by color
-			fixed4 c = tex2D (_MainTex, IN.uv_MainTex) * _Color;
-			o.Albedo = c.rgb;
+			fixed4 c = tex2D(_MainTex, uvw.xy) * uvw.z * _Color;
+
 			// Metallic and smoothness come from slider variables
 			o.Metallic = _Metallic;
 			o.Smoothness = _Glossiness;
 			o.Alpha = c.a;
 
-			o.Albedo = ColorBelowWater(IN.screenPos);
-
+			// water transparency
+			o.Albedo = (c.rgb + ColorBelowWater(IN.screenPos)) / 3;
+			
 			// We must add the underwater color to the surface lighting, which we can do by using it as the emissive color. 
 			// But we must modulate this by the water's albedo. The more opaque it is, the less we see of the background.
 			o.Emission = ColorBelowWater(IN.screenPos) * (1 - c.a);
