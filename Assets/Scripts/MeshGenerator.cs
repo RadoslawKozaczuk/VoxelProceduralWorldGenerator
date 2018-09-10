@@ -107,7 +107,7 @@ public class MeshGenerator
                         continue;
 
                     if (b.Type == BlockType.Water)
-                        CreateStandardQuads(b, ref waterIndex, ref waterTriIndex, ref waterData, new Vector3(x, y, z));
+                        CreateWaterQuads(b, ref waterIndex, ref waterTriIndex, ref waterData, new Vector3(x, y, z));
                     else if (b.Type == BlockType.Grass)
                         CreateGrassQuads(b, ref index, ref triIndex, ref terrainData, new Vector3(x, y, z));
                     else
@@ -329,51 +329,66 @@ public class MeshGenerator
                 }
     }
 
-    static void CreateStandardQuads(BlockData block, ref int index, ref int triIndex, ref MeshData data, Vector3 offset)
+    static void CreateStandardQuads(BlockData block, ref int index, ref int triIndex, ref MeshData data, Vector3 blockCoord)
     {
         int typeIndex = (int)block.Type;
         
         // all possible UVs
-        // top uvs are used only if top side of the block is different
         Vector2 uv00 = _blockUVs[typeIndex, 0],
                 uv10 = _blockUVs[typeIndex, 1],
                 uv01 = _blockUVs[typeIndex, 2],
                 uv11 = _blockUVs[typeIndex, 3];
 
         if (block.Faces.HasFlag(Cubeside.Top))
+        {
             AddQuadComponents(ref index, ref triIndex, block, ref data, Vector3.up,
                 uv11, uv01, uv00, uv10,
-                _p7 + offset, _p6 + offset, _p5 + offset, _p4 + offset);
+                _p7 + blockCoord, _p6 + blockCoord, _p5 + blockCoord, _p4 + blockCoord);
+            AddSuvs(block, ref data);
+        }
 
         if (block.Faces.HasFlag(Cubeside.Bottom))
+        {
             AddQuadComponents(ref index, ref triIndex, block, ref data, Vector3.down,
                 uv11, uv01, uv00, uv10,
-                _p0 + offset, _p1 + offset, _p2 + offset, _p3 + offset);
+                _p0 + blockCoord, _p1 + blockCoord, _p2 + blockCoord, _p3 + blockCoord);
+            AddSuvs(block, ref data);
+        }
 
         if (block.Faces.HasFlag(Cubeside.Left))
         {
             AddQuadComponents(ref index, ref triIndex, block, ref data, Vector3.left,
                 uv11, uv01, uv00, uv10,
-                _p7 + offset, _p4 + offset, _p0 + offset, _p3 + offset);
+                _p7 + blockCoord, _p4 + blockCoord, _p0 + blockCoord, _p3 + blockCoord);
+            AddSuvs(block, ref data);
         }
 
         if (block.Faces.HasFlag(Cubeside.Right))
+        {
             AddQuadComponents(ref index, ref triIndex, block, ref data, Vector3.right,
                 uv11, uv01, uv00, uv10,
-                _p5 + offset, _p6 + offset, _p2 + offset, _p1 + offset);
+                _p5 + blockCoord, _p6 + blockCoord, _p2 + blockCoord, _p1 + blockCoord);
+            AddSuvs(block, ref data);
+        }
 
         if (block.Faces.HasFlag(Cubeside.Front))
+        {
             AddQuadComponents(ref index, ref triIndex, block, ref data, Vector3.forward,
                 uv11, uv01, uv00, uv10,
-                _p4 + offset, _p5 + offset, _p1 + offset, _p0 + offset);
+                _p4 + blockCoord, _p5 + blockCoord, _p1 + blockCoord, _p0 + blockCoord);
+            AddSuvs(block, ref data);
+        }
 
         if (block.Faces.HasFlag(Cubeside.Back))
+        {
             AddQuadComponents(ref index, ref triIndex, block, ref data, Vector3.back,
                 uv11, uv01, uv00, uv10,
-                _p6 + offset, _p7 + offset, _p3 + offset, _p2 + offset);
+                _p6 + blockCoord, _p7 + blockCoord, _p3 + blockCoord, _p2 + blockCoord);
+            AddSuvs(block, ref data);
+        }
     }
 
-    static void CreateGrassQuads(BlockData block, ref int index, ref int triIndex, ref MeshData data, Vector3 offset)
+    static void CreateGrassQuads(BlockData block, ref int index, ref int triIndex, ref MeshData data, Vector3 blockCoord)
     {
         int typeIndex = (int)block.Type;
         
@@ -391,54 +406,78 @@ public class MeshGenerator
                 uv01side = _blockUVs[typeIndex + 1, 2],
                 uv11side = _blockUVs[typeIndex + 1, 3];
 
-            if (block.Faces.HasFlag(Cubeside.Top))
-            {
-                AddQuadComponents(ref index, ref triIndex, block, ref data, Vector3.up,
-                    uv11top, uv01top, uv00top, uv10top,
-                    _p7 + offset, _p6 + offset, _p5 + offset, _p4 + offset);
-            }
+        if (block.Faces.HasFlag(Cubeside.Top))
+        {
+            AddQuadComponents(ref index, ref triIndex, block, ref data, Vector3.up,
+                uv11top, uv01top, uv00top, uv10top,
+                _p7 + blockCoord, _p6 + blockCoord, _p5 + blockCoord, _p4 + blockCoord);
+            AddSuvs(block, ref data);
+        }
 
         if (block.Faces.HasFlag(Cubeside.Bottom))
         {
             AddQuadComponents(ref index, ref triIndex, block, ref data, Vector3.down,
                 uv11bot, uv01bot, uv00bot, uv10bot,
-                _p0 + offset, _p1 + offset, _p2 + offset, _p3 + offset);
+                _p0 + blockCoord, _p1 + blockCoord, _p2 + blockCoord, _p3 + blockCoord);
+            AddSuvs(block, ref data);
         }
 
         if (block.Faces.HasFlag(Cubeside.Left))
         {
             AddQuadComponents(ref index, ref triIndex, block, ref data, Vector3.left,
                 uv11side, uv01side, uv00side, uv10side,
-                _p7 + offset, _p4 + offset, _p0 + offset, _p3 + offset);
+                _p7 + blockCoord, _p4 + blockCoord, _p0 + blockCoord, _p3 + blockCoord);
+            AddSuvs(block, ref data);
         }
 
         if (block.Faces.HasFlag(Cubeside.Right))
-        {
+        { 
             AddQuadComponents(ref index, ref triIndex, block, ref data, Vector3.right,
                 uv11side, uv01side, uv00side, uv10side,
-                _p5 + offset, _p6 + offset, _p2 + offset, _p1 + offset);
+                _p5 + blockCoord, _p6 + blockCoord, _p2 + blockCoord, _p1 + blockCoord);
+            AddSuvs(block, ref data);
         }
 
         if (block.Faces.HasFlag(Cubeside.Front))
         {
             AddQuadComponents(ref index, ref triIndex, block, ref data, Vector3.forward,
                 uv11side, uv01side, uv00side, uv10side,
-                _p4 + offset, _p5 + offset, _p1 + offset, _p0 + offset);
+                _p4 + blockCoord, _p5 + blockCoord, _p1 + blockCoord, _p0 + blockCoord);
+            AddSuvs(block, ref data);
         }
 
         if (block.Faces.HasFlag(Cubeside.Back))
         {
             AddQuadComponents(ref index, ref triIndex, block, ref data, Vector3.back,
                 uv11side, uv01side, uv00side, uv10side,
-                _p6 + offset, _p7 + offset, _p3 + offset, _p2 + offset);
+                _p6 + blockCoord, _p7 + blockCoord, _p3 + blockCoord, _p2 + blockCoord);
+            AddSuvs(block, ref data);
         }
+    }
+
+    static void CreateWaterQuads(BlockData block, ref int index, ref int triIndex, ref MeshData data, Vector3 blockCoord)
+    {
+        float uvConst = 1.0f / World.ChunkSize;
+
+        // all possible UVs
+        // left-top, right-top, left-bottom, right-bottom
+        Vector2 uv00 = new Vector2(uvConst * blockCoord.x, 1 - uvConst * blockCoord.z),
+                uv10 = new Vector2(uvConst * (blockCoord.x + 1), 1 - uvConst * blockCoord.z),
+                uv01 = new Vector2(uvConst * blockCoord.x, 1 - uvConst * (blockCoord.z + 1)),
+                uv11 = new Vector2(uvConst * (blockCoord.x + 1), 1 - uvConst * (blockCoord.z + 1));
+
+        if (block.Faces.HasFlag(Cubeside.Top))
+            AddQuadComponents(ref index, ref triIndex, block, ref data, Vector3.up,
+                uv11, uv01, uv00, uv10,
+                _p7 + blockCoord, _p6 + blockCoord, _p5 + blockCoord, _p4 + blockCoord);
+        
     }
 
     static void AddQuadComponents(ref int index, ref int triIndex, BlockData block,
         ref MeshData data, 
         Vector3 normal,
         Vector2 uv11, Vector2 uv01, Vector2 uv00, Vector2 uv10,
-        Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p4)
+        Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3)
     {
         // add normals
         data.normals[index] = normal;
@@ -447,23 +486,17 @@ public class MeshGenerator
         data.normals[index + 3] = normal;
 
         // add uvs
-        data.uvs[index] = uv11;
-        data.uvs[index + 1] = uv01;
-        data.uvs[index + 2] = uv00;
-        data.uvs[index + 3] = uv10;
+        data.uvs[index] = uv00;
+        data.uvs[index + 1] = uv10;
+        data.uvs[index + 2] = uv11;
+        data.uvs[index + 3] = uv01;
 
         // add verticies
         data.verticies[index] = p0;
         data.verticies[index + 1] = p1;
         data.verticies[index + 2] = p2;
-        data.verticies[index + 3] = p4;
-
-        // add suvs
-        data.suvs.Add(_crackUVs[(int)block.HealthType, 3]); // top right corner
-        data.suvs.Add(_crackUVs[(int)block.HealthType, 2]); // top left corner
-        data.suvs.Add(_crackUVs[(int)block.HealthType, 0]); // bottom left corner
-        data.suvs.Add(_crackUVs[(int)block.HealthType, 1]); // bottom right corner
-
+        data.verticies[index + 3] = p3;
+        
         // add triangles
         data.triangles[triIndex++] = index + 3;
         data.triangles[triIndex++] = index + 1;
@@ -473,5 +506,13 @@ public class MeshGenerator
         data.triangles[triIndex++] = index + 1;
 
         index += 4;
+    }
+
+    static void AddSuvs(BlockData block, ref MeshData data)
+    {
+        data.suvs.Add(_crackUVs[(int)block.HealthType, 3]); // top right corner
+        data.suvs.Add(_crackUVs[(int)block.HealthType, 2]); // top left corner
+        data.suvs.Add(_crackUVs[(int)block.HealthType, 0]); // bottom left corner
+        data.suvs.Add(_crackUVs[(int)block.HealthType, 1]); // bottom right corner
     }
 }

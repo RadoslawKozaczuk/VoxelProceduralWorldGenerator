@@ -2,10 +2,20 @@
 	Properties {
 		_Color ("Color", Color) = (1,1,1,1)
 		_MainTex ("Albedo (RGB)", 2D) = "white" {}
+		
 		// FlowMap doesn't need a separate UV tiling and offset so we give it the NoScaleOffset attribute. 
 		// The default is that there is no flow, which corresponds to a black texture.
 		// Additionally we store noise in the A channel.
 		[NoScaleOffset] _FlowMap("Flow (RG, A noise)", 2D) = "black" {}
+		
+		// Besides always offsetting the UV of A and B by half a unit, it is also possible to offset the UV per phase.
+		// That will cause the animation to change over time, so it takes longer before it loops back to the exact same state.
+		_UJump("U jump per phase", Range(-0.25, 0.25)) = 0.25
+		_VJump("V jump per phase", Range(-0.25, 0.25)) = 0.25
+
+		// We cannot rely on the main tiling and offset of the surface shader, because that also affects the flow map.
+		_Tiling("Tiling", Float) = 1
+
 		_WaterFogColor("Water Fog Color", Color) = (0, 0, 0, 0)
 		_WaterFogDensity("Water Fog Density", Range(0, 2)) = 0.1
 		_Glossiness ("Smoothness", Range(0,1)) = 0.5
@@ -35,7 +45,7 @@
 		sampler2D _MainTex, _CameraDepthTexture, _WaterBackground, _FlowMap;
 		float4 _CameraDepthTexture_TexelSize;
 		float3 _WaterFogColor;
-		float _WaterFogDensity;
+		float _WaterFogDensity, _UJump, _VJump, _Tiling;
 
 		struct Input {
 			float2 uv_MainTex;
@@ -96,12 +106,17 @@
 			float2 flowVector = tex2D(_FlowMap, IN.uv_MainTex).rg 
 				* 2 - 1; // the vector is encoded the same way as in a normal map. We have to manually decode it
 
+			// water albedo color - 4E83A9
+
 			float noise = tex2D(_FlowMap, IN.uv_MainTex).a;
 			float time = _Time.y + noise; // the current time in Unity is available via _Time.y
-			float3 uvw = FlowUVW(IN.uv_MainTex, flowVector, time);
+			float2 jump = float2(_UJump, _VJump);
+			float3 uvw = FlowUVW(IN.uv_MainTex, flowVector, time, jump, _Tiling);
 			
 			// Albedo comes from a texture tinted by color
-			fixed4 c = tex2D(_MainTex, uvw.xy) * uvw.z * _Color;
+			fixed4 c = tex2D(_MainTex, uvw.xy) 
+				* uvw.z 
+				* _Color;
 
 			// Metallic and smoothness come from slider variables
 			o.Metallic = _Metallic;

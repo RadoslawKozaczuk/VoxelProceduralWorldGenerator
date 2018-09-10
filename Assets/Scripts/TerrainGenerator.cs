@@ -90,7 +90,7 @@ public class TerrainGenerator
     {
         // output data
         var types = new BlockType[World.ChunkSize * World.ChunkSize * World.ChunkSize];
-
+        
         var _typeJob = new BlockTypeJob()
         {
             // input

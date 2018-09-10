@@ -15,9 +15,9 @@ namespace Assets.Scripts
 		public Material FluidTexture;
         public const int ChunkSize = 32; //32; // number of blocks in x, y and z
 
-        [SerializeField] public const int WorldSizeX = 5; // 7;
-        [SerializeField] public const int WorldSizeY = 3; // 4; // height
-        [SerializeField] public const int WorldSizeZ = 5; // 7;
+        [SerializeField] public const int WorldSizeX = 7; // 7;
+        [SerializeField] public const int WorldSizeY = 4; // 4; // height
+        [SerializeField] public const int WorldSizeZ = 7; // 7;
         
         public static Chunk[,,] Chunks = new Chunk[WorldSizeX, WorldSizeY, WorldSizeZ];
         
@@ -46,11 +46,6 @@ namespace Assets.Scripts
             if (ActivatePlayer)
                 Player.SetActive(true);
         }
-
-        void Update()
-		{
-            
-		}
         
         public static bool TryGetBlockFromChunk(int chunkX, int chunkY, int chunkZ, int blockX, int blockY, int blockZ, out BlockData block)
         {
