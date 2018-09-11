@@ -39,7 +39,6 @@ namespace Assets.Scripts
         public Vector3Int Coord;
 
         public ChunkMonoBehavior MonoBehavior;
-        public UVScroller TextureScroller;
         public bool Changed = false;
         public ChunkStatus Status; // status of the current chunk
         

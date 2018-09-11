@@ -16,6 +16,24 @@
 		// We cannot rely on the main tiling and offset of the surface shader, because that also affects the flow map.
 		_Tiling("Tiling", Float) = 1
 
+		// The speed of the animation can be directly controlled by scaling the time. This affects the entire animation, so also its duration.
+		_Speed("Speed", Float) = 1
+
+		// By adjusting the strength of the flow we can speed it up, slow it down, or even reverse it, without affecting time.
+		_FlowStrength("Flow Strength", Float) = 1
+
+		// We can also control where the animation starts.
+		_FlowOffset("Flow Offset", Float) = 0
+
+		// Cerivatives are easier to compute and give similar effects to normals
+		[NoScaleOffset] _DerivHeightMap("Deriv (AG) Height (B)", 2D) = "black" {}
+
+		// Derivatives can also be easily scaled.
+		_HeightScale("Height Scale, Constant", Float) = 0.25
+
+		// We can make the height scale variable, based on the flow speed.
+		_HeightScaleModulated("Height Scale, Modulated", Float) = 0.75
+
 		_WaterFogColor("Water Fog Color", Color) = (0, 0, 0, 0)
 		_WaterFogDensity("Water Fog Density", Range(0, 2)) = 0.1
 		_Glossiness ("Smoothness", Range(0,1)) = 0.5
@@ -42,10 +60,10 @@
 
 		#include "Flow.cginc"
 
-		sampler2D _MainTex, _CameraDepthTexture, _WaterBackground, _FlowMap;
+		sampler2D _MainTex, _CameraDepthTexture, _WaterBackground, _FlowMap, _DerivHeightMap;
 		float4 _CameraDepthTexture_TexelSize;
 		float3 _WaterFogColor;
-		float _WaterFogDensity, _UJump, _VJump, _Tiling;
+		float _WaterFogDensity, _UJump, _VJump, _Tiling, _Speed, _FlowStrength, _FlowOffset, _HeightScale, _HeightScaleModulated;
 
 		struct Input {
 			float2 uv_MainTex;
@@ -102,19 +120,29 @@
 			return lerp(_WaterFogColor, backgroundColor, fogFactor);
 		}
 
+		float3 UnpackDerivativeHeight(float4 textureData) {
+			float3 dh = textureData.agb;
+			dh.xy = dh.xy * 2 - 1;
+			return dh;
+		}
+
 		void surf (Input IN, inout SurfaceOutputStandard o) {
-			float2 flowVector = tex2D(_FlowMap, IN.uv_MainTex).rg 
-				* 2 - 1; // the vector is encoded the same way as in a normal map. We have to manually decode it
-
-			// water albedo color - 4E83A9
-
-			float noise = tex2D(_FlowMap, IN.uv_MainTex).a;
-			float time = _Time.y + noise; // the current time in Unity is available via _Time.y
-			float2 jump = float2(_UJump, _VJump);
-			float3 uvw = FlowUVW(IN.uv_MainTex, flowVector, time, jump, _Tiling);
+			float3 flow = tex2D(_FlowMap, IN.uv_MainTex).rgb;
+			flow.xy = flow.xy * 2 - 1; // the vector is encoded the same way as in a normal map. We have to manually decode it
+			flow *= _FlowStrength;
 			
+			float noise = tex2D(_FlowMap, IN.uv_MainTex).a;
+			float time = _Time.y * _Speed + noise; // the current time in Unity is available via _Time.y
+			float2 jump = float2(_UJump, _VJump);
+			float3 uvw = FlowUVW(IN.uv_MainTex, flow.xy, time, jump, _Tiling, _FlowOffset);
+
+			float finalHeightScale = flow.z * _HeightScaleModulated + _HeightScale;
+
+			float3 dh = UnpackDerivativeHeight(tex2D(_DerivHeightMap, uvw.xy)) * (uvw.z * finalHeightScale);
+			o.Normal = normalize(float3(-(dh.xy), 1));
+
 			// Albedo comes from a texture tinted by color
-			fixed4 c = tex2D(_MainTex, uvw.xy) 
+			fixed4 c = tex2D(_MainTex, uvw.xy)
 				* uvw.z 
 				* _Color;
 
@@ -124,7 +152,10 @@
 			o.Alpha = c.a;
 
 			// water transparency
-			o.Albedo = (c.rgb + ColorBelowWater(IN.screenPos)) / 3;
+			o.Albedo = (c.rgb + ColorBelowWater(IN.screenPos)) / 2;
+
+			// we now also have access to the height data, we could use this to colorize the surface as well
+			o.Albedo += dh.z;
 			
 			// We must add the underwater color to the surface lighting, which we can do by using it as the emissive color. 
 			// But we must modulate this by the water's albedo. The more opaque it is, the less we see of the background.
