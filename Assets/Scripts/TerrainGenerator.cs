@@ -5,16 +5,52 @@ using UnityEngine;
 
 public class TerrainGenerator
 {
+    struct HeightData
+    {
+        public float Bedrock, Stone, Dirt;
+    }
+
+    struct HeightJob : IJobParallelFor
+    {
+        [ReadOnly]
+        public int ChunkPosX;
+        [ReadOnly]
+        public int ChunkPosZ;
+        [ReadOnly]
+        public int ChunkSize;
+
+        // result
+        public NativeArray<HeightData> Result;
+
+        public void Execute(int i)
+        {
+            // deflattenization - extract coords from the index
+            var index = i;
+            var z = index / ChunkSize;
+            index -= z * ChunkSize;
+            var x = index;
+
+            Result[i] = new HeightData()
+            {
+                Bedrock = GenerateBedrockHeight(ChunkPosX + x, ChunkPosZ + z),
+                Stone = GenerateStoneHeight(ChunkPosX + x, ChunkPosZ + z),
+                Dirt = GenerateDirtHeight(ChunkPosX + x, ChunkPosZ + z)
+            };
+        }
+    }
+
     struct BlockTypeJob : IJobParallelFor
     {
         [ReadOnly]
-        public float ChunkPosX;
+        public int ChunkPosX;
         [ReadOnly]
-        public float ChunkPosY;
+        public int ChunkPosY;
         [ReadOnly]
-        public float ChunkPosZ;
+        public int ChunkPosZ;
         [ReadOnly]
         public int ChunkSize;
+        [ReadOnly]
+        public NativeArray<HeightData> Heights;
 
         // result
         public NativeArray<BlockType> Result;
@@ -31,7 +67,7 @@ public class TerrainGenerator
 
             var x = index;
 
-            Result[i] = DetermineType((int)(x + ChunkPosX), (int)(y + ChunkPosY), (int)(z + ChunkPosZ));
+            Result[i] = DetermineType(x + ChunkPosX, y + ChunkPosY, z + ChunkPosZ, x, z, ChunkSize, Heights);
         }
     }
     
@@ -75,40 +111,70 @@ public class TerrainGenerator
     const int OctavesBedrock = 2;
     const float PersistenceBedrock = 0.5f;
     #endregion
-    
-    public static BlockData[,,] BuildChunk(Vector3 chunkPosition)
+
+    public static BlockData[,,] BuildChunk(Vector3Int chunkPosition)
     {
         var blocks = new BlockData[World.ChunkSize, World.ChunkSize, World.ChunkSize];
 
-        CalculateBlockTypes(ref blocks, chunkPosition);
+        var heights = CalculateHeights(chunkPosition);
+        CalculateBlockTypes(ref blocks, chunkPosition, heights);
         AddTrees(ref blocks, chunkPosition);
 
         return blocks;
     }
+
+    // calculate global Heights
+    static HeightData[] CalculateHeights(Vector3Int chunkPosition)
+    {
+        // output data
+        var heights = new HeightData[World.ChunkSize * World.ChunkSize];
+
+        var heightJob = new HeightJob()
+        {
+            // input
+            ChunkPosX = chunkPosition.x,
+            ChunkPosZ = chunkPosition.z,
+            ChunkSize = World.ChunkSize,
+
+            // output
+            Result = new NativeArray<HeightData>(heights, Allocator.TempJob)
+        };
+
+        var heightJobHandle = heightJob.Schedule(World.ChunkSize * World.ChunkSize, 8);
+        heightJobHandle.Complete();
+        heightJob.Result.CopyTo(heights);
+
+        // cleanup
+        heightJob.Result.Dispose();
+
+        return heights;
+    }
     
-    static void CalculateBlockTypes(ref BlockData[,,] blocks, Vector3 chunkPosition)
+    static void CalculateBlockTypes(ref BlockData[,,] blocks, Vector3Int chunkPosition, HeightData[] heights)
     {
         // output data
         var types = new BlockType[World.ChunkSize * World.ChunkSize * World.ChunkSize];
-        
-        var _typeJob = new BlockTypeJob()
+
+        var typeJob = new BlockTypeJob()
         {
             // input
             ChunkPosX = chunkPosition.x,
             ChunkPosY = chunkPosition.y,
             ChunkPosZ = chunkPosition.z,
             ChunkSize = World.ChunkSize,
+            Heights = new NativeArray<HeightData>(heights, Allocator.TempJob),
 
             // output
             Result = new NativeArray<BlockType>(types, Allocator.TempJob)
         };
 
-        var _typeJobHandle = _typeJob.Schedule(World.ChunkSize * World.ChunkSize * World.ChunkSize, 8);
-        _typeJobHandle.Complete();
-        _typeJob.Result.CopyTo(types);
+        var typeJobHandle = typeJob.Schedule(World.ChunkSize * World.ChunkSize * World.ChunkSize, 8);
+        typeJobHandle.Complete();
+        typeJob.Result.CopyTo(types);
 
         // cleanup
-        _typeJob.Result.Dispose();
+        typeJob.Result.Dispose();
+        typeJob.Heights.Dispose();
 
         // output deflattenization
         for (var z = 0; z < World.ChunkSize; z++)
@@ -174,24 +240,27 @@ public class TerrainGenerator
         blocks[x, y + 5, z].Type = BlockType.Leaves;
     }
 
-    static BlockType DetermineType(int worldX, int worldY, int worldZ)
+    static BlockType DetermineType(int worldX, int worldY, int worldZ, int localX, int localZ, 
+        int chunkSize, NativeArray<HeightData> heights)
     {
         BlockType type;
 
-        if (worldY <= GenerateBedrockHeight(worldX, worldZ))
+        if (worldY <= heights[localX + localZ * chunkSize].Bedrock)
             type = BlockType.Bedrock;
-        else if (worldY <= GenerateStoneHeight(worldX, worldZ))
+        else if (worldY <= heights[localX + localZ * chunkSize].Stone)
         {
-            if (FractalFunc(worldX, worldY, worldZ, DiamondSmooth, DiamondOctaves) < DiamondProbability && worldY < DiamondMaxHeight)
+            if (FractalFunc(worldX, worldY, worldZ, DiamondSmooth, DiamondOctaves) < DiamondProbability 
+                && worldY < DiamondMaxHeight)
                 type = BlockType.Diamond;
-            else if (FractalFunc(worldX, worldY, worldZ, RedstoneSmooth, RedstoneOctaves) < RedstoneProbability && worldY < RedstoneMaxHeight)
+            else if (FractalFunc(worldX, worldY, worldZ, RedstoneSmooth, RedstoneOctaves) < RedstoneProbability 
+                && worldY < RedstoneMaxHeight)
                 type = BlockType.Redstone;
             else
                 type = BlockType.Stone;
         }
         else
         {
-            var height = GenerateHeight(worldX, worldZ);
+            var height = heights[localX + localZ * chunkSize].Dirt;
             if (worldY == height)
                 type = BlockType.Grass;
             else if (worldY < height)
@@ -210,38 +279,27 @@ public class TerrainGenerator
         return type;
     }
     
-    static int GenerateBedrockHeight(float x, float z)
-    {
-        float height = Map(0, MaxHeightBedrock, 0, 1, FractalBrownianMotion(x * SmoothBedrock, z * SmoothBedrock, OctavesBedrock, PersistenceBedrock));
-        return (int)height;
-    }
+    static int GenerateBedrockHeight(float x, float z) => 
+        (int)Map(0, MaxHeightBedrock, 0, 1, 
+            FractalBrownianMotion(x * SmoothBedrock, z * SmoothBedrock, OctavesBedrock, PersistenceBedrock));
 
-    static int GenerateStoneHeight(float x, float z)
-    {
-        float height = Map(0, MaxHeightStone, 0, 1, FractalBrownianMotion(x * SmoothStone, z * SmoothStone, OctavesStone, PersistenceStone));
-        return (int)height;
-    }
+    static int GenerateStoneHeight(float x, float z) =>
+        (int)Map(0, MaxHeightStone, 0, 1, 
+            FractalBrownianMotion(x * SmoothStone, z * SmoothStone, OctavesStone, PersistenceStone));
 
-    public static int GenerateHeight(float x, float z)
-    {
-        float height = Map(0, MaxHeight, 0, 1, FractalBrownianMotion(x * Smooth, z * Smooth, Octaves, Persistence));
-        return (int)height;
-    }
+    public static int GenerateDirtHeight(float x, float z) =>
+        (int)Map(0, MaxHeight, 0, 1, 
+            FractalBrownianMotion(x * Smooth, z * Smooth, Octaves, Persistence));
 
-    static float Map(float newmin, float newmax, float origmin, float origmax, float value)
-    {
-        return Mathf.Lerp(newmin, newmax, Mathf.InverseLerp(origmin, origmax, value));
-    }
+    static float Map(float newmin, float newmax, float origmin, float origmax, float value) => 
+        Mathf.Lerp(newmin, newmax, Mathf.InverseLerp(origmin, origmax, value));
 
     // good noise generator
     // persistence - if < 1 each function is less powerful than the previous one, for > 1 each is more important
     // octaves - number of functions that we sum up
     static float FractalBrownianMotion(float x, float z, int oct, float pers)
     {
-        float total = 0;
-        float frequency = 1;
-        float amplitude = 1;
-        float maxValue = 0;
+        float total = 0, frequency = 1, amplitude = 1, maxValue = 0;
 
         // Perlin function value of x is equal to its value of -x. Same for y.
         // to avoid it we need an offset, quite large one to be sure.

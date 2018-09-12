@@ -67,8 +67,8 @@ Material:
     - _Cutoff: 0.5
     - _DetailNormalMapScale: 1
     - _DstBlend: 0
-    - _FlowOffset: 0.5
-    - _FlowStrength: 0.25
+    - _FlowOffset: -0.4
+    - _FlowStrength: 0.2
     - _GlossMapScale: 1
     - _Glossiness: 0.5
     - _GlossyReflections: 1
@@ -80,9 +80,9 @@ Material:
     - _Parallax: 0.02
     - _SmoothnessTextureChannel: 0
     - _SpecularHighlights: 1
-    - _Speed: 0.5
+    - _Speed: 0.2
     - _SrcBlend: 1
-    - _Tiling: 2
+    - _Tiling: 3
     - _UJump: 0.24
     - _UVSec: 0
     - _VJump: 0.2

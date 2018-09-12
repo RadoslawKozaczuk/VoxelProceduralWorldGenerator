@@ -36,7 +36,7 @@ namespace Assets.Scripts
             Vector3 playerPos = Player.transform.position;
 			Player.transform.position = new Vector3(
 				playerPos.x,
-				TerrainGenerator.GenerateHeight(playerPos.x, playerPos.z) + 1,
+				TerrainGenerator.GenerateDirtHeight(playerPos.x, playerPos.z) + 1,
 				playerPos.z);
             
             BuildChunks();
@@ -74,7 +74,7 @@ namespace Assets.Scripts
                 for (int z = 0; z < WorldSizeZ; z++)
                     for (int y = 0; y < WorldSizeY; y++)
                     {
-                        var chunkPosition = new Vector3(x * ChunkSize, y * ChunkSize, z * ChunkSize);
+                        var chunkPosition = new Vector3Int(x * ChunkSize, y * ChunkSize, z * ChunkSize);
                         var chunkName = BuildChunkName(x, y, z);
 
                         var c = new Chunk(chunkPosition, TextureAtlas, FluidTexture, chunkName, this, new Vector3Int(x, y, z));
