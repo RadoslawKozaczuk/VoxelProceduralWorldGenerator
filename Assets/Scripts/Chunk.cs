@@ -69,9 +69,7 @@ namespace Assets.Scripts
 
             MonoBehavior = Terrain.AddComponent<ChunkMonoBehavior>();
             MonoBehavior.SetOwner(this);
-
-            // BUG: This is extremely slow
-            //TextureScroller = FluidObject.AddComponent<UVScroller>();
+            
             Status = ChunkStatus.NotInitialized;
         }
 
