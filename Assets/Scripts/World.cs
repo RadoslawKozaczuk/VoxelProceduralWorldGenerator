@@ -2,10 +2,7 @@
 using UnityEngine;
 
 public class World : MonoBehaviour
-{    
-    static Stopwatch Stopwatch = new Stopwatch();
-    static long TerrainReadyTime, MeshReadyTime;
-
+{
     public Chunk[,,] Chunks;
     public Transform TerrainParent;
     public Transform WaterParent;
@@ -17,16 +14,19 @@ public class World : MonoBehaviour
     public byte WorldSizeY = 4;
     public byte WorldSizeZ = 7;
 
+    Stopwatch _stopwatch = new Stopwatch();
+    long _terrainReadyTime;
+
     /// <summary>
     /// If storage variable is equal to null terrain will be generated.
     /// Otherwise, read from the storage.
     /// </summary>
     public void GenerateTerrain()
     {
-        Stopwatch.Start();
+        _stopwatch.Start();
         var terrainGenerator = new TerrainGenerator(ChunkSize);
         Chunks = new Chunk[WorldSizeX, WorldSizeY, WorldSizeZ];
-        
+
         for (int x = 0; x < WorldSizeX; x++)
             for (int z = 0; z < WorldSizeZ; z++)
                 for (int y = 0; y < WorldSizeY; y++)
@@ -38,9 +38,9 @@ public class World : MonoBehaviour
                     };
                 }
 
-        Stopwatch.Stop();
-        TerrainReadyTime = Stopwatch.ElapsedMilliseconds;
-        UnityEngine.Debug.Log($"It took {TerrainReadyTime} ms to generate terrain data.");
+        _stopwatch.Stop();
+        _terrainReadyTime = _stopwatch.ElapsedMilliseconds;
+        UnityEngine.Debug.Log($"It took {_terrainReadyTime} ms to generate terrain data.");
     }
 
     /// <summary>
@@ -48,9 +48,8 @@ public class World : MonoBehaviour
     /// </summary>
     public void CalculateMesh()
     {
-        Stopwatch.Restart();
         var meshGenerator = new MeshGenerator(ChunkSize, WorldSizeX, WorldSizeY, WorldSizeZ);
-        
+
         for (int x = 0; x < WorldSizeX; x++)
             for (int z = 0; z < WorldSizeZ; z++)
                 for (int y = 0; y < WorldSizeY; y++)
@@ -58,23 +57,22 @@ public class World : MonoBehaviour
                     var c = Chunks[x, y, z];
 
                     MeshData terrainData, waterData;
-                    meshGenerator.ExtractMeshData(ref c.Blocks, new Vector3Int(x * ChunkSize, y * ChunkSize, z * ChunkSize), 
+                    meshGenerator.ExtractMeshData(ref c.Blocks, new Vector3Int(x * ChunkSize, y * ChunkSize, z * ChunkSize),
                         out terrainData, out waterData);
-                    
-                    c.CreateTerrainObject(meshGenerator.CreateMeshFromData(terrainData));
-                    c.CreateWaterObject(meshGenerator.CreateMeshFromData(waterData));
+
+                    c.CreateTerrainObject(meshGenerator.CreateMesh(terrainData));
+                    c.CreateWaterObject(meshGenerator.CreateMesh(waterData));
 
                     c.Status = Chunk.ChunkStatus.Created;
                 }
 
-        Stopwatch.Stop();
-        MeshReadyTime = Stopwatch.ElapsedMilliseconds;
-        UnityEngine.Debug.Log($"It took {MeshReadyTime} ms to generate mesh data.");
+        meshGenerator.LogTimeSpent();
+        Chunk.LogTimeSpent();
     }
 
     public void LoadTerrain(SaveGameData save)
     {
-        Stopwatch.Start();
+        _stopwatch.Start();
         Chunks = new Chunk[WorldSizeX, WorldSizeY, WorldSizeZ];
 
         for (int x = 0; x < WorldSizeX; x++)
@@ -86,8 +84,8 @@ public class World : MonoBehaviour
                         Blocks = save.Chunks[x, y, z].Blocks
                     };
 
-        Stopwatch.Stop();
-        TerrainReadyTime = Stopwatch.ElapsedMilliseconds;
-        UnityEngine.Debug.Log($"It took {TerrainReadyTime} ms to load terrain data.");
+        _stopwatch.Stop();
+        _terrainReadyTime = _stopwatch.ElapsedMilliseconds;
+        UnityEngine.Debug.Log($"It took {_terrainReadyTime} ms to load terrain data.");
     }
-} 
+}

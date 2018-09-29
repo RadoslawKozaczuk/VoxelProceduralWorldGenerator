@@ -1,8 +1,13 @@
+using System;
+using System.Diagnostics;
 using UnityEngine;
 
 public class Chunk
 {
     public enum ChunkStatus { NotInitialized, Created, NeedToBeRedrawn, Keep }
+
+    static Stopwatch _stopwatch = new Stopwatch();
+    static long _accumulatedTerrainObjectCreationTime, _accumulatedWaterObjectCreationTime;
 
     public Material TerrainMaterial;
     public Material WaterMaterial;
@@ -79,31 +84,52 @@ public class Chunk
     public void DestroyMeshAndCollider()
     {
         // we cannot use normal destroy because it may wait to the next update loop or something which will break the code
-        Object.DestroyImmediate(Terrain.GetComponent<MeshFilter>());
-        Object.DestroyImmediate(Terrain.GetComponent<MeshRenderer>());
-        Object.DestroyImmediate(Terrain.GetComponent<Collider>());
-        Object.DestroyImmediate(Water.GetComponent<MeshFilter>());
-        Object.DestroyImmediate(Water.GetComponent<MeshRenderer>());
+        UnityEngine.Object.DestroyImmediate(Terrain.GetComponent<MeshFilter>());
+        UnityEngine.Object.DestroyImmediate(Terrain.GetComponent<MeshRenderer>());
+        UnityEngine.Object.DestroyImmediate(Terrain.GetComponent<Collider>());
+        UnityEngine.Object.DestroyImmediate(Water.GetComponent<MeshFilter>());
+        UnityEngine.Object.DestroyImmediate(Water.GetComponent<MeshRenderer>());
     }
     
     public void CreateTerrainObject(Mesh mesh)
     {
+        _stopwatch.Restart();
+
         var renderer = Terrain.gameObject.AddComponent(typeof(MeshRenderer)) as MeshRenderer;
         renderer.material = TerrainMaterial;
 
         var meshFilter = (MeshFilter)Terrain.AddComponent(typeof(MeshFilter));
         meshFilter.mesh = mesh;
-
+        
         var collider = Terrain.gameObject.AddComponent(typeof(MeshCollider)) as MeshCollider;
         collider.sharedMesh = mesh;
+        
+        _stopwatch.Stop();
+        _accumulatedTerrainObjectCreationTime += _stopwatch.ElapsedTicks;
     }
 
     public void CreateWaterObject(Mesh mesh)
     {
-        var waterRenderer = Water.gameObject.AddComponent(typeof(MeshRenderer)) as MeshRenderer;
-        waterRenderer.material = WaterMaterial;
+        _stopwatch.Restart();
 
-        var waterMeshFilter = (MeshFilter)Water.AddComponent(typeof(MeshFilter));
-        waterMeshFilter.mesh = mesh;
+        var renderer = Water.gameObject.AddComponent(typeof(MeshRenderer)) as MeshRenderer;
+        renderer.material = WaterMaterial;
+
+        var meshFilter = (MeshFilter)Water.AddComponent(typeof(MeshFilter));
+        meshFilter.mesh = mesh;
+
+        _stopwatch.Stop();
+        _accumulatedWaterObjectCreationTime += _stopwatch.ElapsedTicks;
+    }
+
+    public static void LogTimeSpent()
+    {
+        UnityEngine.Debug.Log("It took " 
+            + _accumulatedTerrainObjectCreationTime / TimeSpan.TicksPerMillisecond 
+            + " ms to create all terrain objects.");
+
+        UnityEngine.Debug.Log("It took " 
+            + _accumulatedWaterObjectCreationTime / TimeSpan.TicksPerMillisecond 
+            + " ms to create all water objects.");
     }
 }

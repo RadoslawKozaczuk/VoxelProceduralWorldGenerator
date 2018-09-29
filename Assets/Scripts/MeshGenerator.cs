@@ -1,9 +1,14 @@
 ﻿using System.Collections.Generic;
+using System.Diagnostics;
 using UnityEngine;
 
 public class MeshGenerator
 {
-    #region Constants
+    Stopwatch _stopwatch = new Stopwatch();
+    long _accumulatedExtractMeshDataTime, _accumulatedCreateMeshTime;
+    
+    
+    #region Readonly lookup tables
     readonly Vector2[,] _blockUVs = { 
 						// left-bottom, right-bottom, left-top, right-top
 		/*DIRT*/		{new Vector2(0.125f, 0.9375f), new Vector2(0.1875f, 0.9375f),
@@ -71,11 +76,13 @@ public class MeshGenerator
     }
 
     /// <summary>
-    /// This method creates mesh data necessary to create mesh.
+    /// This method creates mesh data necessary to create a mesh.
     /// Data for both terrain and water meshes are created.
     /// </summary>
     public void ExtractMeshData(ref BlockData[,,] blocks, Vector3Int coord, out MeshData terrain, out MeshData water)
     {
+        _stopwatch.Restart();
+
         // Determining mesh size
         int size = 0, waterSize = 0;
         CalculateFacesAndMeshSize(ref blocks, coord, out size, out waterSize);
@@ -122,10 +129,15 @@ public class MeshGenerator
 
         terrain = terrainData;
         water = waterData;
+
+        _stopwatch.Stop();
+        _accumulatedExtractMeshDataTime += _stopwatch.ElapsedMilliseconds;
     }
 
-    public Mesh CreateMeshFromData(MeshData meshData)
+    public Mesh CreateMesh(MeshData meshData)
     {
+        _stopwatch.Restart();
+
         var mesh = new Mesh
         {
             vertices = meshData.Verticies,
@@ -136,9 +148,18 @@ public class MeshGenerator
         mesh.SetUVs(1, meshData.Suvs); // secondary uvs
         mesh.RecalculateBounds();
 
+        _stopwatch.Stop();
+        _accumulatedCreateMeshTime += _stopwatch.ElapsedMilliseconds;
+
         return mesh;
     }
     
+    public void LogTimeSpent()
+    {
+        UnityEngine.Debug.Log($"It took {_accumulatedExtractMeshDataTime} ms to extract all mesh data.");
+        UnityEngine.Debug.Log($"It took {_accumulatedCreateMeshTime} ms to generate all meshes.");
+    }
+
     bool QuadVisibilityCheck(BlockTypes target) => target == BlockTypes.Air || target == BlockTypes.Water;
     
     void PerformInterChunkCheck(ref BlockData[,,] blocks, Vector3Int chunkCoord, Vector3Int blockCoord, ref int meshSize)
@@ -247,7 +268,7 @@ public class MeshGenerator
     /// Return true if the particular block could be find in the the chunk.
     /// False if otherwise. In case of false a new dummy block will be returned.
     /// </summary>
-    public bool TryGetBlockFromChunk(int chunkX, int chunkY, int chunkZ, int blockX, int blockY, int blockZ, 
+    bool TryGetBlockFromChunk(int chunkX, int chunkY, int chunkZ, int blockX, int blockY, int blockZ, 
         ref BlockData[,,] blocks, out BlockData block)
     {
         if (chunkX >= _worldSizeX || chunkX < 0
