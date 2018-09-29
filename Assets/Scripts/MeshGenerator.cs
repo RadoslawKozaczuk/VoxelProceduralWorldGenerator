@@ -1,5 +1,4 @@
-﻿using Assets.Scripts;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 
 public class MeshGenerator
@@ -14,7 +13,7 @@ public class MeshGenerator
     }
 
     #region Constants
-    static readonly Vector2[,] _blockUVs = { 
+    readonly Vector2[,] _blockUVs = { 
 						// left-bottom, right-bottom, left-top, right-top
 		/*DIRT*/		{new Vector2(0.125f, 0.9375f), new Vector2(0.1875f, 0.9375f),
                             new Vector2(0.125f, 1.0f), new Vector2(0.1875f, 1.0f)},
@@ -45,7 +44,8 @@ public class MeshGenerator
 
 		// BUG: Tile sheet provided is broken and some tiles overlaps each other
 	};
-    static readonly Vector2[,] _crackUVs = { 
+
+    readonly Vector2[,] _crackUVs = { 
 						// left-bottom, right-bottom, left-top, right-top
 		/*NOCRACK*/		{new Vector2(0.6875f,0f), new Vector2(0.75f,0f),
                             new Vector2(0.6875f,0.0625f), new Vector2(0.75f,0.0625f)},
@@ -58,17 +58,28 @@ public class MeshGenerator
 		/*CRACK4*/		{new Vector2(0.4375f,0f), new Vector2(0.5f,0f),
                             new Vector2(0.4375f,0.0625f), new Vector2(0.5f,0.0625f)}
     };
-    static readonly Vector3 _p0 = new Vector3(-0.5f, -0.5f, 0.5f),
-                            _p1 = new Vector3(0.5f, -0.5f, 0.5f),
-                            _p2 = new Vector3(0.5f, -0.5f, -0.5f),
-                            _p3 = new Vector3(-0.5f, -0.5f, -0.5f),
-                            _p4 = new Vector3(-0.5f, 0.5f, 0.5f),
-                            _p5 = new Vector3(0.5f, 0.5f, 0.5f),
-                            _p6 = new Vector3(0.5f, 0.5f, -0.5f),
-                            _p7 = new Vector3(-0.5f, 0.5f, -0.5f);
+
+    readonly Vector3 _p0 = new Vector3(-0.5f, -0.5f, 0.5f),
+                     _p1 = new Vector3(0.5f, -0.5f, 0.5f),
+                     _p2 = new Vector3(0.5f, -0.5f, -0.5f),
+                     _p3 = new Vector3(-0.5f, -0.5f, -0.5f),
+                     _p4 = new Vector3(-0.5f, 0.5f, 0.5f),
+                     _p5 = new Vector3(0.5f, 0.5f, 0.5f),
+                     _p6 = new Vector3(0.5f, 0.5f, -0.5f),
+                     _p7 = new Vector3(-0.5f, 0.5f, -0.5f);
     #endregion
+
+    readonly int _chunkSize, _worldSizeX, _worldSizeY, _worldSizeZ;
     
-    public static void CreateMeshes(ref BlockData[,,] blocks, Vector3Int coord, out Mesh terrain, out Mesh water)
+    public MeshGenerator(int chunkSize, int worldSizeX, int worldSizeY, int worldSizeZ)
+    {
+        _chunkSize = chunkSize;
+        _worldSizeX = worldSizeX;
+        _worldSizeY = worldSizeY;
+        _worldSizeZ = worldSizeZ;
+    }
+
+    public void CreateMeshes(ref BlockData[,,] blocks, Vector3Int coord, out Mesh terrain, out Mesh water)
     {
         // Determining mesh size
         int size = 0, waterSize = 0;
@@ -97,18 +108,18 @@ public class MeshGenerator
         var waterIndex = 0;
         var waterTriIndex = 0;
 
-        for (var z = 0; z < World.ChunkSize; z++)
-            for (var y = 0; y < World.ChunkSize; y++)
-                for (var x = 0; x < World.ChunkSize; x++)
+        for (var z = 0; z < _chunkSize; z++)
+            for (var y = 0; y < _chunkSize; y++)
+                for (var x = 0; x < _chunkSize; x++)
                 {
                     var b = blocks[x, y, z];
 
-                    if (b.Faces == 0 || b.Type == BlockType.Air)
+                    if (b.Faces == 0 || b.Type == BlockTypes.Air)
                         continue;
 
-                    if (b.Type == BlockType.Water)
+                    if (b.Type == BlockTypes.Water)
                         CreateWaterQuads(b, ref waterIndex, ref waterTriIndex, ref waterData, new Vector3(x, y, z));
-                    else if (b.Type == BlockType.Grass)
+                    else if (b.Type == BlockTypes.Grass)
                         CreateGrassQuads(b, ref index, ref triIndex, ref terrainData, new Vector3(x, y, z));
                     else
                         CreateStandardQuads(b, ref index, ref triIndex, ref terrainData, new Vector3(x, y, z));
@@ -149,187 +160,208 @@ public class MeshGenerator
         else water = null;
     }
     
-    static bool QuadVisibilityCheck(BlockType target) => target == BlockType.Air || target == BlockType.Water;
+    bool QuadVisibilityCheck(BlockTypes target) => target == BlockTypes.Air || target == BlockTypes.Water;
     
-    static void PerformInterChunkCheck(ref BlockData[,,] blocks, Vector3Int chunkCoord, Vector3Int blockCoord, ref int meshSize)
+    void PerformInterChunkCheck(ref BlockData[,,] blocks, Vector3Int chunkCoord, Vector3Int blockCoord, ref int meshSize)
     {
         BlockData block;
-        Cubeside faces = 0;
+        Cubesides faces = 0;
 
-        if (blockCoord.x == World.ChunkSize - 1)
+        if (blockCoord.x == _chunkSize - 1)
         {
-            if(World.TryGetBlockFromChunk(chunkCoord.x + 1, chunkCoord.y, chunkCoord.z,
-                0, blockCoord.y, blockCoord.z, out block))
+            if(TryGetBlockFromChunk(chunkCoord.x + 1, chunkCoord.y, chunkCoord.z,
+                0, blockCoord.y, blockCoord.z, ref blocks, out block))
             {
-                if (QuadVisibilityCheck(block.Type)) { faces |= Cubeside.Right; meshSize += 4; }
+                if (QuadVisibilityCheck(block.Type)) { faces |= Cubesides.Right; meshSize += 4; }
             }
-            else { faces |= Cubeside.Right; meshSize += 4; }
+            else { faces |= Cubesides.Right; meshSize += 4; }
         }
         else if(QuadVisibilityCheck(blocks[blockCoord.x + 1, blockCoord.y, blockCoord.z].Type))
-        { faces |= Cubeside.Right; meshSize += 4; }
+        { faces |= Cubesides.Right; meshSize += 4; }
 
         if (blockCoord.x == 0)
         {
-            if(World.TryGetBlockFromChunk(chunkCoord.x - 1, chunkCoord.y, chunkCoord.z, 
-                World.ChunkSize - 1, blockCoord.y, blockCoord.z, out block))
+            if(TryGetBlockFromChunk(chunkCoord.x - 1, chunkCoord.y, chunkCoord.z, 
+                _chunkSize - 1, blockCoord.y, blockCoord.z, ref blocks, out block))
             {
-                if (QuadVisibilityCheck(block.Type)) { faces |= Cubeside.Left; meshSize += 4; }
+                if (QuadVisibilityCheck(block.Type)) { faces |= Cubesides.Left; meshSize += 4; }
             }
-            else { faces |= Cubeside.Left; meshSize += 4; }
+            else { faces |= Cubesides.Left; meshSize += 4; }
         }
         else if (QuadVisibilityCheck(blocks[blockCoord.x - 1, blockCoord.y, blockCoord.z].Type))
-        { faces |= Cubeside.Left; meshSize += 4; }
+        { faces |= Cubesides.Left; meshSize += 4; }
 
-        if (blockCoord.y == World.ChunkSize - 1)
+        if (blockCoord.y == _chunkSize - 1)
         {
-            if(World.TryGetBlockFromChunk(chunkCoord.x, chunkCoord.y + 1, chunkCoord.z,
-                blockCoord.x, 0, blockCoord.z, out block))
+            if(TryGetBlockFromChunk(chunkCoord.x, chunkCoord.y + 1, chunkCoord.z,
+                blockCoord.x, 0, blockCoord.z, ref blocks, out block))
             {
-                if (QuadVisibilityCheck(block.Type)) { faces |= Cubeside.Top; meshSize += 4; }
+                if (QuadVisibilityCheck(block.Type)) { faces |= Cubesides.Top; meshSize += 4; }
             }
-            else { faces |= Cubeside.Top; meshSize += 4; }
+            else { faces |= Cubesides.Top; meshSize += 4; }
         }
         else if (QuadVisibilityCheck(blocks[blockCoord.x, blockCoord.y + 1, blockCoord.z].Type))
-        { faces |= Cubeside.Top; meshSize += 4; }
+        { faces |= Cubesides.Top; meshSize += 4; }
 
         if (blockCoord.y == 0)
         {
-            if(World.TryGetBlockFromChunk(chunkCoord.x, chunkCoord.y - 1, chunkCoord.z, 
-                blockCoord.x, World.ChunkSize - 1, blockCoord.z, out block))
+            if(TryGetBlockFromChunk(chunkCoord.x, chunkCoord.y - 1, chunkCoord.z, 
+                blockCoord.x, _chunkSize - 1, blockCoord.z, ref blocks, out block))
             {
-                if (QuadVisibilityCheck(block.Type)) { faces |= Cubeside.Bottom; meshSize += 4; }
+                if (QuadVisibilityCheck(block.Type)) { faces |= Cubesides.Bottom; meshSize += 4; }
             }
-            else { faces |= Cubeside.Bottom; meshSize += 4; }
+            else { faces |= Cubesides.Bottom; meshSize += 4; }
         }
         else if (QuadVisibilityCheck(blocks[blockCoord.x, blockCoord.y - 1, blockCoord.z].Type))
-        { faces |= Cubeside.Bottom; meshSize += 4; }
+        { faces |= Cubesides.Bottom; meshSize += 4; }
 
-        if (blockCoord.z == World.ChunkSize - 1)
+        if (blockCoord.z == _chunkSize - 1)
         {
-            if(World.TryGetBlockFromChunk(chunkCoord.x, chunkCoord.y, chunkCoord.z + 1,
-                blockCoord.x, blockCoord.y, 0, out block))
+            if(TryGetBlockFromChunk(chunkCoord.x, chunkCoord.y, chunkCoord.z + 1,
+                blockCoord.x, blockCoord.y, 0, ref blocks, out block))
             {
-                if (QuadVisibilityCheck(block.Type)) { faces |= Cubeside.Front; meshSize += 4; }
+                if (QuadVisibilityCheck(block.Type)) { faces |= Cubesides.Front; meshSize += 4; }
             }
-            else { faces |= Cubeside.Front; meshSize += 4; }
+            else { faces |= Cubesides.Front; meshSize += 4; }
         }
         else if (QuadVisibilityCheck(blocks[blockCoord.x, blockCoord.y, blockCoord.z + 1].Type))
-        { faces |= Cubeside.Front; meshSize += 4; }
+        { faces |= Cubesides.Front; meshSize += 4; }
 
         if (blockCoord.z == 0)
         {
-            if(World.TryGetBlockFromChunk(chunkCoord.x, chunkCoord.y, chunkCoord.z - 1,
-                blockCoord.x, blockCoord.y, World.ChunkSize - 1, out block))
+            if(TryGetBlockFromChunk(chunkCoord.x, chunkCoord.y, chunkCoord.z - 1,
+                blockCoord.x, blockCoord.y, _chunkSize - 1, ref blocks, out block))
             {
-                if (QuadVisibilityCheck(block.Type)) { faces |= Cubeside.Back; meshSize += 4; }
+                if (QuadVisibilityCheck(block.Type)) { faces |= Cubesides.Back; meshSize += 4; }
             }
-            else { faces |= Cubeside.Back; meshSize += 4; }
+            else { faces |= Cubesides.Back; meshSize += 4; }
         }
         else if (QuadVisibilityCheck(blocks[blockCoord.x, blockCoord.y, blockCoord.z - 1].Type))
-        { faces |= Cubeside.Back; meshSize += 4; }
+        { faces |= Cubesides.Back; meshSize += 4; }
 
         blocks[blockCoord.x, blockCoord.y, blockCoord.z].Faces = faces;
     }
 
-    static void WaterInterChunkCheck(ref BlockData[,,] blocks, Vector3Int chunkCoord, Vector3Int blockCoord, ref int meshSize)
+    void WaterInterChunkCheck(ref BlockData[,,] blocks, Vector3Int chunkCoord, Vector3Int blockCoord, ref int meshSize)
     {
-        if (blockCoord.y == World.ChunkSize - 1)
+        if (blockCoord.y == _chunkSize - 1)
         {
             BlockData block;
-            if (World.TryGetBlockFromChunk(chunkCoord.x, chunkCoord.y + 1, chunkCoord.z, blockCoord.x, 0, blockCoord.z, out block))
+            if (TryGetBlockFromChunk(chunkCoord.x, chunkCoord.y + 1, chunkCoord.z, 
+                blockCoord.x, 0, blockCoord.z, ref blocks, out block))
             {
-                if (block.Type == BlockType.Air)
+                if (block.Type == BlockTypes.Air)
                 {
-                    blocks[blockCoord.x, blockCoord.y, blockCoord.z].Faces |= Cubeside.Top;
+                    blocks[blockCoord.x, blockCoord.y, blockCoord.z].Faces |= Cubesides.Top;
                     meshSize += 4;
                 }
             }
         }
-        else if (blocks[blockCoord.x, blockCoord.y + 1, blockCoord.z].Type == BlockType.Air)
+        else if (blocks[blockCoord.x, blockCoord.y + 1, blockCoord.z].Type == BlockTypes.Air)
         {
-            blocks[blockCoord.x, blockCoord.y, blockCoord.z].Faces |= Cubeside.Top;
+            blocks[blockCoord.x, blockCoord.y, blockCoord.z].Faces |= Cubesides.Top;
             meshSize += 4;
         }
     }
 
-    public static void CalculateFacesAndMeshSize(ref BlockData[,,] blocks, Vector3Int chunkCoord, 
+    /// <summary>
+    /// Return true if the particular block could be find in the the chunk.
+    /// False if otherwise. In case of false a new dummy block will be returned.
+    /// </summary>
+    public bool TryGetBlockFromChunk(int chunkX, int chunkY, int chunkZ, int blockX, int blockY, int blockZ, 
+        ref BlockData[,,] blocks, out BlockData block)
+    {
+        if (chunkX >= _worldSizeX || chunkX < 0
+            || chunkY >= _worldSizeY || chunkY < 0
+            || chunkZ >= _worldSizeZ || chunkZ < 0)
+        {
+            // we are outside of the world!
+            block = new BlockData(); // dummy data
+            return false;
+        }
+
+        block = blocks[blockX, blockY, blockZ];
+
+        return true;
+    }
+
+    void CalculateFacesAndMeshSize(ref BlockData[,,] blocks, Vector3Int chunkCoord, 
         out int terrainMeshSize, out int waterMeshSize)
     {
-        var chunkSize = World.ChunkSize;
         terrainMeshSize = 0;
         waterMeshSize = 0;
         
         int x, y, z;
         // internal blocks
-        for (z = 1; z < chunkSize - 1; z++)
-            for (y = 1; y < chunkSize - 1; y++)
-                for (x = 1; x < chunkSize - 1; x++)
+        for (z = 1; z < _chunkSize - 1; z++)
+            for (y = 1; y < _chunkSize - 1; y++)
+                for (x = 1; x < _chunkSize - 1; x++)
                 {
                     var type = blocks[x, y, z].Type;
 
-                    if (type == BlockType.Water)
+                    if (type == BlockTypes.Water)
                     {
-                        if (blocks[x, y + 1, z].Type == BlockType.Air)
+                        if (blocks[x, y + 1, z].Type == BlockTypes.Air)
                         {
-                            blocks[x, y, z].Faces |= Cubeside.Top;
+                            blocks[x, y, z].Faces |= Cubesides.Top;
                             waterMeshSize += 4;
                         }
                     }
-                    else if (type != BlockType.Air)
+                    else if (type != BlockTypes.Air)
                     {
-                        Cubeside faces = 0;
-                        if (QuadVisibilityCheck(blocks[x + 1, y, z].Type)) { faces |= Cubeside.Right; terrainMeshSize += 4; }
-                        if (QuadVisibilityCheck(blocks[x - 1, y, z].Type)) { faces |= Cubeside.Left; terrainMeshSize += 4; }
-                        if (QuadVisibilityCheck(blocks[x, y + 1, z].Type)) { faces |= Cubeside.Top; terrainMeshSize += 4; }
-                        if (QuadVisibilityCheck(blocks[x, y - 1, z].Type)) { faces |= Cubeside.Bottom; terrainMeshSize += 4; }
-                        if (QuadVisibilityCheck(blocks[x, y, z + 1].Type)) { faces |= Cubeside.Front; terrainMeshSize += 4; }
-                        if (QuadVisibilityCheck(blocks[x, y, z - 1].Type)) { faces |= Cubeside.Back; terrainMeshSize += 4; }
+                        Cubesides faces = 0;
+                        if (QuadVisibilityCheck(blocks[x + 1, y, z].Type)) { faces |= Cubesides.Right; terrainMeshSize += 4; }
+                        if (QuadVisibilityCheck(blocks[x - 1, y, z].Type)) { faces |= Cubesides.Left; terrainMeshSize += 4; }
+                        if (QuadVisibilityCheck(blocks[x, y + 1, z].Type)) { faces |= Cubesides.Top; terrainMeshSize += 4; }
+                        if (QuadVisibilityCheck(blocks[x, y - 1, z].Type)) { faces |= Cubesides.Bottom; terrainMeshSize += 4; }
+                        if (QuadVisibilityCheck(blocks[x, y, z + 1].Type)) { faces |= Cubesides.Front; terrainMeshSize += 4; }
+                        if (QuadVisibilityCheck(blocks[x, y, z - 1].Type)) { faces |= Cubesides.Back; terrainMeshSize += 4; }
                         blocks[x, y, z].Faces = faces;
                     }
                 }
 
         // right and left entire squares boundaries check
-        for (z = 0; z < chunkSize; z++)
-            for (y = 0; y < chunkSize; y++)
-                for (x = 0; x < chunkSize; x += chunkSize - 1)
+        for (z = 0; z < _chunkSize; z++)
+            for (y = 0; y < _chunkSize; y++)
+                for (x = 0; x < _chunkSize; x += _chunkSize - 1)
                 {
                     var type = blocks[x, y, z].Type;
 
-                    if (type == BlockType.Water)
+                    if (type == BlockTypes.Water)
                         WaterInterChunkCheck(ref blocks, chunkCoord, new Vector3Int(x, y, z), ref waterMeshSize);
-                    else if (type != BlockType.Air)
+                    else if (type != BlockTypes.Air)
                         PerformInterChunkCheck(ref blocks, chunkCoord, new Vector3Int(x, y, z), ref terrainMeshSize);
                 }
 
         // top and bottom rectangles boundaries check
-        y = chunkSize - 1;
-        for (z = 0; z < chunkSize; z++)
-            for (y = 0; y < chunkSize; y += chunkSize - 1)
-                for (x = 1; x < chunkSize - 1; x++)
+        y = _chunkSize - 1;
+        for (z = 0; z < _chunkSize; z++)
+            for (y = 0; y < _chunkSize; y += _chunkSize - 1)
+                for (x = 1; x < _chunkSize - 1; x++)
                 {
                     var type = blocks[x, y, z].Type;
 
-                    if (type == BlockType.Water)
+                    if (type == BlockTypes.Water)
                         WaterInterChunkCheck(ref blocks, chunkCoord, new Vector3Int(x, y, z), ref waterMeshSize);
-                    else if (type != BlockType.Air)
+                    else if (type != BlockTypes.Air)
                         PerformInterChunkCheck(ref blocks, chunkCoord, new Vector3Int(x, y, z), ref terrainMeshSize);
                 }
 
         // front and back intarnal squares boundaries check
-        for (z = 0; z < chunkSize; z += chunkSize - 1)
-            for (y = 1; y < chunkSize - 1; y++)
-                for (x = 1; x < chunkSize - 1; x++)
+        for (z = 0; z < _chunkSize; z += _chunkSize - 1)
+            for (y = 1; y < _chunkSize - 1; y++)
+                for (x = 1; x < _chunkSize - 1; x++)
                 {
                     var type = blocks[x, y, z].Type;
 
-                    if (type == BlockType.Water)
+                    if (type == BlockTypes.Water)
                         WaterInterChunkCheck(ref blocks, chunkCoord, new Vector3Int(x, y, z), ref waterMeshSize);
-                    else if (type != BlockType.Air)
+                    else if (type != BlockTypes.Air)
                         PerformInterChunkCheck(ref blocks, chunkCoord, new Vector3Int(x, y, z), ref terrainMeshSize);
                 }
     }
 
-    static void CreateStandardQuads(BlockData block, ref int index, ref int triIndex, ref MeshData data, Vector3 blockCoord)
+    void CreateStandardQuads(BlockData block, ref int index, ref int triIndex, ref MeshData data, Vector3 blockCoord)
     {
         int typeIndex = (int)block.Type;
         
@@ -339,7 +371,7 @@ public class MeshGenerator
                 uv01 = _blockUVs[typeIndex, 2],
                 uv11 = _blockUVs[typeIndex, 3];
 
-        if (block.Faces.HasFlag(Cubeside.Top))
+        if (block.Faces.HasFlag(Cubesides.Top))
         {
             AddQuadComponents(ref index, ref triIndex, block, ref data, Vector3.up,
                 uv11, uv01, uv00, uv10,
@@ -347,7 +379,7 @@ public class MeshGenerator
             AddSuvs(block, ref data);
         }
 
-        if (block.Faces.HasFlag(Cubeside.Bottom))
+        if (block.Faces.HasFlag(Cubesides.Bottom))
         {
             AddQuadComponents(ref index, ref triIndex, block, ref data, Vector3.down,
                 uv11, uv01, uv00, uv10,
@@ -355,7 +387,7 @@ public class MeshGenerator
             AddSuvs(block, ref data);
         }
 
-        if (block.Faces.HasFlag(Cubeside.Left))
+        if (block.Faces.HasFlag(Cubesides.Left))
         {
             AddQuadComponents(ref index, ref triIndex, block, ref data, Vector3.left,
                 uv11, uv01, uv00, uv10,
@@ -363,7 +395,7 @@ public class MeshGenerator
             AddSuvs(block, ref data);
         }
 
-        if (block.Faces.HasFlag(Cubeside.Right))
+        if (block.Faces.HasFlag(Cubesides.Right))
         {
             AddQuadComponents(ref index, ref triIndex, block, ref data, Vector3.right,
                 uv11, uv01, uv00, uv10,
@@ -371,7 +403,7 @@ public class MeshGenerator
             AddSuvs(block, ref data);
         }
 
-        if (block.Faces.HasFlag(Cubeside.Front))
+        if (block.Faces.HasFlag(Cubesides.Front))
         {
             AddQuadComponents(ref index, ref triIndex, block, ref data, Vector3.forward,
                 uv11, uv01, uv00, uv10,
@@ -379,7 +411,7 @@ public class MeshGenerator
             AddSuvs(block, ref data);
         }
 
-        if (block.Faces.HasFlag(Cubeside.Back))
+        if (block.Faces.HasFlag(Cubesides.Back))
         {
             AddQuadComponents(ref index, ref triIndex, block, ref data, Vector3.back,
                 uv11, uv01, uv00, uv10,
@@ -388,7 +420,7 @@ public class MeshGenerator
         }
     }
 
-    static void CreateGrassQuads(BlockData block, ref int index, ref int triIndex, ref MeshData data, Vector3 blockCoord)
+    void CreateGrassQuads(BlockData block, ref int index, ref int triIndex, ref MeshData data, Vector3 blockCoord)
     {
         int typeIndex = (int)block.Type;
         
@@ -406,7 +438,7 @@ public class MeshGenerator
                 uv01side = _blockUVs[typeIndex + 1, 2],
                 uv11side = _blockUVs[typeIndex + 1, 3];
 
-        if (block.Faces.HasFlag(Cubeside.Top))
+        if (block.Faces.HasFlag(Cubesides.Top))
         {
             AddQuadComponents(ref index, ref triIndex, block, ref data, Vector3.up,
                 uv11top, uv01top, uv00top, uv10top,
@@ -414,7 +446,7 @@ public class MeshGenerator
             AddSuvs(block, ref data);
         }
 
-        if (block.Faces.HasFlag(Cubeside.Bottom))
+        if (block.Faces.HasFlag(Cubesides.Bottom))
         {
             AddQuadComponents(ref index, ref triIndex, block, ref data, Vector3.down,
                 uv11bot, uv01bot, uv00bot, uv10bot,
@@ -422,7 +454,7 @@ public class MeshGenerator
             AddSuvs(block, ref data);
         }
 
-        if (block.Faces.HasFlag(Cubeside.Left))
+        if (block.Faces.HasFlag(Cubesides.Left))
         {
             AddQuadComponents(ref index, ref triIndex, block, ref data, Vector3.left,
                 uv11side, uv01side, uv00side, uv10side,
@@ -430,7 +462,7 @@ public class MeshGenerator
             AddSuvs(block, ref data);
         }
 
-        if (block.Faces.HasFlag(Cubeside.Right))
+        if (block.Faces.HasFlag(Cubesides.Right))
         { 
             AddQuadComponents(ref index, ref triIndex, block, ref data, Vector3.right,
                 uv11side, uv01side, uv00side, uv10side,
@@ -438,7 +470,7 @@ public class MeshGenerator
             AddSuvs(block, ref data);
         }
 
-        if (block.Faces.HasFlag(Cubeside.Front))
+        if (block.Faces.HasFlag(Cubesides.Front))
         {
             AddQuadComponents(ref index, ref triIndex, block, ref data, Vector3.forward,
                 uv11side, uv01side, uv00side, uv10side,
@@ -446,7 +478,7 @@ public class MeshGenerator
             AddSuvs(block, ref data);
         }
 
-        if (block.Faces.HasFlag(Cubeside.Back))
+        if (block.Faces.HasFlag(Cubesides.Back))
         {
             AddQuadComponents(ref index, ref triIndex, block, ref data, Vector3.back,
                 uv11side, uv01side, uv00side, uv10side,
@@ -455,9 +487,9 @@ public class MeshGenerator
         }
     }
 
-    static void CreateWaterQuads(BlockData block, ref int index, ref int triIndex, ref MeshData data, Vector3 blockCoord)
+    void CreateWaterQuads(BlockData block, ref int index, ref int triIndex, ref MeshData data, Vector3 blockCoord)
     {
-        float uvConst = 1.0f / World.ChunkSize;
+        float uvConst = 1.0f / _chunkSize;
 
         // all possible UVs
         // left-top, right-top, left-bottom, right-bottom
@@ -466,14 +498,14 @@ public class MeshGenerator
                 uv01 = new Vector2(uvConst * blockCoord.x, 1 - uvConst * (blockCoord.z + 1)),
                 uv11 = new Vector2(uvConst * (blockCoord.x + 1), 1 - uvConst * (blockCoord.z + 1));
 
-        if (block.Faces.HasFlag(Cubeside.Top))
+        if (block.Faces.HasFlag(Cubesides.Top))
             AddQuadComponents(ref index, ref triIndex, block, ref data, Vector3.up,
                 uv11, uv01, uv00, uv10,
                 _p7 + blockCoord, _p6 + blockCoord, _p5 + blockCoord, _p4 + blockCoord);
         
     }
 
-    static void AddQuadComponents(ref int index, ref int triIndex, BlockData block,
+    void AddQuadComponents(ref int index, ref int triIndex, BlockData block,
         ref MeshData data, 
         Vector3 normal,
         Vector2 uv11, Vector2 uv01, Vector2 uv00, Vector2 uv10,
@@ -508,11 +540,11 @@ public class MeshGenerator
         index += 4;
     }
 
-    static void AddSuvs(BlockData block, ref MeshData data)
+    void AddSuvs(BlockData block, ref MeshData data)
     {
-        data.suvs.Add(_crackUVs[(int)block.HealthType, 3]); // top right corner
-        data.suvs.Add(_crackUVs[(int)block.HealthType, 2]); // top left corner
-        data.suvs.Add(_crackUVs[(int)block.HealthType, 0]); // bottom left corner
-        data.suvs.Add(_crackUVs[(int)block.HealthType, 1]); // bottom right corner
+        //data.suvs.Add(_crackUVs[(int)block.HealthType, 3]); // top right corner
+        //data.suvs.Add(_crackUVs[(int)block.HealthType, 2]); // top left corner
+        //data.suvs.Add(_crackUVs[(int)block.HealthType, 0]); // bottom left corner
+        //data.suvs.Add(_crackUVs[(int)block.HealthType, 1]); // bottom right corner
     }
 }

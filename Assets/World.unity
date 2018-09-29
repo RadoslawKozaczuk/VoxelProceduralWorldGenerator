@@ -396,8 +396,9 @@ GameObject:
   m_Component:
   - component: {fileID: 2093027089}
   - component: {fileID: 2093027090}
+  - component: {fileID: 2093027091}
   m_Layer: 0
-  m_Name: World
+  m_Name: Game
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -431,10 +432,27 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   TerrainParent: {fileID: 350537351}
   WaterParent: {fileID: 1304138699}
-  ActivatePlayer: 1
-  Player: {fileID: 1746416011}
   TextureAtlas: {fileID: 2100000, guid: 0beff685461bd4744bc433ab1599a347, type: 2}
   FluidTexture: {fileID: 2100000, guid: c40c0017d3704914db1e95d92cdb03a4, type: 2}
+  ChunkSize: 32
+  WorldSizeX: 5
+  WorldSizeY: 3
+  WorldSizeZ: 5
+--- !u!114 &2093027091
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 2093027087}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d5bcb6feeeb5b7a43becc923482bf5a1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  Player: {fileID: 1746416011}
   MainCamera: {fileID: 1698775129}
-  Posx: 0
-  Posz: 0
+  NewGameKey: 110
+  SaveKey: 115
+  LoadKey: 108
+  ControlKey: 306
+  ActivatePlayer: 1
