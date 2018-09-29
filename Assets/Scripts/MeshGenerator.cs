@@ -3,15 +3,6 @@ using UnityEngine;
 
 public class MeshGenerator
 {
-    public struct MeshData
-    {
-        public Vector2[] uvs;
-        public List<Vector2> suvs;
-        public Vector3[] verticies;
-        public Vector3[] normals;
-        public int[] triangles;
-    }
-
     #region Constants
     readonly Vector2[,] _blockUVs = { 
 						// left-bottom, right-bottom, left-top, right-top
@@ -79,7 +70,11 @@ public class MeshGenerator
         _worldSizeZ = worldSizeZ;
     }
 
-    public void CreateMeshes(ref BlockData[,,] blocks, Vector3Int coord, out Mesh terrain, out Mesh water)
+    /// <summary>
+    /// This method creates mesh data necessary to create mesh.
+    /// Data for both terrain and water meshes are created.
+    /// </summary>
+    public void ExtractMeshData(ref BlockData[,,] blocks, Vector3Int coord, out MeshData terrain, out MeshData water)
     {
         // Determining mesh size
         int size = 0, waterSize = 0;
@@ -87,20 +82,20 @@ public class MeshGenerator
         
         var terrainData = new MeshData
         {
-            uvs = new Vector2[size],
-            suvs = new List<Vector2>(size),
-            verticies = new Vector3[size],
-            normals = new Vector3[size],
-            triangles = new int[(int)(1.5f * size)]
+            Uvs = new Vector2[size],
+            Suvs = new List<Vector2>(size),
+            Verticies = new Vector3[size],
+            Normals = new Vector3[size],
+            Triangles = new int[(int)(1.5f * size)]
         };
         
         var waterData = new MeshData
         {
-            uvs = new Vector2[waterSize],
-            suvs = new List<Vector2>(waterSize),
-            verticies = new Vector3[waterSize],
-            normals = new Vector3[waterSize],
-            triangles = new int[(int)(1.5f * waterSize)]
+            Uvs = new Vector2[waterSize],
+            Suvs = new List<Vector2>(waterSize),
+            Verticies = new Vector3[waterSize],
+            Normals = new Vector3[waterSize],
+            Triangles = new int[(int)(1.5f * waterSize)]
         };
         
         var index = 0;
@@ -125,39 +120,23 @@ public class MeshGenerator
                         CreateStandardQuads(b, ref index, ref triIndex, ref terrainData, new Vector3(x, y, z));
                 }
 
-        // Create terrain mesh
-        if (size > 0)
-        {
-            var terrainMesh = new Mesh
-            {
-                vertices = terrainData.verticies,
-                normals = terrainData.normals,
-                uv = terrainData.uvs, // Uvs maps the texture over the surface
-                triangles = terrainData.triangles
-            };
-            terrainMesh.SetUVs(1, terrainData.suvs); // secondary uvs
-            terrainMesh.RecalculateBounds();
+        terrain = terrainData;
+        water = waterData;
+    }
 
-            terrain = terrainMesh;
-        }
-        else terrain = null;
-        
-        // Create water mesh
-        if (waterSize > 0)
+    public Mesh CreateMeshFromData(MeshData meshData)
+    {
+        var mesh = new Mesh
         {
-            var waterMesh = new Mesh
-            {
-                vertices = waterData.verticies,
-                normals = waterData.normals,
-                uv = waterData.uvs, // Uvs maps the texture over the surface
-                triangles = waterData.triangles
-            };
-            waterMesh.SetUVs(1, waterData.suvs); // secondary uvs
-            waterMesh.RecalculateBounds();
+            vertices = meshData.Verticies,
+            normals = meshData.Normals,
+            uv = meshData.Uvs, // Uvs maps the texture over the surface
+            triangles = meshData.Triangles
+        };
+        mesh.SetUVs(1, meshData.Suvs); // secondary uvs
+        mesh.RecalculateBounds();
 
-            water = waterMesh;
-        }
-        else water = null;
+        return mesh;
     }
     
     bool QuadVisibilityCheck(BlockTypes target) => target == BlockTypes.Air || target == BlockTypes.Water;
@@ -512,30 +491,30 @@ public class MeshGenerator
         Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3)
     {
         // add normals
-        data.normals[index] = normal;
-        data.normals[index + 1] = normal;
-        data.normals[index + 2] = normal;
-        data.normals[index + 3] = normal;
+        data.Normals[index] = normal;
+        data.Normals[index + 1] = normal;
+        data.Normals[index + 2] = normal;
+        data.Normals[index + 3] = normal;
 
         // add uvs
-        data.uvs[index] = uv00;
-        data.uvs[index + 1] = uv10;
-        data.uvs[index + 2] = uv11;
-        data.uvs[index + 3] = uv01;
+        data.Uvs[index] = uv00;
+        data.Uvs[index + 1] = uv10;
+        data.Uvs[index + 2] = uv11;
+        data.Uvs[index + 3] = uv01;
 
         // add verticies
-        data.verticies[index] = p0;
-        data.verticies[index + 1] = p1;
-        data.verticies[index + 2] = p2;
-        data.verticies[index + 3] = p3;
+        data.Verticies[index] = p0;
+        data.Verticies[index + 1] = p1;
+        data.Verticies[index + 2] = p2;
+        data.Verticies[index + 3] = p3;
         
         // add triangles
-        data.triangles[triIndex++] = index + 3;
-        data.triangles[triIndex++] = index + 1;
-        data.triangles[triIndex++] = index;
-        data.triangles[triIndex++] = index + 3;
-        data.triangles[triIndex++] = index + 2;
-        data.triangles[triIndex++] = index + 1;
+        data.Triangles[triIndex++] = index + 3;
+        data.Triangles[triIndex++] = index + 1;
+        data.Triangles[triIndex++] = index;
+        data.Triangles[triIndex++] = index + 3;
+        data.Triangles[triIndex++] = index + 2;
+        data.Triangles[triIndex++] = index + 1;
 
         index += 4;
     }

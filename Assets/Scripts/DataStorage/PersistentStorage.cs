@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System.Collections.Generic;
+using System.IO;
 using UnityEngine;
 
 public class PersistentStorage
@@ -15,7 +16,7 @@ public class PersistentStorage
         _chunkSize = chunkSize;
         _savePath = Path.Combine(Application.persistentDataPath, _saveFileName);
     }
-    
+
     public void SaveGame(Transform playerTransform, World world)
     {
         _writer = new BinaryWriter(File.Open(_savePath, FileMode.Create));
@@ -30,12 +31,15 @@ public class PersistentStorage
         _writer.Write(world.WorldSizeY);
         _writer.Write(world.WorldSizeZ);
 
-        // terrain data
+        // chunk data
         for (int x = 0; x < world.WorldSizeX; x++)
             for (int z = 0; z < world.WorldSizeZ; z++)
                 for (int y = 0; y < world.WorldSizeY; y++)
-                    Write(world.Chunks[x, y, z].Blocks);
-
+                    Write(new ChunkData()
+                    {
+                        Blocks = world.Chunks[x, y, z].Blocks
+                    });
+           
         _writer.Close();
         _writer.Dispose();
     }
@@ -53,13 +57,13 @@ public class PersistentStorage
 
             // world data
             ChunkSize = _reader.ReadByte(),
-            WorldSizeX =_reader.ReadByte(),
-            WorldSizeY =_reader.ReadByte(),
-            WorldSizeZ =_reader.ReadByte()
+            WorldSizeX = _reader.ReadByte(),
+            WorldSizeY = _reader.ReadByte(),
+            WorldSizeZ = _reader.ReadByte()
         };
 
-        int sizeX = loadGameData.WorldSizeX, 
-            sizeY = loadGameData.WorldSizeY, 
+        int sizeX = loadGameData.WorldSizeX,
+            sizeY = loadGameData.WorldSizeY,
             sizeZ = loadGameData.WorldSizeX;
 
         var chunks = new ChunkData[sizeX, sizeY, sizeZ];
@@ -68,7 +72,7 @@ public class PersistentStorage
         for (int x = 0; x < sizeX; x++)
             for (int z = 0; z < sizeZ; z++)
                 for (int y = 0; y < sizeY; y++)
-                    chunks[x, y, z] = new ChunkData() { Blocks = ReadChunkData() };
+                    chunks[x, y, z].Blocks = ReadChunkData().Blocks;
 
         loadGameData.Chunks = chunks;
 
@@ -77,8 +81,17 @@ public class PersistentStorage
 
         return loadGameData;
     }
-    
-    BlockData[,,] ReadChunkData()
+
+    #region Reading Methods
+    ChunkData ReadChunkData() => new ChunkData()
+    {
+        Blocks = ReadBlockDataArray()
+        //,
+        //TerrainData = ReadMeshData(),
+        //WaterData = ReadMeshData()
+    };
+
+    BlockData[,,] ReadBlockDataArray()
     {
         var blocks = new BlockData[_chunkSize, _chunkSize, _chunkSize];
         for (var z = 0; z < _chunkSize; z++)
@@ -94,7 +107,23 @@ public class PersistentStorage
         Faces = (Cubesides)_reader.ReadByte(),
         Type = (BlockTypes)_reader.ReadByte()
     };
-    
+
+    MeshData ReadMeshData()
+    {
+        var collectionSizes = ReadArrayInt32(5);
+        var meshData = new MeshData
+        {
+            //CollectionSizes = collectionSizes,
+            Uvs = ReadArrayVector2(collectionSizes[0]),
+            Suvs = ReadListVector2(collectionSizes[1]),
+            Verticies = ReadArrayVector3(collectionSizes[2]),
+            Normals = ReadArrayVector3(collectionSizes[3]),
+            Triangles = ReadArrayInt32(collectionSizes[4])
+        };
+
+        return meshData;
+    }
+
     Quaternion ReadQuaternion() => new Quaternion
     {
         x = _reader.ReadSingle(),
@@ -103,13 +132,60 @@ public class PersistentStorage
         w = _reader.ReadSingle()
     };
 
+    Vector3[] ReadArrayVector3(int size)
+    {
+        var array = new Vector3[size];
+        for (int i = 0; i < size; i++)
+            array[i] = ReadVector2();
+        return array;
+    }
+
     Vector3 ReadVector3() => new Vector3
     {
         x = _reader.ReadSingle(),
         y = _reader.ReadSingle(),
         z = _reader.ReadSingle()
     };
-    
+
+    List<Vector2> ReadListVector2(int size)
+    {
+        var list = new List<Vector2>(size);
+        for (int i = 0; i < size; i++)
+            list.Add(ReadVector2());
+        return list;
+    }
+
+    Vector2[]ReadArrayVector2(int size)
+    {
+        var array = new Vector2[size];
+        for (int i = 0; i < size; i++)
+            array[i] = ReadVector2();
+        return array;
+    }
+
+    Vector2 ReadVector2() => new Vector2
+    {
+        x = _reader.ReadSingle(),
+        y = _reader.ReadSingle()
+    };
+
+    int[] ReadArrayInt32(int size)
+    {
+        var array = new int[size];
+        for (int i = 0; i < size; i++)
+            array[i] = _reader.ReadInt32();
+        return array;
+    }
+    #endregion
+
+    #region Writing Methods
+    void Write(ChunkData chunkData)
+    {
+        Write(chunkData.Blocks);
+        //Write(chunkData.TerrainData);
+        //Write(chunkData.WaterData);
+    }
+
     void Write(BlockData[,,] blocks)
     {
         for (var z = 0; z < _chunkSize; z++)
@@ -121,7 +197,17 @@ public class PersistentStorage
                     _writer.Write((byte)block.Type);
                 }
     }
-    
+
+    void Write(MeshData meshData)
+    {
+        //Write(meshData.CollectionSizes);
+        Write(meshData.Uvs);
+        Write(meshData.Suvs);
+        Write(meshData.Verticies);
+        Write(meshData.Normals);
+        Write(meshData.Triangles);
+    }
+
     void Write(Quaternion value)
     {
         _writer.Write(value.x);
@@ -130,10 +216,41 @@ public class PersistentStorage
         _writer.Write(value.w);
     }
 
+    void Write(Vector3[] array)
+    {
+        for (int i = 0; i < array.Length; i++)
+            Write(array[i]);
+    }
+
     void Write(Vector3 value)
     {
         _writer.Write(value.x);
         _writer.Write(value.y);
         _writer.Write(value.z);
     }
+
+    void Write(List<Vector2> list)
+    {
+        foreach (var v in list)
+            Write(v);
+    }
+
+    void Write(Vector2[] array)
+    {
+        for (int i = 0; i < array.Length; i++)
+            Write(array[i]);
+    }
+
+    void Write(Vector2 value)
+    {
+        _writer.Write(value.x);
+        _writer.Write(value.y);
+    }
+
+    void Write(int[] array)
+    {
+        for (int i = 0; i < array.Length; i++)
+            _writer.Write(array[i]);
+    }
+    #endregion
 }

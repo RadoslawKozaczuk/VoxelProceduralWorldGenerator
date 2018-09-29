@@ -23,31 +23,33 @@ public class Chunk
 			0  // air
 		}; // -1 means the block cannot be destroyed
 
+    Vector3 _position;
     readonly int _chunkSize, _worldSizeX, _worldSizeY, _worldSizeZ;
+    readonly string _chunkKey;
 
     public Chunk(Vector3 position, Material chunkMaterial, Material transparentMaterial, World worldReference, Vector3Int coord)
     {
+        Coord = coord;
+
         _chunkSize = worldReference.ChunkSize;
         _worldSizeX = worldReference.WorldSizeX;
         _worldSizeY = worldReference.WorldSizeY;
         _worldSizeZ = worldReference.WorldSizeZ;
-
-        // TODO: do sprawdzenia czy to ma wogole sens - czy ten klucz odpowiada numerowi czunku w przestrzeni
-        var chunkKey = _worldSizeY * _worldSizeY * coord.y + _worldSizeZ * coord.z + coord.x;
-        Coord = coord;
-
-        Terrain = new GameObject(chunkKey.ToString());
+        _position = position;
+        _chunkKey = $"{coord.y + coord.z * _worldSizeZ + coord.x * _worldSizeY * _worldSizeZ}";
+        
+        Terrain = new GameObject(_chunkKey);
         Terrain.transform.position = position;
         Terrain.transform.SetParent(worldReference.TerrainParent);
         TerrainMaterial = chunkMaterial;
 
-        Water = new GameObject(chunkKey + "_fluid");
+        Water = new GameObject(_chunkKey);
         Water.transform.position = position;
         Water.transform.SetParent(worldReference.WaterParent);
         WaterMaterial = transparentMaterial;
 
-        MonoBehavior = Terrain.AddComponent<ChunkMonoBehavior>();
-        MonoBehavior.SetOwner(this);
+        //MonoBehavior = Terrain.AddComponent<ChunkMonoBehavior>();
+        //MonoBehavior.SetOwner(this);
 
         Status = ChunkStatus.NotInitialized;
     }
@@ -68,7 +70,7 @@ public class Chunk
     {
         DestroyMeshAndCollider();
         var meshGenerator = new MeshGenerator(_chunkSize, _worldSizeX, _worldSizeY, _worldSizeZ);
-        CalculateMeshes(meshGenerator, Coord);
+        //CalculateMeshes(meshGenerator, Coord);
     }
 
     /// <summary>
@@ -83,43 +85,25 @@ public class Chunk
         Object.DestroyImmediate(Water.GetComponent<MeshFilter>());
         Object.DestroyImmediate(Water.GetComponent<MeshRenderer>());
     }
-
-    public void CalculateMeshes(MeshGenerator meshGenerator, Vector3 chunkPos)
+    
+    public void CreateTerrainObject(Mesh mesh)
     {
-        Mesh mesh, waterMesh;
-        meshGenerator.CreateMeshes(ref Blocks, Coord, out mesh, out waterMesh);
+        var renderer = Terrain.gameObject.AddComponent(typeof(MeshRenderer)) as MeshRenderer;
+        renderer.material = TerrainMaterial;
 
-        // Create terrain object
-        if (mesh != null)
-        {
-            var chunk = new GameObject("Chunk");
-            chunk.transform.position = chunkPos;
-            chunk.transform.parent = Terrain.transform;
+        var meshFilter = (MeshFilter)Terrain.AddComponent(typeof(MeshFilter));
+        meshFilter.mesh = mesh;
 
-            var renderer = chunk.gameObject.AddComponent(typeof(MeshRenderer)) as MeshRenderer;
-            renderer.material = TerrainMaterial;
+        var collider = Terrain.gameObject.AddComponent(typeof(MeshCollider)) as MeshCollider;
+        collider.sharedMesh = mesh;
+    }
 
-            var meshFilter = (MeshFilter)chunk.AddComponent(typeof(MeshFilter));
-            meshFilter.mesh = mesh;
+    public void CreateWaterObject(Mesh mesh)
+    {
+        var waterRenderer = Water.gameObject.AddComponent(typeof(MeshRenderer)) as MeshRenderer;
+        waterRenderer.material = WaterMaterial;
 
-            var collider = Terrain.gameObject.AddComponent(typeof(MeshCollider)) as MeshCollider;
-            collider.sharedMesh = mesh;
-        }
-
-        // Create water object
-        if (waterMesh != null)
-        {
-            var waterChunk = new GameObject("WaterChunk");
-            waterChunk.transform.position = chunkPos;
-            waterChunk.transform.parent = Water.transform;
-
-            var waterRenderer = waterChunk.gameObject.AddComponent(typeof(MeshRenderer)) as MeshRenderer;
-            waterRenderer.material = WaterMaterial;
-
-            var waterMeshFilter = (MeshFilter)waterChunk.AddComponent(typeof(MeshFilter));
-            waterMeshFilter.mesh = waterMesh;
-        }
-
-        Status = ChunkStatus.Created;
+        var waterMeshFilter = (MeshFilter)Water.AddComponent(typeof(MeshFilter));
+        waterMeshFilter.mesh = mesh;
     }
 }

@@ -43,7 +43,7 @@ public class Game : MonoBehaviour
             var storage = new PersistentStorage(World.ChunkSize);
 
             var save = storage.LoadGame();
-            World.GenerateTerrain(save);
+            World.LoadTerrain(save);
             World.CalculateMesh();
             CreatePlayer(save.Position, save.Rotation);
             Player.SetActive(true);
