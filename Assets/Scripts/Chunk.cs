@@ -85,6 +85,8 @@ public class Chunk
 
         CreateTerrainObject(tm);
         CreateWaterObject(wm);
+
+        Status = ChunkStatus.Created;
     }
 
     /// <summary>
@@ -131,8 +133,13 @@ public class Chunk
         _accumulatedWaterObjectCreationTime += _stopwatch.ElapsedTicks;
     }
     
-    public void BlockHit(int x, int y, int z)
+    /// <summary>
+    /// Returns true if the block has been destroyed.
+    /// </summary>
+    public bool BlockHit(int x, int y, int z)
     {
+        var retVal = false;
+
         byte previousHpLevel = Blocks[x, y, z].HealthLevel;
         Blocks[x, y, z].Hp--;
         byte currentHpLevel = CalculateHealthLevel(
@@ -142,14 +149,19 @@ public class Chunk
         if (currentHpLevel != previousHpLevel)
         {
             Blocks[x, y, z].HealthLevel = currentHpLevel;
-            
+
             if (Blocks[x, y, z].Hp == 0)
+            {
                 Blocks[x, y, z].Type = BlockTypes.Air;
+                retVal = true;
+            }
 
             // TODO: for now lets simply redraw whole chunk to see if it works
             // this is rather expensive and maybe I should look for another solution
             Status = ChunkStatus.NeedToBeRedrawn;
         }
+
+        return retVal;
     }
 
     byte CalculateHealthLevel(int hp, int maxHp)

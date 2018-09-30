@@ -84,25 +84,25 @@ public class MeshGenerator
         _stopwatch.Restart();
 
         // Determining mesh size
-        int size = 0, waterSize = 0;
-        CalculateFacesAndMeshSize(ref blocks, coord, out size, out waterSize);
+        int tSize = 0, wSize = 0;
+        CalculateFacesAndMeshSize(ref blocks, coord, out tSize, out wSize);
         
         var terrainData = new MeshData
         {
-            Uvs = new Vector2[size],
-            Suvs = new List<Vector2>(size),
-            Verticies = new Vector3[size],
-            Normals = new Vector3[size],
-            Triangles = new int[(int)(1.5f * size)]
+            Uvs = new Vector2[tSize],
+            Suvs = new List<Vector2>(tSize),
+            Verticies = new Vector3[tSize],
+            Normals = new Vector3[tSize],
+            Triangles = new int[(int)(1.5f * tSize)]
         };
         
         var waterData = new MeshData
         {
-            Uvs = new Vector2[waterSize],
-            Suvs = new List<Vector2>(waterSize),
-            Verticies = new Vector3[waterSize],
-            Normals = new Vector3[waterSize],
-            Triangles = new int[(int)(1.5f * waterSize)]
+            Uvs = new Vector2[wSize],
+            Suvs = new List<Vector2>(wSize),
+            Verticies = new Vector3[wSize],
+            Normals = new Vector3[wSize],
+            Triangles = new int[(int)(1.5f * wSize)]
         };
         
         var index = 0;
@@ -326,6 +326,11 @@ public class MeshGenerator
                 for (x = 0; x < _chunkSize; x += _chunkSize - 1)
                 {
                     var type = blocks[x, y, z].Type;
+
+                    int werwr = 0;
+                    if (chunkCoord.x == 0 && chunkCoord.y == 11 && chunkCoord.z == 0
+                        && x == 2 && y == 2 && z == 1)
+                        werwr = 1;
 
                     if (type == BlockTypes.Water)
                         WaterInterChunkCheck(ref blocks, chunkCoord, new Vector3Int(x, y, z), ref waterMeshSize);

@@ -74,23 +74,4 @@ public class BlockInteraction : MonoBehaviour
             Debug.Log("Change build block type to Water");
         }
     }
-
-    private void RedrawNeighbours(Vector3 blockPosition, int chunkX, int chunkY, int chunkZ)
-    {
-        // if the block is on the edge of the chunk we need to inform the neighbor chunk
-        //         if (blockPosition.x == 0 && chunkX - 1 >= 0)
-        //             World.Chunks[chunkX - 1, chunkY, chunkZ].RecreateMeshAndCollider();
-        //if (blockPosition.x == World.ChunkSize - 1 && chunkX + 1 < World.WorldSizeX)
-        //             World.Chunks[chunkX + 1, chunkY, chunkZ].RecreateMeshAndCollider();
-
-        //if (blockPosition.y == 0 && chunkY - 1 >= 0)
-        //             World.Chunks[chunkX, chunkY - 1, chunkZ].RecreateMeshAndCollider();
-        //if (blockPosition.y == World.ChunkSize - 1 && chunkY + 1 < World.WorldSizeY)
-        //             World.Chunks[chunkX, chunkY + 1, chunkZ].RecreateMeshAndCollider();
-
-        //if (blockPosition.z == 0 && chunkX - 1 >= 0)
-        //             World.Chunks[chunkX, chunkY, chunkZ - 1].RecreateMeshAndCollider();
-        //if (blockPosition.z == World.ChunkSize - 1 && chunkZ + 1 < World.WorldSizeZ)
-        //             World.Chunks[chunkX, chunkY, chunkZ + 1].RecreateMeshAndCollider();
-    }
 }

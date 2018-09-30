@@ -446,6 +446,7 @@ MonoBehaviour:
   WaterParent: {fileID: 1304138699}
   TextureAtlas: {fileID: 2100000, guid: 0beff685461bd4744bc433ab1599a347, type: 2}
   FluidTexture: {fileID: 2100000, guid: c40c0017d3704914db1e95d92cdb03a4, type: 2}
+  WorldCreated: 0
   ChunkSize: 32
   WorldSizeX: 4
   WorldSizeY: 3
@@ -464,7 +465,7 @@ MonoBehaviour:
   Player: {fileID: 1746416011}
   MainCamera: {fileID: 1698775129}
   NewGameKey: 110
-  SaveKey: 115
+  SaveKey: 107
   LoadKey: 108
   ControlKey: 306
   PlayerStartPosition: {x: 15, y: 15, z: 15}

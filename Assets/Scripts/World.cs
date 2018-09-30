@@ -113,11 +113,46 @@ public class World : MonoBehaviour
         int chunkX = hitBlock.x < 0 ? 0 : (int)(hitBlock.x / ChunkSize);
         int chunkY = hitBlock.y < 0 ? 0 : (int)(hitBlock.y / ChunkSize);
         int chunkZ = hitBlock.z < 0 ? 0 : (int)(hitBlock.z / ChunkSize);
+        
+        int blockX = (int)hitBlock.x - chunkX * ChunkSize;
+        int blockY = (int)hitBlock.y - chunkY * ChunkSize;
+        int blockZ = (int)hitBlock.z - chunkZ * ChunkSize;
 
         // inform chunk
-        Chunks[chunkX, chunkY, chunkZ].BlockHit(
-            (int)hitBlock.x - chunkX * ChunkSize,
-            (int)hitBlock.y - chunkY * ChunkSize,
-            (int)hitBlock.z - chunkZ * ChunkSize);
+        var wasBlockDestroyed = Chunks[chunkX, chunkY, chunkZ].BlockHit(blockX, blockY, blockZ);
+        
+        if (wasBlockDestroyed)
+            CheckNeighboringChunks(blockX, blockY, blockZ, chunkX, chunkY, chunkZ);
+    }
+
+    /// <summary>
+    /// Check if neighboring chunks need to be redrawn and change their status if necessary.
+    /// </summary>
+    void CheckNeighboringChunks(int blockX, int blockY, int blockZ, int chunkX, int chunkY, int chunkZ)
+    {
+        // right check
+        if (blockX == ChunkSize - 1 && chunkX + 1 < WorldSizeX)
+            Chunks[chunkX + 1, chunkY, chunkZ].Status = ChunkStatus.NeedToBeRedrawn;
+
+        // BUG: there are sometimes faces not beinf rendered on this axis - dunno why
+        // left check
+        if (blockX == 0 && chunkX - 1 >= 0)
+            Chunks[chunkX - 1, chunkY, chunkZ].Status = ChunkStatus.NeedToBeRedrawn;
+
+        // top check
+        if (blockY == ChunkSize - 1 && chunkY + 1 < WorldSizeY)
+            Chunks[chunkX, chunkY + 1, chunkZ].Status = ChunkStatus.NeedToBeRedrawn;
+
+        // bottom check
+        if (blockY == 0 && chunkY - 1 >= 0)
+            Chunks[chunkX, chunkY - 1, chunkZ].Status = ChunkStatus.NeedToBeRedrawn;
+
+        // front check
+        if (blockZ == ChunkSize - 1 && chunkZ + 1 < WorldSizeZ)
+            Chunks[chunkX, chunkY, chunkZ + 1].Status = ChunkStatus.NeedToBeRedrawn;
+
+        // back check
+        if (blockZ == 0 && chunkZ - 1 >= 0)
+            Chunks[chunkX, chunkY, chunkZ - 1].Status = ChunkStatus.NeedToBeRedrawn;
     }
 }
