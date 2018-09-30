@@ -24,9 +24,13 @@ public class Game : MonoBehaviour
     {
         if (Input.GetKeyDown(NewGameKey))
         {
+            World.WorldCreated = false;
+
             World.GenerateTerrain();
             World.CalculateMesh();
             CreatePlayer();
+
+            World.WorldCreated = true;
 
             Debug.Log("New Game started");
         }
@@ -47,6 +51,8 @@ public class Game : MonoBehaviour
         }
         else if (Input.GetKeyDown(LoadKey))
         {
+            World.WorldCreated = false;
+
             var storage = new PersistentStorage(World.ChunkSize);
 
             var save = storage.LoadGame();
@@ -60,6 +66,8 @@ public class Game : MonoBehaviour
 
             CreatePlayer(save.Position, save.Rotation);
             Player.SetActive(true);
+
+            World.WorldCreated = true;
 
             Debug.Log("Game Loaded");
         }

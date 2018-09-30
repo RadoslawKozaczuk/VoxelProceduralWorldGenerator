@@ -9,6 +9,7 @@ public class World : MonoBehaviour
     public Material TextureAtlas;
     public Material FluidTexture;
 
+    public bool WorldCreated = false;
     public byte ChunkSize = 32;
     public byte WorldSizeX = 7;
     public byte WorldSizeY = 4;
@@ -16,6 +17,24 @@ public class World : MonoBehaviour
 
     Stopwatch _stopwatch = new Stopwatch();
     long _terrainReadyTime;
+    
+    void Update()
+    {
+        if(WorldCreated)
+            RedrawChunksIfNecessary();
+    }
+
+    void RedrawChunksIfNecessary()
+    {
+        for (int x = 0; x < WorldSizeX; x++)
+            for (int z = 0; z < WorldSizeZ; z++)
+                for (int y = 0; y < WorldSizeY; y++)
+                {
+                    Chunk c = Chunks[x, y, z];
+                    if (c.Status == ChunkStatus.NeedToBeRedrawn)
+                        c.RecreateMeshAndCollider();
+                }
+    }
 
     /// <summary>
     /// If storage variable is equal to null terrain will be generated.
@@ -63,7 +82,7 @@ public class World : MonoBehaviour
                     c.CreateTerrainObject(meshGenerator.CreateMesh(terrainData));
                     c.CreateWaterObject(meshGenerator.CreateMesh(waterData));
 
-                    c.Status = Chunk.ChunkStatus.Created;
+                    c.Status = ChunkStatus.Created;
                 }
 
         meshGenerator.LogTimeSpent();
@@ -87,5 +106,18 @@ public class World : MonoBehaviour
         _stopwatch.Stop();
         _terrainReadyTime = _stopwatch.ElapsedMilliseconds;
         UnityEngine.Debug.Log($"It took {_terrainReadyTime} ms to load terrain data.");
+    }
+
+    public void ProcessBlockHit(Vector3 hitBlock)
+    {
+        int chunkX = hitBlock.x < 0 ? 0 : (int)(hitBlock.x / ChunkSize);
+        int chunkY = hitBlock.y < 0 ? 0 : (int)(hitBlock.y / ChunkSize);
+        int chunkZ = hitBlock.z < 0 ? 0 : (int)(hitBlock.z / ChunkSize);
+
+        // inform chunk
+        Chunks[chunkX, chunkY, chunkZ].BlockHit(
+            (int)hitBlock.x - chunkX * ChunkSize,
+            (int)hitBlock.y - chunkY * ChunkSize,
+            (int)hitBlock.z - chunkZ * ChunkSize);
     }
 }

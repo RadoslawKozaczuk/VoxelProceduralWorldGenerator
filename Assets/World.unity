@@ -192,6 +192,21 @@ Prefab:
       propertyPath: m_MouseLook.clampVerticalRotation
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 114073182465937732, guid: 5e9e851c0e142814dac026a256ba2ac0,
+        type: 2}
+      propertyPath: World
+      value: 
+      objectReference: {fileID: 2093027090}
+    - target: {fileID: 114073182465937732, guid: 5e9e851c0e142814dac026a256ba2ac0,
+        type: 2}
+      propertyPath: Camera
+      value: 
+      objectReference: {fileID: 1447860041}
+    - target: {fileID: 114073182465937732, guid: 5e9e851c0e142814dac026a256ba2ac0,
+        type: 2}
+      propertyPath: Cam
+      value: 
+      objectReference: {fileID: 1447860041}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 5e9e851c0e142814dac026a256ba2ac0, type: 2}
   m_IsPrefabAsset: 0
@@ -223,6 +238,11 @@ Transform:
   m_Father: {fileID: 2093027089}
   m_RootOrder: 1
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1447860041 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 100002, guid: 5e9e851c0e142814dac026a256ba2ac0,
+    type: 2}
+  m_PrefabInternal: {fileID: 1046121369}
 --- !u!1 &1536793149
 GameObject:
   m_ObjectHideFlags: 0
@@ -427,9 +447,9 @@ MonoBehaviour:
   TextureAtlas: {fileID: 2100000, guid: 0beff685461bd4744bc433ab1599a347, type: 2}
   FluidTexture: {fileID: 2100000, guid: c40c0017d3704914db1e95d92cdb03a4, type: 2}
   ChunkSize: 32
-  WorldSizeX: 5
+  WorldSizeX: 4
   WorldSizeY: 3
-  WorldSizeZ: 5
+  WorldSizeZ: 4
 --- !u!114 &2093027091
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -447,5 +467,5 @@ MonoBehaviour:
   SaveKey: 115
   LoadKey: 108
   ControlKey: 306
-  PlayerStartPosition: {x: 10, y: 10, z: 10}
+  PlayerStartPosition: {x: 15, y: 15, z: 15}
   ActivatePlayer: 1

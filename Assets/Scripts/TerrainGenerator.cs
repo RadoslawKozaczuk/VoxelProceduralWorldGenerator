@@ -279,7 +279,11 @@ public class TerrainGenerator
         for (var z = 0; z < _chunkSize; z++)
             for (var y = 0; y < _chunkSize; y++)
                 for (var x = 0; x < _chunkSize; x++)
-                    blocks[x, y, z].Type = types[x + y * _chunkSize + z * _chunkSize * _chunkSize];
+                {
+                    var type = types[x + y * _chunkSize + z * _chunkSize * _chunkSize];
+                    blocks[x, y, z].Type = type;
+                    blocks[x, y, z].Hp = LookupTables.BlockHealthMax[(int)type];
+                }
     }
     
     void AddTrees(ref BlockData[,,] blocks, Vector3 chunkPosition)

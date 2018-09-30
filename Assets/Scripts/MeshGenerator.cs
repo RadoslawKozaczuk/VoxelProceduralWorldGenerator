@@ -15,7 +15,7 @@ public class MeshGenerator
 {
     Stopwatch _stopwatch = new Stopwatch();
     long _accumulatedExtractMeshDataTime, _accumulatedCreateMeshTime;
-    
+
     #region Readonly lookup tables
     readonly Vector2[,] _blockUVs = { 
 						// left-bottom, right-bottom, left-top, right-top
@@ -49,19 +49,9 @@ public class MeshGenerator
 		// BUG: Tile sheet provided is broken and some tiles overlaps each other
 	};
 
-    readonly Vector2[,] _crackUVs = { 
-						// left-bottom, right-bottom, left-top, right-top
-		/*NOCRACK*/		{new Vector2(0.6875f,0f), new Vector2(0.75f,0f),
-                            new Vector2(0.6875f,0.0625f), new Vector2(0.75f,0.0625f)},
-		/*CRACK1*/		{new Vector2(0.0625f,0f), new Vector2(0.125f,0f),
-                            new Vector2(0.0625f,0.0625f), new Vector2(0.125f,0.0625f)},
-		/*CRACK2*/		{new Vector2(0.1875f,0f), new Vector2(0.25f,0f),
-                            new Vector2(0.1875f,0.0625f), new Vector2(0.25f,0.0625f)},
-		/*CRACK3*/		{new Vector2(0.3125f,0f), new Vector2(0.375f,0f),
-                            new Vector2(0.3125f,0.0625f), new Vector2(0.375f,0.0625f)},
-		/*CRACK4*/		{new Vector2(0.4375f,0f), new Vector2(0.5f,0f),
-                            new Vector2(0.4375f,0.0625f), new Vector2(0.5f,0.0625f)}
-    };
+    // order goes as follows
+    // NoCrack, Crack1, Crack2, Crack3, Crack4, Crack5, Crack6, Crack7, Crack8, Crack9, Crack10
+    readonly Vector2[,] _crackUVs;
 
     readonly Vector3 _p0 = new Vector3(-0.5f, -0.5f, 0.5f),
                      _p1 = new Vector3(0.5f, -0.5f, 0.5f),
@@ -81,6 +71,8 @@ public class MeshGenerator
         _worldSizeX = worldSizeX;
         _worldSizeY = worldSizeY;
         _worldSizeZ = worldSizeZ;
+
+        _crackUVs = FillCrackUvTable();
     }
 
     /// <summary>
@@ -550,9 +542,33 @@ public class MeshGenerator
 
     void AddSuvs(BlockData block, ref MeshData data)
     {
-        //data.suvs.Add(_crackUVs[(int)block.HealthType, 3]); // top right corner
-        //data.suvs.Add(_crackUVs[(int)block.HealthType, 2]); // top left corner
-        //data.suvs.Add(_crackUVs[(int)block.HealthType, 0]); // bottom left corner
-        //data.suvs.Add(_crackUVs[(int)block.HealthType, 1]); // bottom right corner
+        data.Suvs.Add(_crackUVs[block.HealthLevel, 3]); // top right corner
+        data.Suvs.Add(_crackUVs[block.HealthLevel, 2]); // top left corner
+        data.Suvs.Add(_crackUVs[block.HealthLevel, 0]); // bottom left corner
+        data.Suvs.Add(_crackUVs[block.HealthLevel, 1]); // bottom right corner
+    }
+    
+    Vector2[,] FillCrackUvTable()
+    {
+        var crackUVs = new Vector2[11, 4];
+
+        // NoCrack
+        crackUVs[0, 0] = new Vector2(0.6875f, 0f);
+        crackUVs[0, 1] = new Vector2(0.75f, 0f);
+        crackUVs[0, 2] = new Vector2(0.6875f, 0.0625f);
+        crackUVs[0, 3] = new Vector2(0.75f, 0.0625f);
+
+        float singleUnit = 0.0625f;
+
+        // Crack1, Crack2, Crack3, Crack4, Crack5, Crack6, Crack7, Crack8, Crack9, Crack10
+        for (int i = 1; i < 11; i++)
+        {
+            crackUVs[i, 0] = new Vector2((i - 1) * singleUnit, 0f); // left-bottom
+            crackUVs[i, 1] = new Vector2(i * singleUnit, 0f); // right-bottom
+            crackUVs[i, 2] = new Vector2((i - 1) * singleUnit, 0.0625f); // left-top
+            crackUVs[i, 3] = new Vector2(i * singleUnit, 0.0625f); // right-top
+        }
+
+        return crackUVs;
     }
 }

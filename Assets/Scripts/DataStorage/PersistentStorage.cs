@@ -102,7 +102,8 @@ public class PersistentStorage
     BlockData ReadBlock() => new BlockData
     {
         Faces = (Cubesides)_reader.ReadByte(),
-        Type = (BlockTypes)_reader.ReadByte()
+        Type = (BlockTypes)_reader.ReadByte(),
+        Hp = _reader.ReadByte()
     };
     
     Quaternion ReadQuaternion() => new Quaternion
@@ -167,11 +168,14 @@ public class PersistentStorage
         for (var z = 0; z < _chunkSize; z++)
             for (var y = 0; y < _chunkSize; y++)
                 for (var x = 0; x < _chunkSize; x++)
-                {
-                    var block = blocks[x, y, z];
-                    _writer.Write((byte)block.Faces);
-                    _writer.Write((byte)block.Type);
-                }
+                    Write(blocks[x, y, z]);
+    }
+
+    void Write(BlockData value)
+    {
+        _writer.Write((byte)value.Faces);
+        _writer.Write((byte)value.Type);
+        _writer.Write(value.Hp);
     }
 
     void Write(Quaternion value)
