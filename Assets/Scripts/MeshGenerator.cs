@@ -2,11 +2,19 @@
 using System.Diagnostics;
 using UnityEngine;
 
+public struct MeshData
+{
+    public Vector2[] Uvs;
+    public List<Vector2> Suvs;
+    public Vector3[] Verticies;
+    public Vector3[] Normals;
+    public int[] Triangles;
+}
+
 public class MeshGenerator
 {
     Stopwatch _stopwatch = new Stopwatch();
     long _accumulatedExtractMeshDataTime, _accumulatedCreateMeshTime;
-    
     
     #region Readonly lookup tables
     readonly Vector2[,] _blockUVs = { 

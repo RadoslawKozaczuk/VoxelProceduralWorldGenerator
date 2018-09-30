@@ -19,7 +19,7 @@ public class SaveGameData
 {
     // player data
     public Vector3 Position;
-    public Quaternion Rotation;
+    public Vector3 Rotation;
 
     // world data
     public byte ChunkSize;
@@ -42,18 +42,4 @@ public struct BlockData
 public struct ChunkData
 {
     public BlockData[,,] Blocks;
-    //public MeshData TerrainData;
-    //public MeshData WaterData;
-}
-
-public struct MeshData
-{
-    // keep the size of each collection
-    //public int[] CollectionSizes;
-
-    public Vector2[] Uvs;
-    public List<Vector2> Suvs;
-    public Vector3[] Verticies;
-    public Vector3[] Normals;
-    public int[] Triangles;
 }

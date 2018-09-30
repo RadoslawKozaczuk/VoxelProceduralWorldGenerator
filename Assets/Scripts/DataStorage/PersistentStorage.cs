@@ -17,13 +17,13 @@ public class PersistentStorage
         _savePath = Path.Combine(Application.persistentDataPath, _saveFileName);
     }
 
-    public void SaveGame(Transform playerTransform, World world)
+    public void SaveGame(Vector3 playerPosition, Vector3 playerRotation, World world)
     {
         _writer = new BinaryWriter(File.Open(_savePath, FileMode.Create));
 
         // player
-        Write(playerTransform.position);
-        Write(playerTransform.rotation);
+        Write(playerPosition);
+        Write(playerRotation);
 
         // world parameters
         _writer.Write(world.ChunkSize);
@@ -53,7 +53,7 @@ public class PersistentStorage
         {
             // player data
             Position = ReadVector3(),
-            Rotation = ReadQuaternion(),
+            Rotation = ReadVector3(),
 
             // world data
             ChunkSize = _reader.ReadByte(),
@@ -86,9 +86,6 @@ public class PersistentStorage
     ChunkData ReadChunkData() => new ChunkData()
     {
         Blocks = ReadBlockDataArray()
-        //,
-        //TerrainData = ReadMeshData(),
-        //WaterData = ReadMeshData()
     };
 
     BlockData[,,] ReadBlockDataArray()
@@ -107,23 +104,7 @@ public class PersistentStorage
         Faces = (Cubesides)_reader.ReadByte(),
         Type = (BlockTypes)_reader.ReadByte()
     };
-
-    MeshData ReadMeshData()
-    {
-        var collectionSizes = ReadArrayInt32(5);
-        var meshData = new MeshData
-        {
-            //CollectionSizes = collectionSizes,
-            Uvs = ReadArrayVector2(collectionSizes[0]),
-            Suvs = ReadListVector2(collectionSizes[1]),
-            Verticies = ReadArrayVector3(collectionSizes[2]),
-            Normals = ReadArrayVector3(collectionSizes[3]),
-            Triangles = ReadArrayInt32(collectionSizes[4])
-        };
-
-        return meshData;
-    }
-
+    
     Quaternion ReadQuaternion() => new Quaternion
     {
         x = _reader.ReadSingle(),
@@ -179,12 +160,7 @@ public class PersistentStorage
     #endregion
 
     #region Writing Methods
-    void Write(ChunkData chunkData)
-    {
-        Write(chunkData.Blocks);
-        //Write(chunkData.TerrainData);
-        //Write(chunkData.WaterData);
-    }
+    void Write(ChunkData chunkData) => Write(chunkData.Blocks);
 
     void Write(BlockData[,,] blocks)
     {
@@ -196,16 +172,6 @@ public class PersistentStorage
                     _writer.Write((byte)block.Faces);
                     _writer.Write((byte)block.Type);
                 }
-    }
-
-    void Write(MeshData meshData)
-    {
-        //Write(meshData.CollectionSizes);
-        Write(meshData.Uvs);
-        Write(meshData.Suvs);
-        Write(meshData.Verticies);
-        Write(meshData.Normals);
-        Write(meshData.Triangles);
     }
 
     void Write(Quaternion value)

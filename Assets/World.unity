@@ -189,16 +189,8 @@ Prefab:
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 11400000, guid: 5e9e851c0e142814dac026a256ba2ac0, type: 2}
-      propertyPath: m_Enabled
+      propertyPath: m_MouseLook.clampVerticalRotation
       value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 11400000, guid: 5e9e851c0e142814dac026a256ba2ac0, type: 2}
-      propertyPath: m_FootstepSounds.Array.data[0]
-      value: 
-      objectReference: {fileID: 0}
-    - target: {fileID: 11400000, guid: 5e9e851c0e142814dac026a256ba2ac0, type: 2}
-      propertyPath: m_FootstepSounds.Array.data[1]
-      value: 
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 5e9e851c0e142814dac026a256ba2ac0, type: 2}
@@ -376,7 +368,7 @@ Transform:
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 1698775125}
   m_LocalRotation: {x: -0.4241023, y: 0.1363266, z: -0.06474782, w: -0.8929502}
-  m_LocalPosition: {x: 7.464294, y: 4.7402077, z: -2.0080605}
+  m_LocalPosition: {x: 81.2, y: 130.6, z: 27.9}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
@@ -455,4 +447,5 @@ MonoBehaviour:
   SaveKey: 115
   LoadKey: 108
   ControlKey: 306
+  PlayerStartPosition: {x: 10, y: 10, z: 10}
   ActivatePlayer: 1

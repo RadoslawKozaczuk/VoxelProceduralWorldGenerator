@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using UnityStandardAssets.Characters.FirstPerson;
 
 public class Game : MonoBehaviour
 {
@@ -10,6 +11,7 @@ public class Game : MonoBehaviour
     public KeyCode LoadKey = KeyCode.L;
     public KeyCode ControlKey = KeyCode.LeftControl;
 
+    public Vector3 PlayerStartPosition;
     public bool ActivatePlayer = true;
 
     void Start()
@@ -18,10 +20,9 @@ public class Game : MonoBehaviour
         Debug.Log("Waiting instructions...");
     }
 
-    // Update is called once per frame
     void Update()
     {
-        if (/*Input.GetKey(ControlKey) && */Input.GetKeyDown(NewGameKey))
+        if (Input.GetKeyDown(NewGameKey))
         {
             World.GenerateTerrain();
             World.CalculateMesh();
@@ -29,16 +30,22 @@ public class Game : MonoBehaviour
 
             Debug.Log("New Game started");
         }
-        else if (/*Input.GetKey(ControlKey) && */Input.GetKeyDown(SaveKey))
+        else if (Input.GetKeyDown(SaveKey))
         {
             var storage = new PersistentStorage(World.ChunkSize);
 
-            storage.SaveGame(Player.transform, World);
+            var t = Player.transform;
+
+            var playerRotation = new Vector3(
+                t.GetChild(0).gameObject.transform.eulerAngles.x,
+                t.rotation.eulerAngles.y,
+                0);
             
-            // save game
+            storage.SaveGame(t.position, playerRotation, World);
+
             Debug.Log("Game Saved");
         }
-        else if (/*Input.GetKey(ControlKey) && */Input.GetKeyDown(LoadKey))
+        else if (Input.GetKeyDown(LoadKey))
         {
             var storage = new PersistentStorage(World.ChunkSize);
 
@@ -53,21 +60,32 @@ public class Game : MonoBehaviour
 
             CreatePlayer(save.Position, save.Rotation);
             Player.SetActive(true);
-            
-            // load game
+
             Debug.Log("Game Loaded");
         }
     }
 
-    public void CreatePlayer(Vector3? position = null, Quaternion? rotation = null)
+    void CreatePlayer(Vector3? position = null, Vector3? rotation = null)
     {
-        Player.transform.position = position 
-            ?? new Vector3(10, TerrainGenerator.GenerateDirtHeight(10, 10) + 1, 10);
+        var playerPos = position ?? PlayerStartPosition;
+        Player.transform.position = new Vector3(
+                playerPos.x,
+                TerrainGenerator.GenerateDirtHeight(playerPos.x, playerPos.z) + 1,
+                playerPos.z);
 
-        // for future reference
-        // TerrainGenerator.GenerateDirtHeight(playerPos.x, playerPos.z) + 1
-        
         if (rotation.HasValue)
-            Player.transform.rotation = rotation.Value;
+        {
+            var r = rotation.Value;
+            
+            var fpc = Player.GetComponent<FirstPersonController>();
+            fpc.m_MouseLook.m_CharacterTargetRot = Quaternion.Euler(0f, r.y, 0f);
+            fpc.m_MouseLook.m_CameraTargetRot = Quaternion.Euler(r.x, 0f, 0f);
+        }
+        else
+        {
+            var fpc = Player.GetComponent<FirstPersonController>();
+            fpc.m_MouseLook.m_CharacterTargetRot = Quaternion.Euler(0f, 0f, 0f);
+            fpc.m_MouseLook.m_CameraTargetRot = Quaternion.Euler(0f, 0f, 0f);
+        }
     }
 }
