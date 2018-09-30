@@ -6,42 +6,31 @@ public class Chunk
 {
     static Stopwatch _stopwatch = new Stopwatch();
     static long _accumulatedTerrainObjectCreationTime, _accumulatedWaterObjectCreationTime;
-
-    public Material TerrainMaterial;
-    public Material WaterMaterial;
-    public GameObject Terrain;
-    public GameObject Water;
+    
     public BlockData[,,] Blocks;
     public Vector3Int Coord;
-
     public ChunkMonoBehavior MonoBehavior;
-    public bool Changed = false;
     public ChunkStatus Status; // status of the current chunk
-    
+
+    public GameObject Terrain;
+    public GameObject Water;
     Vector3 _position;
-    readonly int _chunkSize, _worldSizeX, _worldSizeY, _worldSizeZ;
+    World _world;
     readonly string _chunkKey;
 
-    public Chunk(Vector3 position, Material chunkMaterial, Material transparentMaterial, World worldReference, Vector3Int coord)
+    public Chunk(Vector3 position, Vector3Int coord, World world)
     {
         Coord = coord;
-
-        _chunkSize = worldReference.ChunkSize;
-        _worldSizeX = worldReference.WorldSizeX;
-        _worldSizeY = worldReference.WorldSizeY;
-        _worldSizeZ = worldReference.WorldSizeZ;
         _position = position;
-        _chunkKey = $"{coord.y + coord.z * _worldSizeZ + coord.x * _worldSizeY * _worldSizeZ}";
-        
-        Terrain = new GameObject(_chunkKey);
-        Terrain.transform.position = position;
-        Terrain.transform.SetParent(worldReference.TerrainParent);
-        TerrainMaterial = chunkMaterial;
+        _world = world;
 
-        Water = new GameObject(_chunkKey);
+        _chunkKey = $"{coord.y + coord.z * _world.WorldSizeZ + coord.x * _world.WorldSizeY * _world.WorldSizeZ}";
+        
+        Terrain = new GameObject(_chunkKey + "_terrain");
+        Terrain.transform.position = position;
+
+        Water = new GameObject(_chunkKey + "_water");
         Water.transform.position = position;
-        Water.transform.SetParent(worldReference.WaterParent);
-        WaterMaterial = transparentMaterial;
 
         //MonoBehavior = Terrain.AddComponent<ChunkMonoBehavior>();
         //MonoBehavior.SetOwner(this);
@@ -62,9 +51,9 @@ public class Chunk
 
     public void UpdateChunk()
     {
-        for (var z = 0; z < _chunkSize; z++)
-            for (var y = 0; y < _chunkSize; y++)
-                for (var x = 0; x < _chunkSize; x++)
+        for (var z = 0; z < _world.ChunkSize; z++)
+            for (var y = 0; y < _world.ChunkSize; y++)
+                for (var x = 0; x < _world.ChunkSize; x++)
                 {
                     var b = Blocks[x, y, z];
                     //if (b.Type == BlockType.Sand)
@@ -76,7 +65,7 @@ public class Chunk
     {
         DestroyMeshesAndColliders();
 
-        var meshGenerator = new MeshGenerator(_chunkSize, _worldSizeX, _worldSizeY, _worldSizeZ);
+        var meshGenerator = new MeshGenerator(_world.ChunkSize, _world.WorldSizeX, _world.WorldSizeY, _world.WorldSizeZ);
 
         MeshData t, w;
         meshGenerator.ExtractMeshData(ref Blocks, Coord, out t, out w);
@@ -107,7 +96,7 @@ public class Chunk
         _stopwatch.Restart();
 
         var renderer = Terrain.gameObject.AddComponent(typeof(MeshRenderer)) as MeshRenderer;
-        renderer.material = TerrainMaterial;
+        renderer.material = _world.TerrainTexture;
 
         var meshFilter = (MeshFilter)Terrain.AddComponent(typeof(MeshFilter));
         meshFilter.mesh = mesh;
@@ -124,7 +113,7 @@ public class Chunk
         _stopwatch.Restart();
 
         var renderer = Water.gameObject.AddComponent(typeof(MeshRenderer)) as MeshRenderer;
-        renderer.material = WaterMaterial;
+        renderer.material = _world.WaterTexture;
 
         var meshFilter = (MeshFilter)Water.AddComponent(typeof(MeshFilter));
         meshFilter.mesh = mesh;

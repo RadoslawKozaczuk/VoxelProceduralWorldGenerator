@@ -12,3 +12,5 @@ public enum BlockTypes : byte
 public enum Cubesides : byte { Right = 1, Left = 2, Top = 4, Bottom = 8, Front = 16, Back = 32 }
 
 public enum ChunkStatus { NotInitialized, Created, NeedToBeRedrawn }
+
+public enum GameState { NotStarted, Started }

@@ -113,34 +113,6 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
---- !u!1 &350537350
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInternal: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 350537351}
-  m_Layer: 0
-  m_Name: Terrain
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &350537351
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInternal: {fileID: 0}
-  m_GameObject: {fileID: 350537350}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_Children: []
-  m_Father: {fileID: 2093027089}
-  m_RootOrder: 0
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &1046121369
 Prefab:
   m_ObjectHideFlags: 0
@@ -196,7 +168,7 @@ Prefab:
         type: 2}
       propertyPath: World
       value: 
-      objectReference: {fileID: 2093027090}
+      objectReference: {fileID: 0}
     - target: {fileID: 114073182465937732, guid: 5e9e851c0e142814dac026a256ba2ac0,
         type: 2}
       propertyPath: Camera
@@ -207,37 +179,14 @@ Prefab:
       propertyPath: Cam
       value: 
       objectReference: {fileID: 1447860041}
+    - target: {fileID: 114073182465937732, guid: 5e9e851c0e142814dac026a256ba2ac0,
+        type: 2}
+      propertyPath: Game
+      value: 
+      objectReference: {fileID: 2093027091}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 5e9e851c0e142814dac026a256ba2ac0, type: 2}
   m_IsPrefabAsset: 0
---- !u!1 &1304138698
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInternal: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1304138699}
-  m_Layer: 0
-  m_Name: Water
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &1304138699
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInternal: {fileID: 0}
-  m_GameObject: {fileID: 1304138698}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_Children: []
-  m_Father: {fileID: 2093027089}
-  m_RootOrder: 1
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1447860041 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 100002, guid: 5e9e851c0e142814dac026a256ba2ac0,
@@ -407,7 +356,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2093027089}
-  - component: {fileID: 2093027090}
   - component: {fileID: 2093027091}
   m_Layer: 0
   m_Name: Game
@@ -425,32 +373,10 @@ Transform:
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
-  m_Children:
-  - {fileID: 350537351}
-  - {fileID: 1304138699}
+  m_Children: []
   m_Father: {fileID: 0}
   m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &2093027090
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInternal: {fileID: 0}
-  m_GameObject: {fileID: 2093027087}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0515154f6f47b8d46a28b22689f7979c, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  TerrainParent: {fileID: 350537351}
-  WaterParent: {fileID: 1304138699}
-  TextureAtlas: {fileID: 2100000, guid: 0beff685461bd4744bc433ab1599a347, type: 2}
-  FluidTexture: {fileID: 2100000, guid: c40c0017d3704914db1e95d92cdb03a4, type: 2}
-  WorldCreated: 0
-  ChunkSize: 32
-  WorldSizeX: 4
-  WorldSizeY: 3
-  WorldSizeZ: 4
 --- !u!114 &2093027091
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -462,6 +388,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5bcb6feeeb5b7a43becc923482bf5a1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  World: {fileID: 11400000, guid: 26f304676aa5d88499d979ed0db085af, type: 2}
   Player: {fileID: 1746416011}
   MainCamera: {fileID: 1698775129}
   NewGameKey: 110

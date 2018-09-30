@@ -106,13 +106,5 @@ public class ChunkMonoBehavior : MonoBehaviour
     //          if (block.Type != TerrainGenerator.BlockType.Air)
     //              block.Reset();
     //}
-
-    public void SaveProgress()
-    {
-        if (_owner.Changed)
-        {
-            //_owner.Save();
-            _owner.Changed = false;
-        }
-    }
+    
 }

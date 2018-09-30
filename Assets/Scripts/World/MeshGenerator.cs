@@ -326,12 +326,7 @@ public class MeshGenerator
                 for (x = 0; x < _chunkSize; x += _chunkSize - 1)
                 {
                     var type = blocks[x, y, z].Type;
-
-                    int werwr = 0;
-                    if (chunkCoord.x == 0 && chunkCoord.y == 11 && chunkCoord.z == 0
-                        && x == 2 && y == 2 && z == 1)
-                        werwr = 1;
-
+                    
                     if (type == BlockTypes.Water)
                         WaterInterChunkCheck(ref blocks, chunkCoord, new Vector3Int(x, y, z), ref waterMeshSize);
                     else if (type != BlockTypes.Air)

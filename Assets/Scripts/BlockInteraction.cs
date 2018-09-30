@@ -2,7 +2,7 @@
 
 public class BlockInteraction : MonoBehaviour
 {
-    public World World;
+    public Game Game;
     public GameObject Camera;
     const float AttackRange = 4.0f;
     BlockTypes _buildBlockType = BlockTypes.Stone;
@@ -28,7 +28,7 @@ public class BlockInteraction : MonoBehaviour
         //    ? hit.point - hit.normal / 2.0f // central point
         //    : hit.point + hit.normal / 2.0f; // next to the one that we are pointing at
 
-        World.ProcessBlockHit(hitBlock);
+        Game.ProcessBlockHit(hitBlock);
     }
 
     void CheckForBuildBlockType()
