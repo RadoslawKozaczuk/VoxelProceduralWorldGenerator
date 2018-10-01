@@ -13,7 +13,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   TerrainTexture: {fileID: 2100000, guid: 0beff685461bd4744bc433ab1599a347, type: 2}
   WaterTexture: {fileID: 2100000, guid: c40c0017d3704914db1e95d92cdb03a4, type: 2}
-  WorldCreated: 1
   ChunkSize: 32
   WorldSizeX: 4
   WorldSizeY: 3

@@ -5,8 +5,13 @@ public class BlockInteraction : MonoBehaviour
     public Game Game;
     public GameObject Camera;
     const float AttackRange = 4.0f;
+    [SerializeField] AudioClip _stonehitSound;
+    AudioSource _audioSource;
+
     BlockTypes _buildBlockType = BlockTypes.Stone;
-    
+
+    void Start() => _audioSource = GetComponent<AudioSource>();
+
     void Update()
     {
         if (!Input.anyKey) return;
@@ -28,6 +33,8 @@ public class BlockInteraction : MonoBehaviour
         //    ? hit.point - hit.normal / 2.0f // central point
         //    : hit.point + hit.normal / 2.0f; // next to the one that we are pointing at
 
+        //_audioSource.clip = _stonehitSound;
+        _audioSource.PlayOneShot(_stonehitSound);
         Game.ProcessBlockHit(hitBlock);
     }
 

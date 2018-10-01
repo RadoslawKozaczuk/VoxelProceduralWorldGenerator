@@ -1,5 +1,4 @@
 ﻿using UnityEngine;
-using UnityStandardAssets.Characters.FirstPerson;
 
 public class Game : MonoBehaviour
 {
@@ -148,14 +147,14 @@ public class Game : MonoBehaviour
             var r = rotation.Value;
             
             var fpc = Player.GetComponent<FirstPersonController>();
-            fpc.m_MouseLook.m_CharacterTargetRot = Quaternion.Euler(0f, r.y, 0f);
-            fpc.m_MouseLook.m_CameraTargetRot = Quaternion.Euler(r.x, 0f, 0f);
+            fpc.MouseLook.CharacterTargetRot = Quaternion.Euler(0f, r.y, 0f);
+            fpc.MouseLook.CameraTargetRot = Quaternion.Euler(r.x, 0f, 0f);
         }
         else
         {
             var fpc = Player.GetComponent<FirstPersonController>();
-            fpc.m_MouseLook.m_CharacterTargetRot = Quaternion.Euler(0f, 0f, 0f);
-            fpc.m_MouseLook.m_CameraTargetRot = Quaternion.Euler(0f, 0f, 0f);
+            fpc.MouseLook.CharacterTargetRot = Quaternion.Euler(0f, 0f, 0f);
+            fpc.MouseLook.CameraTargetRot = Quaternion.Euler(0f, 0f, 0f);
         }
     }
 }
