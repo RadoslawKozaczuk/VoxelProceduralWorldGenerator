@@ -1,7 +1,10 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
+using UnityEngine.UI;
 
 public class Game : MonoBehaviour
 {
+    [SerializeField] Text _controlsLabel;
     public World World;
     public GameObject Player;
     public Camera MainCamera;
@@ -14,7 +17,14 @@ public class Game : MonoBehaviour
     public Vector3 PlayerStartPosition;
     public bool ActivatePlayer = true;
 
-    void Start() => Debug.Log("Waiting instructions...");
+    void Start()
+    {
+        _controlsLabel.text = "Controls:" + Environment.NewLine
+            + $"Start a new game - { NewGameKey }" + Environment.NewLine
+            + $"Save Game - { SaveKey }" + Environment.NewLine
+            + $"Load Game - { LoadKey }";
+        Debug.Log("Waiting instructions...");
+    }
 
     void Update()
     {
