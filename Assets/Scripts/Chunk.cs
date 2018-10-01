@@ -153,6 +153,24 @@ public class Chunk
         return retVal;
     }
 
+    /// <summary>
+    /// Returns true if a new block has been built.
+    /// </summary>
+    public bool BuildBlock(int x, int y, int z, BlockTypes type)
+    {
+        if (Blocks[x, y, z].Type != BlockTypes.Air) return false;
+
+        Blocks[x, y, z].Type = type;
+        Blocks[x, y, z].Hp = LookupTables.BlockHealthMax[(int)type];
+        Blocks[x, y, z].HealthLevel = 0;
+        
+        // TODO: for now lets simply redraw whole chunk to see if it works
+        // this is rather expensive and maybe I should look for another solution
+        Status = ChunkStatus.NeedToBeRedrawn;
+        
+        return true;
+    }
+
     byte CalculateHealthLevel(int hp, int maxHp)
     {
         float proportion = (float)hp / maxHp; // 0.625f

@@ -20,6 +20,8 @@ public class Game : MonoBehaviour
     void Start()
     {
         _controlsLabel.text = "Controls:" + Environment.NewLine
+            + "Attack - LPM" + Environment.NewLine
+            + "Build - RPM" + Environment.NewLine
             + $"Start a new game - { NewGameKey }" + Environment.NewLine
             + $"Save Game - { SaveKey }" + Environment.NewLine
             + $"Load Game - { LoadKey }";
@@ -97,13 +99,9 @@ public class Game : MonoBehaviour
 
     public void ProcessBlockHit(Vector3 hitBlock)
     {
-        int chunkX = hitBlock.x < 0 ? 0 : (int)(hitBlock.x / World.ChunkSize);
-        int chunkY = hitBlock.y < 0 ? 0 : (int)(hitBlock.y / World.ChunkSize);
-        int chunkZ = hitBlock.z < 0 ? 0 : (int)(hitBlock.z / World.ChunkSize);
+        int chunkX, chunkY, chunkZ, blockX, blockY, blockZ;
 
-        int blockX = (int)hitBlock.x - chunkX * World.ChunkSize;
-        int blockY = (int)hitBlock.y - chunkY * World.ChunkSize;
-        int blockZ = (int)hitBlock.z - chunkZ * World.ChunkSize;
+        FindChunkAndBlock(hitBlock, out chunkX, out chunkY, out chunkZ, out blockX, out blockY, out blockZ);
 
         // inform chunk
         var wasBlockDestroyed = World.Chunks[chunkX, chunkY, chunkZ]
@@ -111,6 +109,33 @@ public class Game : MonoBehaviour
 
         if (wasBlockDestroyed)
             CheckNeighboringChunks(blockX, blockY, blockZ, chunkX, chunkY, chunkZ);
+    }
+
+    public void ProcessBuildBlock(Vector3 hitBlock, BlockTypes type)
+    {
+        int chunkX, chunkY, chunkZ, blockX, blockY, blockZ;
+
+        FindChunkAndBlock(hitBlock, out chunkX, out chunkY, out chunkZ, out blockX, out blockY, out blockZ);
+
+        // inform chunk
+        var wasBlockBuilt = World.Chunks[chunkX, chunkY, chunkZ]
+            .BuildBlock(blockX, blockY, blockZ, type);
+
+        if (wasBlockBuilt)
+            CheckNeighboringChunks(blockX, blockY, blockZ, chunkX, chunkY, chunkZ);
+    }
+
+    void FindChunkAndBlock(Vector3 hitBlock, 
+        out int chunkX, out int chunkY, out int chunkZ, 
+        out int blockX, out int blockY, out int blockZ)
+    {
+        chunkX = hitBlock.x < 0 ? 0 : (int)(hitBlock.x / World.ChunkSize);
+        chunkY = hitBlock.y < 0 ? 0 : (int)(hitBlock.y / World.ChunkSize);
+        chunkZ = hitBlock.z < 0 ? 0 : (int)(hitBlock.z / World.ChunkSize);
+
+        blockX = (int)hitBlock.x - chunkX * World.ChunkSize;
+        blockY = (int)hitBlock.y - chunkY * World.ChunkSize;
+        blockZ = (int)hitBlock.z - chunkZ * World.ChunkSize;
     }
 
     /// <summary>

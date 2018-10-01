@@ -14,28 +14,43 @@ public class BlockInteraction : MonoBehaviour
 
     void Update()
     {
-        if (!Input.anyKey) return;
+        if (Input.GetMouseButtonDown(0))
+        {
+            Debug.Log("Hit block");
+            HitBlock();
+        }
 
-        //CheckForBuildBlockType();
+        if (Input.GetMouseButtonDown(1))
+        {
+            Debug.Log("Build block");
+            BuildBlock();
+        }
+    }
 
-        // left mouse click is going to destroy block and the right mouse click will add a block
-        if (!(Input.GetMouseButtonDown(0) || Input.GetMouseButtonDown(1)))
-            return;
-
+    void HitBlock()
+    {
         RaycastHit hit;
-        //for cross hairs
+
         if (!Physics.Raycast(Camera.transform.position, Camera.transform.forward, out hit, AttackRange))
             return;
 
         Vector3 hitBlock = hit.point - hit.normal / 2.0f; // central point
-
-        //Vector3 hitBlock = Input.GetMouseButtonDown(0)
-        //    ? hit.point - hit.normal / 2.0f // central point
-        //    : hit.point + hit.normal / 2.0f; // next to the one that we are pointing at
-
-        //_audioSource.clip = _stonehitSound;
+        
         _audioSource.PlayOneShot(_stonehitSound);
         Game.ProcessBlockHit(hitBlock);
+    }
+
+    void BuildBlock()
+    {
+        RaycastHit hit;
+
+        if (!Physics.Raycast(Camera.transform.position, Camera.transform.forward, out hit, AttackRange))
+            return;
+
+        Vector3 hitBlock = hit.point + hit.normal / 2.0f; // next to the one that we are pointing at
+        
+        _audioSource.PlayOneShot(_stonehitSound); // TODO: find a good build block sounds
+        Game.ProcessBuildBlock(hitBlock, _buildBlockType);
     }
 
     void CheckForBuildBlockType()
