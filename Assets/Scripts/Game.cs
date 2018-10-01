@@ -5,50 +5,61 @@ using UnityEngine.UI;
 public class Game : MonoBehaviour
 {
     [SerializeField] Text _controlsLabel;
+    [SerializeField] Slider _progressBar;
+    [SerializeField] Text _progressText;
+    [SerializeField] Text _description;
+
     public World World;
     public GameObject Player;
     public Camera MainCamera;
     public GameState GameState = GameState.NotStarted;
-    public KeyCode NewGameKey = KeyCode.N;
-    public KeyCode SaveKey = KeyCode.S;
+    public KeyCode SaveKey = KeyCode.K;
     public KeyCode LoadKey = KeyCode.L;
-    public KeyCode ControlKey = KeyCode.LeftControl;
 
     public Vector3 PlayerStartPosition;
     public bool ActivatePlayer = true;
 
+    bool _playerCreated = false;
+    
     void Start()
     {
         _controlsLabel.text = "Controls:" + Environment.NewLine
             + "Attack - LPM" + Environment.NewLine
             + "Build - RPM" + Environment.NewLine
-            + $"Start a new game - { NewGameKey }" + Environment.NewLine
             + $"Save Game - { SaveKey }" + Environment.NewLine
             + $"Load Game - { LoadKey }";
         Debug.Log("Waiting instructions...");
+
+        Player.SetActive(false);
+
+        StartCoroutine(World.GenerateWorld());
     }
 
     void Update()
     {
+        var progress = Mathf.Clamp01(World.AlreadyGenerated / (World.ChunkObjectsToGenerate + World.ChunkTerrainToGenerate));
+        _progressBar.value = progress;
+        _progressText.text = Mathf.RoundToInt(progress * 100) + "%";
+        _description.text = $"Created objects { World.AlreadyGenerated } "
+            + $"out of { World.ChunkObjectsToGenerate + World.ChunkTerrainToGenerate }";
+
         HandleInput();
 
-        if(GameState == GameState.Started)
+        if (World.Status == WorldGeneratorStatus.Ready)
+        {
+            if(!_playerCreated)
+            {
+                CreatePlayer();
+                _playerCreated = true;
+            }
+
             RedrawChunksIfNecessary();
+        }
     }
     
     void HandleInput()
     {
-        if (Input.GetKeyDown(NewGameKey))
-        {
-            World.GenerateTerrain();
-            World.CalculateMesh();
-            CreatePlayer();
-
-            GameState = GameState.Started;
-
-            Debug.Log("New Game started");
-        }
-        else if (Input.GetKeyDown(SaveKey))
+        if (Input.GetKeyDown(SaveKey))
         {
             var storage = new PersistentStorage(World.ChunkSize);
 
@@ -60,11 +71,12 @@ public class Game : MonoBehaviour
                 0);
             
             storage.SaveGame(t.position, playerRotation, World);
-
-            Debug.Log("Game Saved");
         }
         else if (Input.GetKeyDown(LoadKey))
         {
+            Player.SetActive(false);
+            _playerCreated = false;
+            GameState = GameState.LoadingGame;
             var storage = new PersistentStorage(World.ChunkSize);
 
             var save = storage.LoadGame();
@@ -73,15 +85,7 @@ public class Game : MonoBehaviour
             World.WorldSizeY = save.WorldSizeY;
             World.WorldSizeZ = save.WorldSizeZ;
 
-            World.LoadTerrain(save);
-            World.CalculateMesh();
-
-            CreatePlayer(save.Position, save.Rotation);
-            Player.SetActive(true);
-
-            GameState = GameState.Started;
-
-            Debug.Log("Game Loaded");
+            StartCoroutine(World.LoadTerrain(save));
         }
     }
 
@@ -174,22 +178,22 @@ public class Game : MonoBehaviour
         var playerPos = position ?? PlayerStartPosition;
         Player.transform.position = new Vector3(
                 playerPos.x,
-                TerrainGenerator.GenerateDirtHeight(playerPos.x, playerPos.z) + 1,
+                TerrainGenerator.GenerateDirtHeight(playerPos.x, playerPos.z) + 2,
                 playerPos.z);
 
+        var fpc = Player.GetComponent<FirstPersonController>();
         if (rotation.HasValue)
         {
             var r = rotation.Value;
-            
-            var fpc = Player.GetComponent<FirstPersonController>();
             fpc.MouseLook.CharacterTargetRot = Quaternion.Euler(0f, r.y, 0f);
             fpc.MouseLook.CameraTargetRot = Quaternion.Euler(r.x, 0f, 0f);
         }
         else
         {
-            var fpc = Player.GetComponent<FirstPersonController>();
             fpc.MouseLook.CharacterTargetRot = Quaternion.Euler(0f, 0f, 0f);
             fpc.MouseLook.CameraTargetRot = Quaternion.Euler(0f, 0f, 0f);
         }
+
+        Player.SetActive(true);
     }
 }

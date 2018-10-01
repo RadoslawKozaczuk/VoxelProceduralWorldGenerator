@@ -13,4 +13,4 @@ public enum Cubesides : byte { Right = 1, Left = 2, Top = 4, Bottom = 8, Front =
 
 public enum ChunkStatus { NotInitialized, Created, NeedToBeRedrawn }
 
-public enum GameState { NotStarted, Started }
+public enum GameState { NotStarted, Started, LoadingGame }
