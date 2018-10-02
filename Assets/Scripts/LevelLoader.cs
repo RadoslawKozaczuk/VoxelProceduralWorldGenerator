@@ -5,11 +5,17 @@ using UnityEngine.UI;
 
 public class LevelLoader : MonoBehaviour
 {
+    [SerializeField] GameObject _progressBar;
     [SerializeField] Slider _slider;
     [SerializeField] Text _progressText;
     [SerializeField] Text _description;
 
-    public void LoadLevel(int sceneIndex) => StartCoroutine(LoadLevelAsync(1));
+    public void LoadLevel(int sceneIndex)
+    {
+        _progressBar.SetActive(true);
+        _description.text = "Level loading...";
+        StartCoroutine(LoadLevelAsync(1));
+    }
 
     IEnumerator LoadLevelAsync(int sceneIndex)
     {
@@ -26,7 +32,7 @@ public class LevelLoader : MonoBehaviour
             float progress = Mathf.Clamp01(operation.progress / .9f); // clamps value between min (0) and max (1) and returns value.
             _slider.value = progress;
             _progressText.text = Mathf.RoundToInt(progress * 100) + "%";
-
+            
             yield return null;
         }
     }

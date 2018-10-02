@@ -9,32 +9,25 @@ public class Chunk
     
     public BlockData[,,] Blocks;
     public Vector3Int Coord;
-    public ChunkMonoBehavior MonoBehavior;
-    public ChunkStatus Status; // status of the current chunk
+    public ChunkStatus Status;
 
     public GameObject Terrain;
     public GameObject Water;
-    Vector3 _position;
     World _world;
-    readonly string _chunkKey;
 
     public Chunk(Vector3 position, Vector3Int coord, World world)
     {
         Coord = coord;
-        _position = position;
         _world = world;
 
-        _chunkKey = $"{coord.y + coord.z * _world.WorldSizeZ + coord.x * _world.WorldSizeY * _world.WorldSizeZ}";
+        var chunkKey = $"{coord.y + coord.z * _world.WorldSizeZ + coord.x * _world.WorldSizeY * _world.WorldSizeZ}";
         
-        Terrain = new GameObject(_chunkKey + "_terrain");
+        Terrain = new GameObject(chunkKey + "_terrain");
         Terrain.transform.position = position;
 
-        Water = new GameObject(_chunkKey + "_water");
+        Water = new GameObject(chunkKey + "_water");
         Water.transform.position = position;
-
-        //MonoBehavior = Terrain.AddComponent<ChunkMonoBehavior>();
-        //MonoBehavior.SetOwner(this);
-
+        
         Status = ChunkStatus.NotInitialized;
     }
 
@@ -48,19 +41,7 @@ public class Chunk
             + _accumulatedWaterObjectCreationTime / TimeSpan.TicksPerMillisecond
             + " ms to create all water objects.");
     }
-
-    public void UpdateChunk()
-    {
-        for (var z = 0; z < _world.ChunkSize; z++)
-            for (var y = 0; y < _world.ChunkSize; y++)
-                for (var x = 0; x < _world.ChunkSize; x++)
-                {
-                    var b = Blocks[x, y, z];
-                    //if (b.Type == BlockType.Sand)
-                    //MonoBehavior.StartCoroutine(MonoBehavior.Drop(b, BlockType.Sand));
-                }
-    }
-
+    
     public void RecreateMeshAndCollider()
     {
         DestroyMeshesAndColliders();

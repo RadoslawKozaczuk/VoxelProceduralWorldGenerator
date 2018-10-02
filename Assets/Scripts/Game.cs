@@ -85,7 +85,7 @@ public class Game : MonoBehaviour
             World.WorldSizeY = save.WorldSizeY;
             World.WorldSizeZ = save.WorldSizeZ;
 
-            StartCoroutine(World.LoadTerrain(save));
+            StartCoroutine(World.GenerateWorld(save));
         }
     }
 
