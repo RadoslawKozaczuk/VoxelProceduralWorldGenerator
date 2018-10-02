@@ -51,13 +51,12 @@ public class World : ScriptableObject
         Status = WorldGeneratorStatus.Generating;
 
         AlreadyGenerated = 0;
-        
+        Chunks = new Chunk[WorldSizeX, WorldSizeY, WorldSizeZ];
+
         Scene scene = SceneManager.GetSceneByName("World");
         if(scene.name != "World") // check if the scene was found
             _worldScene = SceneManager.CreateScene(name);
-
-        Chunks = new Chunk[WorldSizeX, WorldSizeY, WorldSizeZ];
-
+        
         for (int x = 0; x < WorldSizeX; x++)
             for (int z = 0; z < WorldSizeZ; z++)
                 for (int y = 0; y < WorldSizeY; y++)
@@ -74,9 +73,6 @@ public class World : ScriptableObject
 
                         SceneManager.MoveGameObjectToScene(c.Terrain.gameObject, _worldScene);
                         SceneManager.MoveGameObjectToScene(c.Water.gameObject, _worldScene);
-
-                        AlreadyGenerated++;
-                        yield return null; // give back control
                     }
                     else
                     {
@@ -85,10 +81,10 @@ public class World : ScriptableObject
                         {
                             Blocks = save.Chunks[x, y, z].Blocks
                         };
-
-                        AlreadyGenerated++;
-                        yield return null; // give back control
                     }
+
+                    AlreadyGenerated++;
+                    yield return null; // give back control
                 }
 
         _stopwatch.Stop();

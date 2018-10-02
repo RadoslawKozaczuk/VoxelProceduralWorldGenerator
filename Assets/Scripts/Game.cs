@@ -12,14 +12,11 @@ public class Game : MonoBehaviour
     public World World;
     public GameObject Player;
     public Camera MainCamera;
-    public GameState GameState = GameState.NotStarted;
+    public GameState GameState = GameState.NotInitialized;
     public KeyCode SaveKey = KeyCode.K;
     public KeyCode LoadKey = KeyCode.L;
 
     public Vector3 PlayerStartPosition;
-    public bool ActivatePlayer = true;
-
-    bool _playerCreated = false;
     
     void Start()
     {
@@ -32,6 +29,7 @@ public class Game : MonoBehaviour
 
         Player.SetActive(false);
 
+        GameState = GameState.Starting;
         StartCoroutine(World.GenerateWorld());
     }
 
@@ -47,12 +45,13 @@ public class Game : MonoBehaviour
 
         if (World.Status == WorldGeneratorStatus.Ready)
         {
-            if(!_playerCreated)
+            if (GameState == GameState.Starting)
             {
+                GameState = GameState.StartingReady;
                 CreatePlayer();
-                _playerCreated = true;
             }
 
+            Player.SetActive(true);
             RedrawChunksIfNecessary();
         }
     }
@@ -75,8 +74,7 @@ public class Game : MonoBehaviour
         else if (Input.GetKeyDown(LoadKey))
         {
             Player.SetActive(false);
-            _playerCreated = false;
-            GameState = GameState.LoadingGame;
+            GameState = GameState.Loading;
             var storage = new PersistentStorage(World.ChunkSize);
 
             var save = storage.LoadGame();
@@ -84,6 +82,8 @@ public class Game : MonoBehaviour
             World.WorldSizeX = save.WorldSizeX;
             World.WorldSizeY = save.WorldSizeY;
             World.WorldSizeZ = save.WorldSizeZ;
+
+            CreatePlayer(save.PlayerPosition, save.PlayerRotation);
 
             StartCoroutine(World.GenerateWorld(save));
         }
@@ -193,7 +193,5 @@ public class Game : MonoBehaviour
             fpc.MouseLook.CharacterTargetRot = Quaternion.Euler(0f, 0f, 0f);
             fpc.MouseLook.CameraTargetRot = Quaternion.Euler(0f, 0f, 0f);
         }
-
-        Player.SetActive(true);
     }
 }

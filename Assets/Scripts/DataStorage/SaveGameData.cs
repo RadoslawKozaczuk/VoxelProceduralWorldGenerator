@@ -3,8 +3,8 @@
 public class SaveGameData
 {
     // player data
-    public Vector3 Position;
-    public Vector3 Rotation;
+    public Vector3 PlayerPosition;
+    public Vector3 PlayerRotation;
 
     // world data
     public byte ChunkSize;

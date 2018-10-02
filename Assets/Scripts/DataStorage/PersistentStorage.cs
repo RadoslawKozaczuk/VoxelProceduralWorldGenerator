@@ -52,8 +52,8 @@ public class PersistentStorage
         var loadGameData = new SaveGameData()
         {
             // player data
-            Position = ReadVector3(),
-            Rotation = ReadVector3(),
+            PlayerPosition = ReadVector3(),
+            PlayerRotation = ReadVector3(),
 
             // world data
             ChunkSize = _reader.ReadByte(),
