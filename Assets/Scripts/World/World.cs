@@ -43,8 +43,9 @@ public class World : ScriptableObject
 
     /// <summary>
     /// Generate terrain and meshes.
+    /// createObjects equals
     /// </summary>
-    public IEnumerator GenerateWorld(SaveGameData save = null)
+    public IEnumerator GenerateWorld(bool firstRun = false, SaveGameData save = null)
     {
         // === generating terrain ===
         _stopwatch.Start();
@@ -71,8 +72,11 @@ public class World : ScriptableObject
 
                         Chunks[x, y, z] = c;
 
-                        SceneManager.MoveGameObjectToScene(c.Terrain.gameObject, _worldScene);
-                        SceneManager.MoveGameObjectToScene(c.Water.gameObject, _worldScene);
+                        if (firstRun)
+                        {
+                            SceneManager.MoveGameObjectToScene(c.Terrain.gameObject, _worldScene);
+                            SceneManager.MoveGameObjectToScene(c.Water.gameObject, _worldScene);
+                        }
                     }
                     else
                     {

@@ -103,7 +103,8 @@ public class PersistentStorage
     {
         Faces = (Cubesides)_reader.ReadByte(),
         Type = (BlockTypes)_reader.ReadByte(),
-        Hp = _reader.ReadByte()
+        Hp = _reader.ReadByte(),
+        HealthLevel = _reader.ReadByte()
     };
     
     Quaternion ReadQuaternion() => new Quaternion
@@ -176,6 +177,7 @@ public class PersistentStorage
         _writer.Write((byte)value.Faces);
         _writer.Write((byte)value.Type);
         _writer.Write(value.Hp);
+        _writer.Write(value.HealthLevel);
     }
 
     void Write(Quaternion value)

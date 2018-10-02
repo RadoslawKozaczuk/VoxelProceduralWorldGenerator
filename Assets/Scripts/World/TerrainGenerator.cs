@@ -332,15 +332,21 @@ public class TerrainGenerator
 
     void BuildTree(ref BlockData[,,] blocks, int x, int y, int z)
     {
-        blocks[x, y, z].Type = BlockTypes.Woodbase;
-        blocks[x, y + 1, z].Type = BlockTypes.Wood;
-        blocks[x, y + 2, z].Type = BlockTypes.Wood;
+        CreateBlock(ref blocks[x, y, z], BlockTypes.Woodbase);
+        CreateBlock(ref blocks[x, y + 1, z], BlockTypes.Wood);
+        CreateBlock(ref blocks[x, y + 2, z], BlockTypes.Wood);
 
         for (int i = -1; i <= 1; i++)
             for (int j = -1; j <= 1; j++)
                 for (int k = 3; k <= 4; k++)
-                    blocks[x + i, y + k, z + j].Type = BlockTypes.Leaves;
+                    CreateBlock(ref blocks[x + i, y + k, z + j], BlockTypes.Leaves);
 
-        blocks[x, y + 5, z].Type = BlockTypes.Leaves;
+        CreateBlock(ref blocks[x, y + 5, z], BlockTypes.Leaves);
+    }
+
+    void CreateBlock(ref BlockData block, BlockTypes type)
+    {
+        block.Type = type;
+        block.Hp = LookupTables.BlockHealthMax[(int)type];
     }
 }

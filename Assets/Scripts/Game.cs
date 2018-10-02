@@ -30,7 +30,7 @@ public class Game : MonoBehaviour
         Player.SetActive(false);
 
         GameState = GameState.Starting;
-        StartCoroutine(World.GenerateWorld());
+        StartCoroutine(World.GenerateWorld(firstRun: true));
     }
 
     void Update()
@@ -70,6 +70,7 @@ public class Game : MonoBehaviour
                 0);
             
             storage.SaveGame(t.position, playerRotation, World);
+            Debug.Log("Game Saved");
         }
         else if (Input.GetKeyDown(LoadKey))
         {
@@ -85,7 +86,7 @@ public class Game : MonoBehaviour
 
             CreatePlayer(save.PlayerPosition, save.PlayerRotation);
 
-            StartCoroutine(World.GenerateWorld(save));
+            StartCoroutine(World.GenerateWorld(save: save));
         }
     }
 
@@ -96,8 +97,10 @@ public class Game : MonoBehaviour
                 for (int y = 0; y < World.WorldSizeY; y++)
                 {
                     Chunk c = World.Chunks[x, y, z];
-                    if (c.Status == ChunkStatus.NeedToBeRedrawn)
+                    if (c.Status == ChunkStatus.NeedToBeRecreated)
                         c.RecreateMeshAndCollider();
+                    else if (c.Status == ChunkStatus.NeedToBeRedrawn) // used only for cracks
+                        c.RecreateTerrainMesh();
                 }
     }
 
@@ -149,28 +152,28 @@ public class Game : MonoBehaviour
     {
         // right check
         if (blockX == World.ChunkSize - 1 && chunkX + 1 < World.WorldSizeX)
-            World.Chunks[chunkX + 1, chunkY, chunkZ].Status = ChunkStatus.NeedToBeRedrawn;
+            World.Chunks[chunkX + 1, chunkY, chunkZ].Status = ChunkStatus.NeedToBeRecreated;
 
         // BUG: there are sometimes faces not beinf rendered on this axis - dunno why
         // left check
         if (blockX == 0 && chunkX - 1 >= 0)
-            World.Chunks[chunkX - 1, chunkY, chunkZ].Status = ChunkStatus.NeedToBeRedrawn;
+            World.Chunks[chunkX - 1, chunkY, chunkZ].Status = ChunkStatus.NeedToBeRecreated;
 
         // top check
         if (blockY == World.ChunkSize - 1 && chunkY + 1 < World.WorldSizeY)
-            World.Chunks[chunkX, chunkY + 1, chunkZ].Status = ChunkStatus.NeedToBeRedrawn;
+            World.Chunks[chunkX, chunkY + 1, chunkZ].Status = ChunkStatus.NeedToBeRecreated;
 
         // bottom check
         if (blockY == 0 && chunkY - 1 >= 0)
-            World.Chunks[chunkX, chunkY - 1, chunkZ].Status = ChunkStatus.NeedToBeRedrawn;
+            World.Chunks[chunkX, chunkY - 1, chunkZ].Status = ChunkStatus.NeedToBeRecreated;
 
         // front check
         if (blockZ == World.ChunkSize - 1 && chunkZ + 1 < World.WorldSizeZ)
-            World.Chunks[chunkX, chunkY, chunkZ + 1].Status = ChunkStatus.NeedToBeRedrawn;
+            World.Chunks[chunkX, chunkY, chunkZ + 1].Status = ChunkStatus.NeedToBeRecreated;
 
         // back check
         if (blockZ == 0 && chunkZ - 1 >= 0)
-            World.Chunks[chunkX, chunkY, chunkZ - 1].Status = ChunkStatus.NeedToBeRedrawn;
+            World.Chunks[chunkX, chunkY, chunkZ - 1].Status = ChunkStatus.NeedToBeRecreated;
     }
     
     void CreatePlayer(Vector3? position = null, Vector3? rotation = null)

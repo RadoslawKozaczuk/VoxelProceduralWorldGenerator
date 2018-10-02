@@ -19,13 +19,13 @@ public class Chunk
     {
         Coord = coord;
         _world = world;
-
-        var chunkKey = $"{coord.y + coord.z * _world.WorldSizeZ + coord.x * _world.WorldSizeY * _world.WorldSizeZ}";
         
-        Terrain = new GameObject(chunkKey + "_terrain");
+        string name = "" + coord.x + coord.y + coord.z;
+
+        Terrain = new GameObject(name + "_terrain");
         Terrain.transform.position = position;
 
-        Water = new GameObject(chunkKey + "_water");
+        Water = new GameObject(name + "_water");
         Water.transform.position = position;
         
         Status = ChunkStatus.NotInitialized;
@@ -60,6 +60,25 @@ public class Chunk
     }
 
     /// <summary>
+    /// Destroys terrain mesh and recreates it.
+    /// Used for cracks as they do not change the terrain geometry.
+    /// </summary>
+    public void RecreateTerrainMesh()
+    {
+        DestroyTerrainMesh();
+
+        var meshGenerator = new MeshGenerator(_world.ChunkSize, _world.WorldSizeX, _world.WorldSizeY, _world.WorldSizeZ);
+
+        MeshData t, w;
+        meshGenerator.ExtractMeshData(ref Blocks, Coord, out t, out w);
+        var tm = meshGenerator.CreateMesh(t);
+
+        CreateTerrainMesh(tm);
+
+        Status = ChunkStatus.Created;
+    }
+
+    /// <summary>
     /// Destroys Meshes and Colliders
     /// </summary>
     public void DestroyMeshesAndColliders()
@@ -70,6 +89,21 @@ public class Chunk
         UnityEngine.Object.DestroyImmediate(Terrain.GetComponent<Collider>());
         UnityEngine.Object.DestroyImmediate(Water.GetComponent<MeshFilter>());
         UnityEngine.Object.DestroyImmediate(Water.GetComponent<MeshRenderer>());
+    }
+
+    public void DestroyTerrainMesh()
+    {
+        UnityEngine.Object.DestroyImmediate(Terrain.GetComponent<MeshFilter>());
+        UnityEngine.Object.DestroyImmediate(Terrain.GetComponent<MeshRenderer>());
+    }
+
+    public void CreateTerrainMesh(Mesh mesh)
+    {
+        var renderer = Terrain.gameObject.AddComponent(typeof(MeshRenderer)) as MeshRenderer;
+        renderer.material = _world.TerrainTexture;
+
+        var meshFilter = (MeshFilter)Terrain.AddComponent(typeof(MeshFilter));
+        meshFilter.mesh = mesh;
     }
     
     public void CreateTerrainObject(Mesh mesh)
