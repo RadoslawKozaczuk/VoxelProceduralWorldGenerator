@@ -8,6 +8,7 @@ public class Game : MonoBehaviour
     [SerializeField] Slider _progressBar;
     [SerializeField] Text _progressText;
     [SerializeField] Text _description;
+    [SerializeField] Image _crosshair;
 
     public World World;
     public GameObject Player;
@@ -20,6 +21,8 @@ public class Game : MonoBehaviour
     
     void Start()
     {
+        _crosshair.enabled = false;
+
         _controlsLabel.text = "Controls:" + Environment.NewLine
             + "Attack - LPM" + Environment.NewLine
             + "Build - RPM" + Environment.NewLine
@@ -45,6 +48,8 @@ public class Game : MonoBehaviour
 
         if (World.Status == WorldGeneratorStatus.Ready)
         {
+            _crosshair.enabled = true;
+
             if (GameState == GameState.Starting)
             {
                 GameState = GameState.StartingReady;

@@ -457,7 +457,7 @@ public class MeshGenerator
         if (block.Faces.HasFlag(Cubesides.Left))
         {
             AddQuadComponents(ref index, ref triIndex, ref data, Vector3.left,
-                uv11side, uv01side, uv00side, uv10side,
+                uv00side, uv10side, uv11side, uv01side,
                 _p7 + blockCoord, _p4 + blockCoord, _p0 + blockCoord, _p3 + blockCoord);
             AddSuvs(ref block, ref data);
         }
@@ -465,7 +465,7 @@ public class MeshGenerator
         if (block.Faces.HasFlag(Cubesides.Right))
         { 
             AddQuadComponents(ref index, ref triIndex, ref data, Vector3.right,
-                uv11side, uv01side, uv00side, uv10side,
+                uv00side, uv10side, uv11side, uv01side,
                 _p5 + blockCoord, _p6 + blockCoord, _p2 + blockCoord, _p1 + blockCoord);
             AddSuvs(ref block, ref data);
         }
@@ -473,7 +473,7 @@ public class MeshGenerator
         if (block.Faces.HasFlag(Cubesides.Front))
         {
             AddQuadComponents(ref index, ref triIndex, ref data, Vector3.forward,
-                uv11side, uv01side, uv00side, uv10side,
+                uv00side, uv10side, uv11side, uv01side,
                 _p4 + blockCoord, _p5 + blockCoord, _p1 + blockCoord, _p0 + blockCoord);
             AddSuvs(ref block, ref data);
         }
@@ -481,7 +481,7 @@ public class MeshGenerator
         if (block.Faces.HasFlag(Cubesides.Back))
         {
             AddQuadComponents(ref index, ref triIndex, ref data, Vector3.back,
-                uv11side, uv01side, uv00side, uv10side,
+                uv00side, uv10side, uv11side, uv01side,
                 _p6 + blockCoord, _p7 + blockCoord, _p3 + blockCoord, _p2 + blockCoord);
             AddSuvs(ref block, ref data);
         }

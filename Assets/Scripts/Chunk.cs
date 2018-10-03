@@ -158,11 +158,12 @@ public class Chunk
             {
                 Blocks[x, y, z].Type = BlockTypes.Air;
                 retVal = true;
+                Status = ChunkStatus.NeedToBeRecreated;
             }
-
-            // TODO: for now lets simply redraw whole chunk to see if it works
-            // this is rather expensive and maybe I should look for another solution
-            Status = ChunkStatus.NeedToBeRedrawn;
+            else
+            {
+                Status = ChunkStatus.NeedToBeRedrawn;
+            }
         }
 
         return retVal;
@@ -179,9 +180,7 @@ public class Chunk
         Blocks[x, y, z].Hp = LookupTables.BlockHealthMax[(int)type];
         Blocks[x, y, z].HealthLevel = 0;
         
-        // TODO: for now lets simply redraw whole chunk to see if it works
-        // this is rather expensive and maybe I should look for another solution
-        Status = ChunkStatus.NeedToBeRedrawn;
+        Status = ChunkStatus.NeedToBeRecreated;
         
         return true;
     }
