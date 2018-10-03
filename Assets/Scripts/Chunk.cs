@@ -44,7 +44,7 @@ public class Chunk
     
     public void RecreateMeshAndCollider()
     {
-        DestroyMeshesAndColliders();
+        UnityEngine.Object.DestroyImmediate(Terrain.GetComponent<Collider>());
 
         var meshGenerator = new MeshGenerator(_world.ChunkSize, _world.WorldSizeX, _world.WorldSizeY, _world.WorldSizeZ);
 
@@ -52,10 +52,15 @@ public class Chunk
         meshGenerator.ExtractMeshData(ref Blocks, Coord, out t, out w);
         var tm = meshGenerator.CreateMesh(t);
         var wm = meshGenerator.CreateMesh(w);
-
-        CreateTerrainObject(tm);
-        CreateWaterObject(wm);
-
+        
+        var terrainFilter = Terrain.GetComponent<MeshFilter>();
+        terrainFilter.mesh = tm;
+        var collider = Terrain.gameObject.AddComponent(typeof(MeshCollider)) as MeshCollider;
+        collider.sharedMesh = tm;
+        
+        var waterFilter = Water.GetComponent<MeshFilter>();
+        waterFilter.mesh = wm;
+        
         Status = ChunkStatus.Created;
     }
 
@@ -65,45 +70,14 @@ public class Chunk
     /// </summary>
     public void RecreateTerrainMesh()
     {
-        DestroyTerrainMesh();
-
-        var meshGenerator = new MeshGenerator(_world.ChunkSize, _world.WorldSizeX, _world.WorldSizeY, _world.WorldSizeZ);
-
         MeshData t, w;
-        meshGenerator.ExtractMeshData(ref Blocks, Coord, out t, out w);
-        var tm = meshGenerator.CreateMesh(t);
-
-        CreateTerrainMesh(tm);
+        _world.MeshGenerator.ExtractMeshData(ref Blocks, Coord, out t, out w);
+        var tm = _world.MeshGenerator.CreateMesh(t);
+        
+        var meshFilter = Terrain.GetComponent<MeshFilter>();
+        meshFilter.mesh = tm;
 
         Status = ChunkStatus.Created;
-    }
-
-    /// <summary>
-    /// Destroys Meshes and Colliders
-    /// </summary>
-    public void DestroyMeshesAndColliders()
-    {
-        // we cannot use normal destroy because it may wait to the next update loop or something which will break the code
-        UnityEngine.Object.DestroyImmediate(Terrain.GetComponent<MeshFilter>());
-        UnityEngine.Object.DestroyImmediate(Terrain.GetComponent<MeshRenderer>());
-        UnityEngine.Object.DestroyImmediate(Terrain.GetComponent<Collider>());
-        UnityEngine.Object.DestroyImmediate(Water.GetComponent<MeshFilter>());
-        UnityEngine.Object.DestroyImmediate(Water.GetComponent<MeshRenderer>());
-    }
-
-    public void DestroyTerrainMesh()
-    {
-        UnityEngine.Object.DestroyImmediate(Terrain.GetComponent<MeshFilter>());
-        UnityEngine.Object.DestroyImmediate(Terrain.GetComponent<MeshRenderer>());
-    }
-
-    public void CreateTerrainMesh(Mesh mesh)
-    {
-        var renderer = Terrain.gameObject.AddComponent(typeof(MeshRenderer)) as MeshRenderer;
-        renderer.material = _world.TerrainTexture;
-
-        var meshFilter = (MeshFilter)Terrain.AddComponent(typeof(MeshFilter));
-        meshFilter.mesh = mesh;
     }
     
     public void CreateTerrainObject(Mesh mesh)
