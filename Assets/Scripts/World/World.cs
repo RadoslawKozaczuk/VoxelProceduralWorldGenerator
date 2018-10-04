@@ -31,10 +31,7 @@ public class World : ScriptableObject
         _meshGenerator = new MeshGenerator(ChunkSize, WorldSizeX, WorldSizeY, WorldSizeZ);
 
         ChunkTerrainToGenerate = WorldSizeX * WorldSizeY * WorldSizeZ;
-        ChunkObjectsToGenerate = ChunkTerrainToGenerate; // each chunk has to game objects
-        AlreadyGenerated = 0;
-
-        Status = WorldGeneratorStatus.Idle;
+        ChunkObjectsToGenerate = ChunkTerrainToGenerate * 2; // each chunk has two game objects
     }
 
     public IEnumerator GenerateWorld(bool firstRun)
@@ -96,7 +93,7 @@ public class World : ScriptableObject
                     else if (c.Status == ChunkStatus.NeedToBeRedrawn) // used only for cracks
                         RecreateTerrainMesh(c);
 
-                    AlreadyGenerated++;
+                    AlreadyGenerated += 2;
 
                     yield return null; // give back control
                 }
@@ -180,7 +177,7 @@ public class World : ScriptableObject
                     CreateRenderingComponents(c, terrainData, waterData);
                     c.Status = ChunkStatus.Created;
 
-                    AlreadyGenerated++;
+                    AlreadyGenerated += 2;
 
                     yield return null; // give back control
                 }
