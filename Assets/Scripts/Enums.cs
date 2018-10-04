@@ -11,6 +11,8 @@ public enum BlockTypes : byte
 [Flags]
 public enum Cubesides : byte { Right = 1, Left = 2, Top = 4, Bottom = 8, Front = 16, Back = 32 }
 
+public enum WorldGeneratorStatus { Idle, GeneratingTerrain, TerrainReady, GeneratingMeshes, AllReady }
+
 public enum ChunkStatus { NotInitialized, Created, NeedToBeRedrawn, NeedToBeRecreated }
 
-public enum GameState { NotInitialized, Starting, Loading, StartingReady, LoadingReady }
+public enum GameState { NotInitialized, Starting, ReStarting, Started }

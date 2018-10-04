@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -9,6 +10,7 @@ public class Game : MonoBehaviour
     [SerializeField] Text _progressText;
     [SerializeField] Text _description;
     [SerializeField] Image _crosshair;
+    [SerializeField] Text _internalStatus;
 
     [SerializeField] World _world;
     public GameObject Player;
@@ -18,7 +20,7 @@ public class Game : MonoBehaviour
     public KeyCode LoadKey = KeyCode.L;
 
     public Vector3 PlayerStartPosition;
-    
+
     void Start()
     {
         _crosshair.enabled = false;
@@ -33,7 +35,7 @@ public class Game : MonoBehaviour
         Player.SetActive(false);
 
         GameState = GameState.Starting;
-        StartCoroutine(_world.GenerateWorld(firstRun: true));
+        StartCoroutine(_world.GenerateWorld(true));
     }
 
     void Update()
@@ -43,24 +45,32 @@ public class Game : MonoBehaviour
         _progressText.text = Mathf.RoundToInt(progress * 100) + "%";
         _description.text = $"Created objects { _world.AlreadyGenerated } "
             + $"out of { _world.ChunkObjectsToGenerate + _world.ChunkTerrainToGenerate }";
+        _internalStatus.text = "Game Status: " + Enum.GetName(GameState.GetType(), GameState) + Environment.NewLine
+            + "Generator Status: " + Enum.GetName(_world.Status.GetType(), _world.Status);
 
         HandleInput();
 
-        if (_world.Status == WorldGeneratorStatus.Ready)
+        if (_world.Status == WorldGeneratorStatus.TerrainReady && GameState == GameState.Starting)
+            StartCoroutine(_world.GenerateMeshes());
+
+        if (_world.Status == WorldGeneratorStatus.TerrainReady && GameState == GameState.ReStarting)
+            StartCoroutine(_world.RedrawChunksIfNecessaryAsync());
+
+        if (_world.Status == WorldGeneratorStatus.AllReady)
         {
             _crosshair.enabled = true;
 
             if (GameState == GameState.Starting)
             {
-                GameState = GameState.StartingReady;
+                GameState = GameState.Started;
                 CreatePlayer();
             }
 
             Player.SetActive(true);
-            RedrawChunksIfNecessary();
+            _world.RedrawChunksIfNecessary();
         }
     }
-    
+
     void HandleInput()
     {
         if (Input.GetKeyDown(SaveKey))
@@ -73,14 +83,14 @@ public class Game : MonoBehaviour
                 t.GetChild(0).gameObject.transform.eulerAngles.x,
                 t.rotation.eulerAngles.y,
                 0);
-            
+
             storage.SaveGame(t.position, playerRotation, _world);
             Debug.Log("Game Saved");
         }
         else if (Input.GetKeyDown(LoadKey))
         {
+            GameState = GameState.ReStarting;
             Player.SetActive(false);
-            GameState = GameState.Loading;
             var storage = new PersistentStorage(_world.ChunkSize);
 
             var save = storage.LoadGame();
@@ -91,60 +101,10 @@ public class Game : MonoBehaviour
 
             CreatePlayer(save.PlayerPosition, save.PlayerRotation);
 
-            StartCoroutine(_world.GenerateWorld(save: save));
+            StartCoroutine(_world.LoadWorld(save, false));
         }
     }
-
-    void RedrawChunksIfNecessary()
-    {
-        for (int x = 0; x < _world.WorldSizeX; x++)
-            for (int z = 0; z < _world.WorldSizeZ; z++)
-                for (int y = 0; y < _world.WorldSizeY; y++)
-                {
-                    Chunk c = _world.Chunks[x, y, z];
-                    if (c.Status == ChunkStatus.NeedToBeRecreated)
-                        RecreateMeshAndCollider(c);
-                    else if (c.Status == ChunkStatus.NeedToBeRedrawn) // used only for cracks
-                        RecreateTerrainMesh(c);
-                }
-    }
-
-    void RecreateMeshAndCollider(Chunk c)
-    {
-        DestroyImmediate(c.Terrain.GetComponent<Collider>());
-        
-        MeshData t, w;
-        _world.MeshGenerator.ExtractMeshData(ref c.Blocks, c.Coord, out t, out w);
-        var tm = _world.MeshGenerator.CreateMesh(t);
-        var wm = _world.MeshGenerator.CreateMesh(w);
-
-        var terrainFilter = c.Terrain.GetComponent<MeshFilter>();
-        terrainFilter.mesh = tm;
-        var collider = c.Terrain.gameObject.AddComponent(typeof(MeshCollider)) as MeshCollider;
-        collider.sharedMesh = tm;
-
-        var waterFilter = c.Water.GetComponent<MeshFilter>();
-        waterFilter.mesh = wm;
-
-        c.Status = ChunkStatus.Created;
-    }
-
-    /// <summary>
-    /// Destroys terrain mesh and recreates it.
-    /// Used for cracks as they do not change the terrain geometry.
-    /// </summary>
-    public void RecreateTerrainMesh(Chunk c)
-    {
-        MeshData t, w;
-        _world.MeshGenerator.ExtractMeshData(ref c.Blocks, c.Coord, out t, out w);
-        var tm = _world.MeshGenerator.CreateMesh(t);
-
-        var meshFilter = c.Terrain.GetComponent<MeshFilter>();
-        meshFilter.mesh = tm;
-
-        c.Status = ChunkStatus.Created;
-    }
-
+    
     public void ProcessBlockHit(Vector3 hitBlock)
     {
         int chunkX, chunkY, chunkZ, blockX, blockY, blockZ;
@@ -233,8 +193,8 @@ public class Game : MonoBehaviour
         return true;
     }
 
-    void FindChunkAndBlock(Vector3 hitBlock, 
-        out int chunkX, out int chunkY, out int chunkZ, 
+    void FindChunkAndBlock(Vector3 hitBlock,
+        out int chunkX, out int chunkY, out int chunkZ,
         out int blockX, out int blockY, out int blockZ)
     {
         chunkX = hitBlock.x < 0 ? 0 : (int)(hitBlock.x / _world.ChunkSize);
@@ -276,7 +236,7 @@ public class Game : MonoBehaviour
         if (blockZ == 0 && chunkZ - 1 >= 0)
             _world.Chunks[chunkX, chunkY, chunkZ - 1].Status = ChunkStatus.NeedToBeRecreated;
     }
-    
+
     void CreatePlayer(Vector3? position = null, Vector3? rotation = null)
     {
         var playerPos = position ?? PlayerStartPosition;

@@ -11,9 +11,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1eb6898d0177b8249bdf93bba445c010, type: 3}
   m_Name: World
   m_EditorClassIdentifier: 
-  TerrainTexture: {fileID: 2100000, guid: 0beff685461bd4744bc433ab1599a347, type: 2}
-  WaterTexture: {fileID: 2100000, guid: c40c0017d3704914db1e95d92cdb03a4, type: 2}
-  ChunkSize: 24
-  WorldSizeX: 7
-  WorldSizeY: 4
-  WorldSizeZ: 7
+  ChunkSize: 32
+  WorldSizeX: 4
+  WorldSizeY: 3
+  WorldSizeZ: 4
+  _terrainTexture: {fileID: 2100000, guid: 0beff685461bd4744bc433ab1599a347, type: 2}
+  _waterTexture: {fileID: 2100000, guid: c40c0017d3704914db1e95d92cdb03a4, type: 2}
