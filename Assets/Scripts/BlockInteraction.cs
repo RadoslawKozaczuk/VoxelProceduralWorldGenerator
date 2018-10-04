@@ -40,9 +40,9 @@ public class BlockInteraction : MonoBehaviour
         // Does the ray intersect any objects excluding the player layer
         if (!Physics.Raycast(Camera.transform.position, Camera.transform.forward, out hit, Mathf.Infinity, layerMask))
             return;
-        
+
         Vector3 hitBlock = hit.point - hit.normal / 2.0f; // central point
-        
+
         _audioSource.PlayOneShot(_stonehitSound);
         Game.ProcessBlockHit(hitBlock);
     }
@@ -62,7 +62,7 @@ public class BlockInteraction : MonoBehaviour
             return;
 
         Vector3 hitBlock = hit.point + hit.normal / 2.0f; // next to the one that we are pointing at
-        
+
         _audioSource.PlayOneShot(_stonehitSound); // TODO: find a good build block sounds
         Game.ProcessBuildBlock(hitBlock, _buildBlockType);
     }

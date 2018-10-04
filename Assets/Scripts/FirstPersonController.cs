@@ -27,7 +27,7 @@ public class FirstPersonController : MonoBehaviour
     [SerializeField] AudioClip[] _footstepSounds;    // an array of footstep sounds that will be randomly selected from.
     [SerializeField] AudioClip _jumpSound;           // the sound played when character leaves the ground.
     [SerializeField] AudioClip _landSound;           // the sound played when character touches back on ground.
-    
+
     Camera _camera;
     bool _jump;
     float _yRotation;
@@ -134,7 +134,7 @@ public class FirstPersonController : MonoBehaviour
         _audioSource.clip = _jumpSound;
         _audioSource.Play();
     }
-    
+
     void ProgressStepCycle(float speed)
     {
         if (_characterController.velocity.sqrMagnitude > 0 && (_input.x != 0 || _input.y != 0))
@@ -193,7 +193,7 @@ public class FirstPersonController : MonoBehaviour
         float vertical = CrossPlatformInputManager.GetAxis("Vertical");
 
         bool wasWalking = _isWalking;
-        
+
         // On standalone builds, walk/run speed is modified by a key press.
         // keep track of whether or not the character is walking or running
         _isWalking = !Input.GetKey(KeyCode.LeftShift);

@@ -1,6 +1,6 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
 using UnityEngine.UI;
-using System;
 
 public class FPSCounter : MonoBehaviour
 {
@@ -36,7 +36,7 @@ public class FPSCounter : MonoBehaviour
     [SerializeField] FPSColor[] _coloring;
     int[] _fpsBuffer; // we store all values from the last second
     int _fpsBufferIndex; // index of the curretly stored value
-    
+
     void Update()
     {
         Display(HighestFPSLabel, HighestFPS);

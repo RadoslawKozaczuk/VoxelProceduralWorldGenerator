@@ -32,7 +32,7 @@ public class LevelLoader : MonoBehaviour
             float progress = Mathf.Clamp01(operation.progress / .9f); // clamps value between min (0) and max (1) and returns value.
             _slider.value = progress;
             _progressText.text = Mathf.RoundToInt(progress * 100) + "%";
-            
+
             yield return null;
         }
     }

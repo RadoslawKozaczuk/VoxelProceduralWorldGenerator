@@ -64,7 +64,7 @@ public class MeshGenerator
     #endregion
 
     readonly int _chunkSize, _worldSizeX, _worldSizeY, _worldSizeZ;
-    
+
     public MeshGenerator(int chunkSize, int worldSizeX, int worldSizeY, int worldSizeZ)
     {
         _chunkSize = chunkSize;
@@ -86,7 +86,7 @@ public class MeshGenerator
         // Determining mesh size
         int tSize = 0, wSize = 0;
         CalculateFacesAndMeshSize(ref blocks, coord, out tSize, out wSize);
-        
+
         var terrainData = new MeshData
         {
             Uvs = new Vector2[tSize],
@@ -95,7 +95,7 @@ public class MeshGenerator
             Normals = new Vector3[tSize],
             Triangles = new int[(int)(1.5f * tSize)]
         };
-        
+
         var waterData = new MeshData
         {
             Uvs = new Vector2[wSize],
@@ -104,7 +104,7 @@ public class MeshGenerator
             Normals = new Vector3[wSize],
             Triangles = new int[(int)(1.5f * wSize)]
         };
-        
+
         var index = 0;
         var triIndex = 0;
         var waterIndex = 0;
@@ -153,7 +153,7 @@ public class MeshGenerator
 
         return mesh;
     }
-    
+
     public void LogTimeSpent()
     {
         UnityEngine.Debug.Log($"It took {_accumulatedExtractMeshDataTime} ms to extract all mesh data.");
@@ -161,7 +161,7 @@ public class MeshGenerator
     }
 
     bool QuadVisibilityCheck(BlockTypes target) => target == BlockTypes.Air || target == BlockTypes.Water;
-    
+
     void PerformInterChunkCheck(ref Block[,,] blocks, Vector3Int chunkCoord, Vector3Int blockCoord, ref int meshSize)
     {
         Block block;
@@ -169,19 +169,19 @@ public class MeshGenerator
 
         if (blockCoord.x == _chunkSize - 1)
         {
-            if(TryGetBlockFromChunk(chunkCoord.x + 1, chunkCoord.y, chunkCoord.z,
+            if (TryGetBlockFromChunk(chunkCoord.x + 1, chunkCoord.y, chunkCoord.z,
                 0, blockCoord.y, blockCoord.z, ref blocks, out block))
             {
                 if (QuadVisibilityCheck(block.Type)) { faces |= Cubesides.Right; meshSize += 4; }
             }
             else { faces |= Cubesides.Right; meshSize += 4; }
         }
-        else if(QuadVisibilityCheck(blocks[blockCoord.x + 1, blockCoord.y, blockCoord.z].Type))
+        else if (QuadVisibilityCheck(blocks[blockCoord.x + 1, blockCoord.y, blockCoord.z].Type))
         { faces |= Cubesides.Right; meshSize += 4; }
 
         if (blockCoord.x == 0)
         {
-            if(TryGetBlockFromChunk(chunkCoord.x - 1, chunkCoord.y, chunkCoord.z, 
+            if (TryGetBlockFromChunk(chunkCoord.x - 1, chunkCoord.y, chunkCoord.z,
                 _chunkSize - 1, blockCoord.y, blockCoord.z, ref blocks, out block))
             {
                 if (QuadVisibilityCheck(block.Type)) { faces |= Cubesides.Left; meshSize += 4; }
@@ -193,7 +193,7 @@ public class MeshGenerator
 
         if (blockCoord.y == _chunkSize - 1)
         {
-            if(TryGetBlockFromChunk(chunkCoord.x, chunkCoord.y + 1, chunkCoord.z,
+            if (TryGetBlockFromChunk(chunkCoord.x, chunkCoord.y + 1, chunkCoord.z,
                 blockCoord.x, 0, blockCoord.z, ref blocks, out block))
             {
                 if (QuadVisibilityCheck(block.Type)) { faces |= Cubesides.Top; meshSize += 4; }
@@ -205,7 +205,7 @@ public class MeshGenerator
 
         if (blockCoord.y == 0)
         {
-            if(TryGetBlockFromChunk(chunkCoord.x, chunkCoord.y - 1, chunkCoord.z, 
+            if (TryGetBlockFromChunk(chunkCoord.x, chunkCoord.y - 1, chunkCoord.z,
                 blockCoord.x, _chunkSize - 1, blockCoord.z, ref blocks, out block))
             {
                 if (QuadVisibilityCheck(block.Type)) { faces |= Cubesides.Bottom; meshSize += 4; }
@@ -217,7 +217,7 @@ public class MeshGenerator
 
         if (blockCoord.z == _chunkSize - 1)
         {
-            if(TryGetBlockFromChunk(chunkCoord.x, chunkCoord.y, chunkCoord.z + 1,
+            if (TryGetBlockFromChunk(chunkCoord.x, chunkCoord.y, chunkCoord.z + 1,
                 blockCoord.x, blockCoord.y, 0, ref blocks, out block))
             {
                 if (QuadVisibilityCheck(block.Type)) { faces |= Cubesides.Front; meshSize += 4; }
@@ -229,7 +229,7 @@ public class MeshGenerator
 
         if (blockCoord.z == 0)
         {
-            if(TryGetBlockFromChunk(chunkCoord.x, chunkCoord.y, chunkCoord.z - 1,
+            if (TryGetBlockFromChunk(chunkCoord.x, chunkCoord.y, chunkCoord.z - 1,
                 blockCoord.x, blockCoord.y, _chunkSize - 1, ref blocks, out block))
             {
                 if (QuadVisibilityCheck(block.Type)) { faces |= Cubesides.Back; meshSize += 4; }
@@ -247,7 +247,7 @@ public class MeshGenerator
         if (blockCoord.y == _chunkSize - 1)
         {
             Block block;
-            if (TryGetBlockFromChunk(chunkCoord.x, chunkCoord.y + 1, chunkCoord.z, 
+            if (TryGetBlockFromChunk(chunkCoord.x, chunkCoord.y + 1, chunkCoord.z,
                 blockCoord.x, 0, blockCoord.z, ref blocks, out block))
             {
                 if (block.Type == BlockTypes.Air)
@@ -268,7 +268,7 @@ public class MeshGenerator
     /// Return true if the particular block could be find in the the chunk.
     /// False if otherwise. In case of false a new dummy block will be returned.
     /// </summary>
-    bool TryGetBlockFromChunk(int chunkX, int chunkY, int chunkZ, int blockX, int blockY, int blockZ, 
+    bool TryGetBlockFromChunk(int chunkX, int chunkY, int chunkZ, int blockX, int blockY, int blockZ,
         ref Block[,,] blocks, out Block block)
     {
         if (chunkX >= _worldSizeX || chunkX < 0
@@ -285,12 +285,12 @@ public class MeshGenerator
         return true;
     }
 
-    void CalculateFacesAndMeshSize(ref Block[,,] blocks, Vector3Int chunkCoord, 
+    void CalculateFacesAndMeshSize(ref Block[,,] blocks, Vector3Int chunkCoord,
         out int terrainMeshSize, out int waterMeshSize)
     {
         terrainMeshSize = 0;
         waterMeshSize = 0;
-        
+
         int x, y, z;
         // internal blocks
         for (z = 1; z < _chunkSize - 1; z++)
@@ -326,7 +326,7 @@ public class MeshGenerator
                 for (x = 0; x < _chunkSize; x += _chunkSize - 1)
                 {
                     var type = blocks[x, y, z].Type;
-                    
+
                     if (type == BlockTypes.Water)
                         WaterInterChunkCheck(ref blocks, chunkCoord, new Vector3Int(x, y, z), ref waterMeshSize);
                     else if (type != BlockTypes.Air)
@@ -364,7 +364,7 @@ public class MeshGenerator
     void CreateStandardQuads(ref Block block, ref int index, ref int triIndex, ref MeshData data, Vector3 blockCoord)
     {
         int typeIndex = (int)block.Type;
-        
+
         // all possible UVs
         Vector2 uv00 = _blockUVs[typeIndex, 0],
                 uv10 = _blockUVs[typeIndex, 1],
@@ -423,7 +423,7 @@ public class MeshGenerator
     void CreateGrassQuads(ref Block block, ref int index, ref int triIndex, ref MeshData data, Vector3 blockCoord)
     {
         int typeIndex = (int)block.Type;
-        
+
         var restIndex = typeIndex - 10;
         Vector2 uv00top = _blockUVs[typeIndex, 0],
                 uv10top = _blockUVs[typeIndex, 1],
@@ -463,7 +463,7 @@ public class MeshGenerator
         }
 
         if (block.Faces.HasFlag(Cubesides.Right))
-        { 
+        {
             AddQuadComponents(ref index, ref triIndex, ref data, Vector3.right,
                 uv00side, uv10side, uv11side, uv01side,
                 _p5 + blockCoord, _p6 + blockCoord, _p2 + blockCoord, _p1 + blockCoord);
@@ -502,11 +502,11 @@ public class MeshGenerator
             AddQuadComponents(ref index, ref triIndex, ref data, Vector3.up,
                 uv11, uv01, uv00, uv10,
                 _p7 + blockCoord, _p6 + blockCoord, _p5 + blockCoord, _p4 + blockCoord);
-        
+
     }
 
     void AddQuadComponents(ref int index, ref int triIndex,
-        ref MeshData data, 
+        ref MeshData data,
         Vector3 normal,
         Vector2 uv11, Vector2 uv01, Vector2 uv00, Vector2 uv10,
         Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3)
@@ -528,7 +528,7 @@ public class MeshGenerator
         data.Verticies[index + 1] = p1;
         data.Verticies[index + 2] = p2;
         data.Verticies[index + 3] = p3;
-        
+
         // add triangles
         data.Triangles[triIndex++] = index + 3;
         data.Triangles[triIndex++] = index + 1;
@@ -547,7 +547,7 @@ public class MeshGenerator
         data.Suvs.Add(_crackUVs[block.HealthLevel, 0]); // bottom left corner
         data.Suvs.Add(_crackUVs[block.HealthLevel, 1]); // bottom right corner
     }
-    
+
     Vector2[,] FillCrackUvTable()
     {
         var crackUVs = new Vector2[11, 4];

@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -11,15 +10,13 @@ public class Game : MonoBehaviour
     [SerializeField] Text _description;
     [SerializeField] Image _crosshair;
     [SerializeField] Text _internalStatus;
-
     [SerializeField] World _world;
-    public GameObject Player;
-    public Camera MainCamera;
-    public GameState GameState = GameState.NotInitialized;
-    public KeyCode SaveKey = KeyCode.K;
-    public KeyCode LoadKey = KeyCode.L;
-
-    public Vector3 PlayerStartPosition;
+    [SerializeField] GameObject _player;
+    [SerializeField] Camera _mainCamera;
+    [SerializeField] GameState _gameState = GameState.NotInitialized;
+    [SerializeField] KeyCode _saveKey = KeyCode.K;
+    [SerializeField] KeyCode _loadKey = KeyCode.L;
+    [SerializeField] Vector3 _playerStartPosition;
 
     void Start()
     {
@@ -28,13 +25,13 @@ public class Game : MonoBehaviour
         _controlsLabel.text = "Controls:" + Environment.NewLine
             + "Attack - LPM" + Environment.NewLine
             + "Build - RPM" + Environment.NewLine
-            + $"Save Game - { SaveKey }" + Environment.NewLine
-            + $"Load Game - { LoadKey }";
+            + $"Save Game - { _saveKey }" + Environment.NewLine
+            + $"Load Game - { _loadKey }";
         Debug.Log("Waiting instructions...");
 
-        Player.SetActive(false);
+        _player.SetActive(false);
 
-        GameState = GameState.Starting;
+        _gameState = GameState.Starting;
         StartCoroutine(_world.GenerateWorld(true));
     }
 
@@ -45,39 +42,39 @@ public class Game : MonoBehaviour
         _progressText.text = Mathf.RoundToInt(progress * 100) + "%";
         _description.text = $"Created objects { _world.AlreadyGenerated } "
             + $"out of { _world.ChunkObjectsToGenerate + _world.ChunkTerrainToGenerate }";
-        _internalStatus.text = "Game Status: " + Enum.GetName(GameState.GetType(), GameState) + Environment.NewLine
+        _internalStatus.text = "Game Status: " + Enum.GetName(_gameState.GetType(), _gameState) + Environment.NewLine
             + "Generator Status: " + Enum.GetName(_world.Status.GetType(), _world.Status);
 
         HandleInput();
 
-        if (_world.Status == WorldGeneratorStatus.TerrainReady && GameState == GameState.Starting)
+        if (_world.Status == WorldGeneratorStatus.TerrainReady && _gameState == GameState.Starting)
             StartCoroutine(_world.GenerateMeshes());
 
-        if (_world.Status == WorldGeneratorStatus.TerrainReady && GameState == GameState.ReStarting)
+        if (_world.Status == WorldGeneratorStatus.TerrainReady && _gameState == GameState.ReStarting)
             StartCoroutine(_world.RedrawChunksIfNecessaryAsync());
 
         if (_world.Status == WorldGeneratorStatus.AllReady)
         {
             _crosshair.enabled = true;
 
-            if (GameState == GameState.Starting)
+            if (_gameState == GameState.Starting)
             {
-                GameState = GameState.Started;
+                _gameState = GameState.Started;
                 CreatePlayer();
             }
 
-            Player.SetActive(true);
+            _player.SetActive(true);
             _world.RedrawChunksIfNecessary();
         }
     }
 
     void HandleInput()
     {
-        if (Input.GetKeyDown(SaveKey))
+        if (Input.GetKeyDown(_saveKey))
         {
             var storage = new PersistentStorage(_world.ChunkSize);
 
-            var t = Player.transform;
+            var t = _player.transform;
 
             var playerRotation = new Vector3(
                 t.GetChild(0).gameObject.transform.eulerAngles.x,
@@ -87,10 +84,10 @@ public class Game : MonoBehaviour
             storage.SaveGame(t.position, playerRotation, _world);
             Debug.Log("Game Saved");
         }
-        else if (Input.GetKeyDown(LoadKey))
+        else if (Input.GetKeyDown(_loadKey))
         {
-            GameState = GameState.ReStarting;
-            Player.SetActive(false);
+            _gameState = GameState.ReStarting;
+            _player.SetActive(false);
             var storage = new PersistentStorage(_world.ChunkSize);
 
             var save = storage.LoadGame();
@@ -104,7 +101,7 @@ public class Game : MonoBehaviour
             StartCoroutine(_world.LoadWorld(save, false));
         }
     }
-    
+
     public void ProcessBlockHit(Vector3 hitBlock)
     {
         int chunkX, chunkY, chunkZ, blockX, blockY, blockZ;
@@ -239,13 +236,13 @@ public class Game : MonoBehaviour
 
     void CreatePlayer(Vector3? position = null, Vector3? rotation = null)
     {
-        var playerPos = position ?? PlayerStartPosition;
-        Player.transform.position = new Vector3(
+        var playerPos = position ?? _playerStartPosition;
+        _player.transform.position = new Vector3(
                 playerPos.x,
                 TerrainGenerator.GenerateDirtHeight(playerPos.x, playerPos.z) + 2,
                 playerPos.z);
 
-        var fpc = Player.GetComponent<FirstPersonController>();
+        var fpc = _player.GetComponent<FirstPersonController>();
         if (rotation.HasValue)
         {
             var r = rotation.Value;

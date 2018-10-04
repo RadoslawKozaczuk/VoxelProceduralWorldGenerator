@@ -39,7 +39,7 @@ public class PersistentStorage
                     {
                         Blocks = world.Chunks[x, y, z].Blocks
                     });
-           
+
         _writer.Close();
         _writer.Dispose();
     }
@@ -73,7 +73,7 @@ public class PersistentStorage
             for (int z = 0; z < sizeZ; z++)
                 for (int y = 0; y < sizeY; y++)
                     chunks[x, y, z] = ReadChunkData();
-                    
+
 
         loadGameData.Chunks = chunks;
 
@@ -109,7 +109,7 @@ public class PersistentStorage
         Hp = _reader.ReadByte(),
         HealthLevel = _reader.ReadByte()
     };
-    
+
     Quaternion ReadQuaternion() => new Quaternion
     {
         x = _reader.ReadSingle(),
@@ -148,7 +148,7 @@ public class PersistentStorage
         return list;
     }
 
-    Vector2[]ReadArrayVector2(int size)
+    Vector2[] ReadArrayVector2(int size)
     {
         var array = new Vector2[size];
         for (int i = 0; i < size; i++)

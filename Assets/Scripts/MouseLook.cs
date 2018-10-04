@@ -13,7 +13,7 @@ public class MouseLook
     public bool smooth;
     public float smoothTime = 5f;
     public bool lockCursor = true;
-    
+
     public Quaternion CharacterTargetRot;
     public Quaternion CameraTargetRot;
 

@@ -5,7 +5,7 @@ public class Pickaxe : MonoBehaviour
 {
     [SerializeField] AudioClip _wooshSound;
     AudioSource _audioSource;
-    
+
     // Use this for initialization
     void Start() => _audioSource = GetComponent<AudioSource>();
 

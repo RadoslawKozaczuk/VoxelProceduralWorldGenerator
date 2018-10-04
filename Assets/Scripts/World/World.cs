@@ -6,8 +6,6 @@ using UnityEngine.SceneManagement;
 [CreateAssetMenu]
 public class World : ScriptableObject
 {
-    public TerrainGenerator TerrainGenerator { get; private set; }
-    public MeshGenerator MeshGenerator { get; private set; }
     public Chunk[,,] Chunks;
     public byte ChunkSize = 32;
     public byte WorldSizeX = 7;
@@ -18,19 +16,19 @@ public class World : ScriptableObject
     public float AlreadyGenerated { get; private set; }
     public WorldGeneratorStatus Status { get; private set; }
 
+    [SerializeField] TerrainGenerator _terrainGenerator;
+    [SerializeField] MeshGenerator _meshGenerator;
     [SerializeField] Material _terrainTexture;
     [SerializeField] Material _waterTexture;
 
     Stopwatch _stopwatch = new Stopwatch();
     Scene _worldScene;
-    long _terrainReadyTime;
-    
     long _accumulatedTerrainGenerationTime, _accumulatedMeshCreationTime;
 
     void OnEnable()
     {
-        TerrainGenerator = new TerrainGenerator(ChunkSize);
-        MeshGenerator = new MeshGenerator(ChunkSize, WorldSizeX, WorldSizeY, WorldSizeZ);
+        _terrainGenerator = new TerrainGenerator(ChunkSize);
+        _meshGenerator = new MeshGenerator(ChunkSize, WorldSizeX, WorldSizeY, WorldSizeZ);
 
         ChunkTerrainToGenerate = WorldSizeX * WorldSizeY * WorldSizeZ;
         ChunkObjectsToGenerate = ChunkTerrainToGenerate; // each chunk has to game objects
@@ -50,7 +48,7 @@ public class World : ScriptableObject
 
         if (firstRun)
             _worldScene = SceneManager.CreateScene(name);
-        
+
         for (int x = 0; x < WorldSizeX; x++)
             for (int z = 0; z < WorldSizeZ; z++)
                 for (int y = 0; y < WorldSizeY; y++)
@@ -59,7 +57,7 @@ public class World : ScriptableObject
 
                     var c = new Chunk()
                     {
-                        Blocks = TerrainGenerator.BuildChunk(chunkPosition),
+                        Blocks = _terrainGenerator.BuildChunk(chunkPosition),
                         Coord = new Vector3Int(x, y, z)
                     };
 
@@ -73,7 +71,7 @@ public class World : ScriptableObject
 
                     Chunks[x, y, z] = c;
                     AlreadyGenerated++;
-                    
+
                     yield return null; // give back control
                 }
 
@@ -102,7 +100,7 @@ public class World : ScriptableObject
 
                     yield return null; // give back control
                 }
-        
+
         Status = WorldGeneratorStatus.AllReady;
         _stopwatch.Stop();
         _accumulatedMeshCreationTime += _stopwatch.ElapsedMilliseconds;
@@ -177,7 +175,7 @@ public class World : ScriptableObject
                 {
                     var c = Chunks[x, y, z];
                     MeshData terrainData, waterData;
-                    MeshGenerator.ExtractMeshData(ref c.Blocks, new Vector3Int(x * ChunkSize, y * ChunkSize, z * ChunkSize),
+                    _meshGenerator.ExtractMeshData(ref c.Blocks, new Vector3Int(x * ChunkSize, y * ChunkSize, z * ChunkSize),
                         out terrainData, out waterData);
                     CreateRenderingComponents(c, terrainData, waterData);
                     c.Status = ChunkStatus.Created;
@@ -201,9 +199,9 @@ public class World : ScriptableObject
         DestroyImmediate(c.Terrain.GetComponent<Collider>());
 
         MeshData t, w;
-        MeshGenerator.ExtractMeshData(ref c.Blocks, c.Coord, out t, out w);
-        var tm = MeshGenerator.CreateMesh(t);
-        var wm = MeshGenerator.CreateMesh(w);
+        _meshGenerator.ExtractMeshData(ref c.Blocks, c.Coord, out t, out w);
+        var tm = _meshGenerator.CreateMesh(t);
+        var wm = _meshGenerator.CreateMesh(w);
 
         var terrainFilter = c.Terrain.GetComponent<MeshFilter>();
         terrainFilter.mesh = tm;
@@ -223,15 +221,15 @@ public class World : ScriptableObject
     void RecreateTerrainMesh(Chunk c)
     {
         MeshData t, w;
-        MeshGenerator.ExtractMeshData(ref c.Blocks, c.Coord, out t, out w);
-        var tm = MeshGenerator.CreateMesh(t);
+        _meshGenerator.ExtractMeshData(ref c.Blocks, c.Coord, out t, out w);
+        var tm = _meshGenerator.CreateMesh(t);
 
         var meshFilter = c.Terrain.GetComponent<MeshFilter>();
         meshFilter.mesh = tm;
 
         c.Status = ChunkStatus.Created;
     }
-    
+
     void CreateGameObjects(Chunk c, Vector3Int chunkPosition)
     {
         string name = "" + chunkPosition.x + chunkPosition.y + chunkPosition.z;
@@ -241,10 +239,10 @@ public class World : ScriptableObject
         c.Water.transform.position = chunkPosition;
         c.Status = ChunkStatus.NeedToBeRedrawn;
     }
-    
+
     void CreateRenderingComponents(Chunk chunk, MeshData terrainData, MeshData waterData)
     {
-        var meshT = MeshGenerator.CreateMesh(terrainData);
+        var meshT = _meshGenerator.CreateMesh(terrainData);
         var rt = chunk.Terrain.gameObject.AddComponent(typeof(MeshRenderer)) as MeshRenderer;
         rt.material = _terrainTexture;
 
@@ -254,7 +252,7 @@ public class World : ScriptableObject
         var ct = chunk.Terrain.gameObject.AddComponent(typeof(MeshCollider)) as MeshCollider;
         ct.sharedMesh = meshT;
 
-        var meshW = MeshGenerator.CreateMesh(waterData);
+        var meshW = _meshGenerator.CreateMesh(waterData);
         var rw = chunk.Water.gameObject.AddComponent(typeof(MeshRenderer)) as MeshRenderer;
         rw.material = _waterTexture;
 

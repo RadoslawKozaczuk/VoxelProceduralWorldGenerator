@@ -69,7 +69,7 @@ public class TerrainGenerator
             Result[i] = DetermineType(x + ChunkPosX, y + ChunkPosY, z + ChunkPosZ, x, z, ChunkSize, Heights);
         }
     }
-    
+
     #region Constants
     // caves should be more erratic so has to be a higher number
     const float CaveProbability = 0.44f;
@@ -250,7 +250,7 @@ public class TerrainGenerator
 
         return heights;
     }
-    
+
     void CalculateBlockTypes(ref Block[,,] blocks, Vector3Int chunkPosition, HeightData[] heights)
     {
         // output data
@@ -287,7 +287,7 @@ public class TerrainGenerator
                     blocks[x, y, z].Hp = LookupTables.BlockHealthMax[(int)type];
                 }
     }
-    
+
     void AddTrees(ref Block[,,] blocks, Vector3 chunkPosition)
     {
         for (var z = 1; z < _chunkSize - 1; z++)
