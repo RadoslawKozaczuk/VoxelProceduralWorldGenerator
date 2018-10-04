@@ -854,6 +854,12 @@ Prefab:
       propertyPath: _crosshair
       value: 
       objectReference: {fileID: 64712580}
+    - target: {fileID: 114565008789362862, guid: 1fcd5e8ae70ba1e44a1f577082c26d51,
+        type: 2}
+      propertyPath: _world
+      value: 
+      objectReference: {fileID: 11400000, guid: 26f304676aa5d88499d979ed0db085af,
+        type: 2}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 1fcd5e8ae70ba1e44a1f577082c26d51, type: 2}
   m_IsPrefabAsset: 0

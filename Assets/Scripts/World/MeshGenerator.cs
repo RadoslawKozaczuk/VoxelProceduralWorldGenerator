@@ -79,7 +79,7 @@ public class MeshGenerator
     /// This method creates mesh data necessary to create a mesh.
     /// Data for both terrain and water meshes are created.
     /// </summary>
-    public void ExtractMeshData(ref BlockData[,,] blocks, Vector3Int coord, out MeshData terrain, out MeshData water)
+    public void ExtractMeshData(ref Block[,,] blocks, Vector3Int coord, out MeshData terrain, out MeshData water)
     {
         _stopwatch.Restart();
 
@@ -162,9 +162,9 @@ public class MeshGenerator
 
     bool QuadVisibilityCheck(BlockTypes target) => target == BlockTypes.Air || target == BlockTypes.Water;
     
-    void PerformInterChunkCheck(ref BlockData[,,] blocks, Vector3Int chunkCoord, Vector3Int blockCoord, ref int meshSize)
+    void PerformInterChunkCheck(ref Block[,,] blocks, Vector3Int chunkCoord, Vector3Int blockCoord, ref int meshSize)
     {
-        BlockData block;
+        Block block;
         Cubesides faces = 0;
 
         if (blockCoord.x == _chunkSize - 1)
@@ -242,11 +242,11 @@ public class MeshGenerator
         blocks[blockCoord.x, blockCoord.y, blockCoord.z].Faces = faces;
     }
 
-    void WaterInterChunkCheck(ref BlockData[,,] blocks, Vector3Int chunkCoord, Vector3Int blockCoord, ref int meshSize)
+    void WaterInterChunkCheck(ref Block[,,] blocks, Vector3Int chunkCoord, Vector3Int blockCoord, ref int meshSize)
     {
         if (blockCoord.y == _chunkSize - 1)
         {
-            BlockData block;
+            Block block;
             if (TryGetBlockFromChunk(chunkCoord.x, chunkCoord.y + 1, chunkCoord.z, 
                 blockCoord.x, 0, blockCoord.z, ref blocks, out block))
             {
@@ -269,14 +269,14 @@ public class MeshGenerator
     /// False if otherwise. In case of false a new dummy block will be returned.
     /// </summary>
     bool TryGetBlockFromChunk(int chunkX, int chunkY, int chunkZ, int blockX, int blockY, int blockZ, 
-        ref BlockData[,,] blocks, out BlockData block)
+        ref Block[,,] blocks, out Block block)
     {
         if (chunkX >= _worldSizeX || chunkX < 0
             || chunkY >= _worldSizeY || chunkY < 0
             || chunkZ >= _worldSizeZ || chunkZ < 0)
         {
             // we are outside of the world!
-            block = new BlockData(); // dummy data
+            block = new Block(); // dummy data
             return false;
         }
 
@@ -285,7 +285,7 @@ public class MeshGenerator
         return true;
     }
 
-    void CalculateFacesAndMeshSize(ref BlockData[,,] blocks, Vector3Int chunkCoord, 
+    void CalculateFacesAndMeshSize(ref Block[,,] blocks, Vector3Int chunkCoord, 
         out int terrainMeshSize, out int waterMeshSize)
     {
         terrainMeshSize = 0;
@@ -361,7 +361,7 @@ public class MeshGenerator
                 }
     }
 
-    void CreateStandardQuads(ref BlockData block, ref int index, ref int triIndex, ref MeshData data, Vector3 blockCoord)
+    void CreateStandardQuads(ref Block block, ref int index, ref int triIndex, ref MeshData data, Vector3 blockCoord)
     {
         int typeIndex = (int)block.Type;
         
@@ -420,7 +420,7 @@ public class MeshGenerator
         }
     }
 
-    void CreateGrassQuads(ref BlockData block, ref int index, ref int triIndex, ref MeshData data, Vector3 blockCoord)
+    void CreateGrassQuads(ref Block block, ref int index, ref int triIndex, ref MeshData data, Vector3 blockCoord)
     {
         int typeIndex = (int)block.Type;
         
@@ -487,7 +487,7 @@ public class MeshGenerator
         }
     }
 
-    void CreateWaterQuads(ref BlockData block, ref int index, ref int triIndex, ref MeshData data, Vector3 blockCoord)
+    void CreateWaterQuads(ref Block block, ref int index, ref int triIndex, ref MeshData data, Vector3 blockCoord)
     {
         float uvConst = 1.0f / _chunkSize;
 
@@ -540,7 +540,7 @@ public class MeshGenerator
         index += 4;
     }
 
-    void AddSuvs(ref BlockData block, ref MeshData data)
+    void AddSuvs(ref Block block, ref MeshData data)
     {
         data.Suvs.Add(_crackUVs[block.HealthLevel, 3]); // top right corner
         data.Suvs.Add(_crackUVs[block.HealthLevel, 2]); // top left corner

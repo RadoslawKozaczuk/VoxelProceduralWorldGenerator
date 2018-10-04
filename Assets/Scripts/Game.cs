@@ -10,7 +10,7 @@ public class Game : MonoBehaviour
     [SerializeField] Text _description;
     [SerializeField] Image _crosshair;
 
-    public World World;
+    [SerializeField] World _world;
     public GameObject Player;
     public Camera MainCamera;
     public GameState GameState = GameState.NotInitialized;
@@ -33,20 +33,20 @@ public class Game : MonoBehaviour
         Player.SetActive(false);
 
         GameState = GameState.Starting;
-        StartCoroutine(World.GenerateWorld(firstRun: true));
+        StartCoroutine(_world.GenerateWorld(firstRun: true));
     }
 
     void Update()
     {
-        var progress = Mathf.Clamp01(World.AlreadyGenerated / (World.ChunkObjectsToGenerate + World.ChunkTerrainToGenerate));
+        var progress = Mathf.Clamp01(_world.AlreadyGenerated / (_world.ChunkObjectsToGenerate + _world.ChunkTerrainToGenerate));
         _progressBar.value = progress;
         _progressText.text = Mathf.RoundToInt(progress * 100) + "%";
-        _description.text = $"Created objects { World.AlreadyGenerated } "
-            + $"out of { World.ChunkObjectsToGenerate + World.ChunkTerrainToGenerate }";
+        _description.text = $"Created objects { _world.AlreadyGenerated } "
+            + $"out of { _world.ChunkObjectsToGenerate + _world.ChunkTerrainToGenerate }";
 
         HandleInput();
 
-        if (World.Status == WorldGeneratorStatus.Ready)
+        if (_world.Status == WorldGeneratorStatus.Ready)
         {
             _crosshair.enabled = true;
 
@@ -65,7 +65,7 @@ public class Game : MonoBehaviour
     {
         if (Input.GetKeyDown(SaveKey))
         {
-            var storage = new PersistentStorage(World.ChunkSize);
+            var storage = new PersistentStorage(_world.ChunkSize);
 
             var t = Player.transform;
 
@@ -74,39 +74,75 @@ public class Game : MonoBehaviour
                 t.rotation.eulerAngles.y,
                 0);
             
-            storage.SaveGame(t.position, playerRotation, World);
+            storage.SaveGame(t.position, playerRotation, _world);
             Debug.Log("Game Saved");
         }
         else if (Input.GetKeyDown(LoadKey))
         {
             Player.SetActive(false);
             GameState = GameState.Loading;
-            var storage = new PersistentStorage(World.ChunkSize);
+            var storage = new PersistentStorage(_world.ChunkSize);
 
             var save = storage.LoadGame();
-            World.ChunkSize = save.ChunkSize;
-            World.WorldSizeX = save.WorldSizeX;
-            World.WorldSizeY = save.WorldSizeY;
-            World.WorldSizeZ = save.WorldSizeZ;
+            _world.ChunkSize = save.ChunkSize;
+            _world.WorldSizeX = save.WorldSizeX;
+            _world.WorldSizeY = save.WorldSizeY;
+            _world.WorldSizeZ = save.WorldSizeZ;
 
             CreatePlayer(save.PlayerPosition, save.PlayerRotation);
 
-            StartCoroutine(World.GenerateWorld(save: save));
+            StartCoroutine(_world.GenerateWorld(save: save));
         }
     }
 
     void RedrawChunksIfNecessary()
     {
-        for (int x = 0; x < World.WorldSizeX; x++)
-            for (int z = 0; z < World.WorldSizeZ; z++)
-                for (int y = 0; y < World.WorldSizeY; y++)
+        for (int x = 0; x < _world.WorldSizeX; x++)
+            for (int z = 0; z < _world.WorldSizeZ; z++)
+                for (int y = 0; y < _world.WorldSizeY; y++)
                 {
-                    Chunk c = World.Chunks[x, y, z];
+                    Chunk c = _world.Chunks[x, y, z];
                     if (c.Status == ChunkStatus.NeedToBeRecreated)
-                        c.RecreateMeshAndCollider();
+                        RecreateMeshAndCollider(c);
                     else if (c.Status == ChunkStatus.NeedToBeRedrawn) // used only for cracks
-                        c.RecreateTerrainMesh();
+                        RecreateTerrainMesh(c);
                 }
+    }
+
+    void RecreateMeshAndCollider(Chunk c)
+    {
+        DestroyImmediate(c.Terrain.GetComponent<Collider>());
+        
+        MeshData t, w;
+        _world.MeshGenerator.ExtractMeshData(ref c.Blocks, c.Coord, out t, out w);
+        var tm = _world.MeshGenerator.CreateMesh(t);
+        var wm = _world.MeshGenerator.CreateMesh(w);
+
+        var terrainFilter = c.Terrain.GetComponent<MeshFilter>();
+        terrainFilter.mesh = tm;
+        var collider = c.Terrain.gameObject.AddComponent(typeof(MeshCollider)) as MeshCollider;
+        collider.sharedMesh = tm;
+
+        var waterFilter = c.Water.GetComponent<MeshFilter>();
+        waterFilter.mesh = wm;
+
+        c.Status = ChunkStatus.Created;
+    }
+
+    /// <summary>
+    /// Destroys terrain mesh and recreates it.
+    /// Used for cracks as they do not change the terrain geometry.
+    /// </summary>
+    public void RecreateTerrainMesh(Chunk c)
+    {
+        MeshData t, w;
+        _world.MeshGenerator.ExtractMeshData(ref c.Blocks, c.Coord, out t, out w);
+        var tm = _world.MeshGenerator.CreateMesh(t);
+
+        var meshFilter = c.Terrain.GetComponent<MeshFilter>();
+        meshFilter.mesh = tm;
+
+        c.Status = ChunkStatus.Created;
     }
 
     public void ProcessBlockHit(Vector3 hitBlock)
@@ -116,11 +152,55 @@ public class Game : MonoBehaviour
         FindChunkAndBlock(hitBlock, out chunkX, out chunkY, out chunkZ, out blockX, out blockY, out blockZ);
 
         // inform chunk
-        var wasBlockDestroyed = World.Chunks[chunkX, chunkY, chunkZ]
-            .BlockHit(blockX, blockY, blockZ);
+        var c = _world.Chunks[chunkX, chunkY, chunkZ];
 
-        if (wasBlockDestroyed)
+        // was block destroyed
+        if (BlockHit(blockX, blockY, blockZ, c))
             CheckNeighboringChunks(blockX, blockY, blockZ, chunkX, chunkY, chunkZ);
+    }
+
+    /// <summary>
+    /// Returns true if the block has been destroyed.
+    /// </summary>
+    bool BlockHit(int x, int y, int z, Chunk c)
+    {
+        var retVal = false;
+
+        byte previousHpLevel = c.Blocks[x, y, z].HealthLevel;
+        c.Blocks[x, y, z].Hp--;
+        byte currentHpLevel = CalculateHealthLevel(
+            c.Blocks[x, y, z].Hp,
+            LookupTables.BlockHealthMax[(int)c.Blocks[x, y, z].Type]);
+
+        if (currentHpLevel != previousHpLevel)
+        {
+            c.Blocks[x, y, z].HealthLevel = currentHpLevel;
+
+            if (c.Blocks[x, y, z].Hp == 0)
+            {
+                c.Blocks[x, y, z].Type = BlockTypes.Air;
+                c.Status = ChunkStatus.NeedToBeRecreated;
+                retVal = true;
+            }
+            else
+            {
+                c.Status = ChunkStatus.NeedToBeRedrawn;
+            }
+        }
+
+        return retVal;
+    }
+
+    byte CalculateHealthLevel(int hp, int maxHp)
+    {
+        float proportion = (float)hp / maxHp; // 0.625f
+
+        // TODO: this require information from MeshGenerator which breaks the encapsulation rule
+        float step = (float)1 / 11; // _crackUVs.Length; // 0.09f
+        float value = proportion / step; // 6.94f
+        int level = Mathf.RoundToInt(value); // 7
+
+        return (byte)(11 - level); // array is in reverse order so we subtract our value from 1
     }
 
     public void ProcessBuildBlock(Vector3 hitBlock, BlockTypes type)
@@ -130,24 +210,40 @@ public class Game : MonoBehaviour
         FindChunkAndBlock(hitBlock, out chunkX, out chunkY, out chunkZ, out blockX, out blockY, out blockZ);
 
         // inform chunk
-        var wasBlockBuilt = World.Chunks[chunkX, chunkY, chunkZ]
-            .BuildBlock(blockX, blockY, blockZ, type);
+        var c = _world.Chunks[chunkX, chunkY, chunkZ];
 
-        if (wasBlockBuilt)
+        // was block built
+        if (BuildBlock(blockX, blockY, blockZ, type, c))
             CheckNeighboringChunks(blockX, blockY, blockZ, chunkX, chunkY, chunkZ);
+    }
+
+    /// <summary>
+    /// Returns true if a new block has been built.
+    /// </summary>
+    bool BuildBlock(int x, int y, int z, BlockTypes type, Chunk c)
+    {
+        if (c.Blocks[x, y, z].Type != BlockTypes.Air) return false;
+
+        c.Blocks[x, y, z].Type = type;
+        c.Blocks[x, y, z].Hp = LookupTables.BlockHealthMax[(int)type];
+        c.Blocks[x, y, z].HealthLevel = 0;
+
+        c.Status = ChunkStatus.NeedToBeRecreated;
+
+        return true;
     }
 
     void FindChunkAndBlock(Vector3 hitBlock, 
         out int chunkX, out int chunkY, out int chunkZ, 
         out int blockX, out int blockY, out int blockZ)
     {
-        chunkX = hitBlock.x < 0 ? 0 : (int)(hitBlock.x / World.ChunkSize);
-        chunkY = hitBlock.y < 0 ? 0 : (int)(hitBlock.y / World.ChunkSize);
-        chunkZ = hitBlock.z < 0 ? 0 : (int)(hitBlock.z / World.ChunkSize);
+        chunkX = hitBlock.x < 0 ? 0 : (int)(hitBlock.x / _world.ChunkSize);
+        chunkY = hitBlock.y < 0 ? 0 : (int)(hitBlock.y / _world.ChunkSize);
+        chunkZ = hitBlock.z < 0 ? 0 : (int)(hitBlock.z / _world.ChunkSize);
 
-        blockX = (int)hitBlock.x - chunkX * World.ChunkSize;
-        blockY = (int)hitBlock.y - chunkY * World.ChunkSize;
-        blockZ = (int)hitBlock.z - chunkZ * World.ChunkSize;
+        blockX = (int)hitBlock.x - chunkX * _world.ChunkSize;
+        blockY = (int)hitBlock.y - chunkY * _world.ChunkSize;
+        blockZ = (int)hitBlock.z - chunkZ * _world.ChunkSize;
     }
 
     /// <summary>
@@ -156,29 +252,29 @@ public class Game : MonoBehaviour
     void CheckNeighboringChunks(int blockX, int blockY, int blockZ, int chunkX, int chunkY, int chunkZ)
     {
         // right check
-        if (blockX == World.ChunkSize - 1 && chunkX + 1 < World.WorldSizeX)
-            World.Chunks[chunkX + 1, chunkY, chunkZ].Status = ChunkStatus.NeedToBeRecreated;
+        if (blockX == _world.ChunkSize - 1 && chunkX + 1 < _world.WorldSizeX)
+            _world.Chunks[chunkX + 1, chunkY, chunkZ].Status = ChunkStatus.NeedToBeRecreated;
 
         // BUG: there are sometimes faces not beinf rendered on this axis - dunno why
         // left check
         if (blockX == 0 && chunkX - 1 >= 0)
-            World.Chunks[chunkX - 1, chunkY, chunkZ].Status = ChunkStatus.NeedToBeRecreated;
+            _world.Chunks[chunkX - 1, chunkY, chunkZ].Status = ChunkStatus.NeedToBeRecreated;
 
         // top check
-        if (blockY == World.ChunkSize - 1 && chunkY + 1 < World.WorldSizeY)
-            World.Chunks[chunkX, chunkY + 1, chunkZ].Status = ChunkStatus.NeedToBeRecreated;
+        if (blockY == _world.ChunkSize - 1 && chunkY + 1 < _world.WorldSizeY)
+            _world.Chunks[chunkX, chunkY + 1, chunkZ].Status = ChunkStatus.NeedToBeRecreated;
 
         // bottom check
         if (blockY == 0 && chunkY - 1 >= 0)
-            World.Chunks[chunkX, chunkY - 1, chunkZ].Status = ChunkStatus.NeedToBeRecreated;
+            _world.Chunks[chunkX, chunkY - 1, chunkZ].Status = ChunkStatus.NeedToBeRecreated;
 
         // front check
-        if (blockZ == World.ChunkSize - 1 && chunkZ + 1 < World.WorldSizeZ)
-            World.Chunks[chunkX, chunkY, chunkZ + 1].Status = ChunkStatus.NeedToBeRecreated;
+        if (blockZ == _world.ChunkSize - 1 && chunkZ + 1 < _world.WorldSizeZ)
+            _world.Chunks[chunkX, chunkY, chunkZ + 1].Status = ChunkStatus.NeedToBeRecreated;
 
         // back check
         if (blockZ == 0 && chunkZ - 1 >= 0)
-            World.Chunks[chunkX, chunkY, chunkZ - 1].Status = ChunkStatus.NeedToBeRecreated;
+            _world.Chunks[chunkX, chunkY, chunkZ - 1].Status = ChunkStatus.NeedToBeRecreated;
     }
     
     void CreatePlayer(Vector3? position = null, Vector3? rotation = null)

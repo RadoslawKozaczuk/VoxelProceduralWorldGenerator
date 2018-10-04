@@ -13,10 +13,10 @@ public class SaveGameData
     public byte WorldSizeZ;
 
     // chunks
-    public ChunkData[,,] Chunks;
+    public Chunk[,,] Chunks;
 }
 
-public struct BlockData
+public struct Block
 {
     public Cubesides Faces;
     public BlockTypes Type;
@@ -24,7 +24,11 @@ public struct BlockData
     public byte HealthLevel; // corresponds to the visible crack appearence texture
 }
 
-public struct ChunkData
+public class Chunk
 {
-    public BlockData[,,] Blocks;
+    public Block[,,] Blocks;
+    public Vector3Int Coord;
+    public GameObject Terrain;
+    public GameObject Water;
+    public ChunkStatus Status;
 }

@@ -72,7 +72,7 @@ public class TerrainGenerator
     
     #region Constants
     // caves should be more erratic so has to be a higher number
-    const float CaveProbability = 0.43f;
+    const float CaveProbability = 0.44f;
     const float CaveSmooth = 0.09f;
     const int CaveOctaves = 3; // reduced a bit to lower workload but not to much to maintain randomness
     const int WaterLevel = 65; // inclusive
@@ -80,34 +80,34 @@ public class TerrainGenerator
     // shiny diamonds!
     const float DiamondProbability = 0.38f; // this is not percentage chance because we are using Perlin function
     const float DiamondSmooth = 0.06f;
-    const int DiamondOctaves = 3;
-    const int DiamondMaxHeight = 50;
+    const int DiamondOctaves = 1;
+    const int DiamondMaxHeight = 80;
 
     // red stones
-    const float RedstoneProbability = 0.41f;
+    const float RedstoneProbability = 0.36f;
     const float RedstoneSmooth = 0.06f;
-    const int RedstoneOctaves = 3;
-    const int RedstoneMaxHeight = 30;
+    const int RedstoneOctaves = 1;
+    const int RedstoneMaxHeight = 50;
 
     // woodbase
-    const float WoodbaseProbability = 0.40f;
+    const float WoodbaseProbability = 0.35f;
     const float WoodbaseSmooth = 0.4f;
-    const int WoodbaseOctaves = 2;
+    const int WoodbaseOctaves = 1;
     const int TreeHeight = 7;
 
-    const int MaxHeight = 150;
+    const int MaxHeight = 90;
     const float Smooth = 0.01f; // bigger number increases sampling of the function
-    const int Octaves = 4;
+    const int Octaves = 3;
     const float Persistence = 0.5f;
 
-    const int MaxHeightStone = 145;
-    const float SmoothStone = 0.02f;
-    const int OctavesStone = 5;
-    const float PersistenceStone = 0.75f;
+    const int MaxHeightStone = 80;
+    const float SmoothStone = 0.05f;
+    const int OctavesStone = 2;
+    const float PersistenceStone = 0.25f;
 
-    const int MaxHeightBedrock = 20;
-    const float SmoothBedrock = 0.01f;
-    const int OctavesBedrock = 2;
+    const int MaxHeightBedrock = 15;
+    const float SmoothBedrock = 0.1f;
+    const int OctavesBedrock = 1;
     const float PersistenceBedrock = 0.5f;
     #endregion
 
@@ -118,9 +118,9 @@ public class TerrainGenerator
         _chunkSize = chunkSize;
     }
 
-    public BlockData[,,] BuildChunk(Vector3Int chunkPosition)
+    public Block[,,] BuildChunk(Vector3Int chunkPosition)
     {
-        var blocks = new BlockData[_chunkSize, _chunkSize, _chunkSize];
+        var blocks = new Block[_chunkSize, _chunkSize, _chunkSize];
 
         var heights = CalculateHeights(chunkPosition);
         CalculateBlockTypes(ref blocks, chunkPosition, heights);
@@ -149,6 +149,8 @@ public class TerrainGenerator
     {
         BlockTypes type;
 
+        if (worldY == 0) return BlockTypes.Bedrock;
+
         if (worldY <= heights[localX + localZ * chunkSize].Bedrock)
             type = BlockTypes.Bedrock;
         else if (worldY <= heights[localX + localZ * chunkSize].Stone)
@@ -169,8 +171,8 @@ public class TerrainGenerator
                 type = BlockTypes.Grass;
             else if (worldY < height)
                 type = BlockTypes.Dirt;
-            else if (worldY <= WaterLevel)
-                type = BlockTypes.Water;
+            //else if (worldY <= WaterLevel)
+            //    type = BlockTypes.Water;
             else
                 type = BlockTypes.Air;
         }
@@ -249,7 +251,7 @@ public class TerrainGenerator
         return heights;
     }
     
-    void CalculateBlockTypes(ref BlockData[,,] blocks, Vector3Int chunkPosition, HeightData[] heights)
+    void CalculateBlockTypes(ref Block[,,] blocks, Vector3Int chunkPosition, HeightData[] heights)
     {
         // output data
         var types = new BlockTypes[_chunkSize * _chunkSize * _chunkSize];
@@ -286,7 +288,7 @@ public class TerrainGenerator
                 }
     }
     
-    void AddTrees(ref BlockData[,,] blocks, Vector3 chunkPosition)
+    void AddTrees(ref Block[,,] blocks, Vector3 chunkPosition)
     {
         for (var z = 1; z < _chunkSize - 1; z++)
             // trees cannot grow on chunk edges (x, y cannot be 0 or ChunkSize) 
@@ -312,7 +314,7 @@ public class TerrainGenerator
                 }
     }
 
-    bool IsThereEnoughSpaceForTree(ref BlockData[,,] blocks, int x, int y, int z)
+    bool IsThereEnoughSpaceForTree(ref Block[,,] blocks, int x, int y, int z)
     {
         for (int i = 2; i < TreeHeight; i++)
         {
@@ -330,7 +332,7 @@ public class TerrainGenerator
         return true;
     }
 
-    void BuildTree(ref BlockData[,,] blocks, int x, int y, int z)
+    void BuildTree(ref Block[,,] blocks, int x, int y, int z)
     {
         CreateBlock(ref blocks[x, y, z], BlockTypes.Woodbase);
         CreateBlock(ref blocks[x, y + 1, z], BlockTypes.Wood);
@@ -344,7 +346,7 @@ public class TerrainGenerator
         CreateBlock(ref blocks[x, y + 5, z], BlockTypes.Leaves);
     }
 
-    void CreateBlock(ref BlockData block, BlockTypes type)
+    void CreateBlock(ref Block block, BlockTypes type)
     {
         block.Type = type;
         block.Hp = LookupTables.BlockHealthMax[(int)type];

@@ -35,7 +35,7 @@ public class PersistentStorage
         for (int x = 0; x < world.WorldSizeX; x++)
             for (int z = 0; z < world.WorldSizeZ; z++)
                 for (int y = 0; y < world.WorldSizeY; y++)
-                    Write(new ChunkData()
+                    Write(new Chunk()
                     {
                         Blocks = world.Chunks[x, y, z].Blocks
                     });
@@ -66,13 +66,14 @@ public class PersistentStorage
             sizeY = loadGameData.WorldSizeY,
             sizeZ = loadGameData.WorldSizeX;
 
-        var chunks = new ChunkData[sizeX, sizeY, sizeZ];
+        var chunks = new Chunk[sizeX, sizeY, sizeZ];
 
         // chunks data
         for (int x = 0; x < sizeX; x++)
             for (int z = 0; z < sizeZ; z++)
                 for (int y = 0; y < sizeY; y++)
-                    chunks[x, y, z].Blocks = ReadChunkData().Blocks;
+                    chunks[x, y, z] = ReadChunkData();
+                    
 
         loadGameData.Chunks = chunks;
 
@@ -83,14 +84,16 @@ public class PersistentStorage
     }
 
     #region Reading Methods
-    ChunkData ReadChunkData() => new ChunkData()
+    Chunk ReadChunkData() => new Chunk()
     {
-        Blocks = ReadBlockDataArray()
+        Blocks = ReadBlockDataArray(),
+        Coord = ReadVector3Int(),
+        Status = ChunkStatus.NeedToBeRedrawn
     };
 
-    BlockData[,,] ReadBlockDataArray()
+    Block[,,] ReadBlockDataArray()
     {
-        var blocks = new BlockData[_chunkSize, _chunkSize, _chunkSize];
+        var blocks = new Block[_chunkSize, _chunkSize, _chunkSize];
         for (var z = 0; z < _chunkSize; z++)
             for (var y = 0; y < _chunkSize; y++)
                 for (var x = 0; x < _chunkSize; x++)
@@ -99,7 +102,7 @@ public class PersistentStorage
         return blocks;
     }
 
-    BlockData ReadBlock() => new BlockData
+    Block ReadBlock() => new Block
     {
         Faces = (Cubesides)_reader.ReadByte(),
         Type = (BlockTypes)_reader.ReadByte(),
@@ -128,6 +131,13 @@ public class PersistentStorage
         x = _reader.ReadSingle(),
         y = _reader.ReadSingle(),
         z = _reader.ReadSingle()
+    };
+
+    Vector3Int ReadVector3Int() => new Vector3Int
+    {
+        x = _reader.ReadInt32(),
+        y = _reader.ReadInt32(),
+        z = _reader.ReadInt32()
     };
 
     List<Vector2> ReadListVector2(int size)
@@ -162,9 +172,13 @@ public class PersistentStorage
     #endregion
 
     #region Writing Methods
-    void Write(ChunkData chunkData) => Write(chunkData.Blocks);
+    void Write(Chunk chunkData)
+    {
+        Write(chunkData.Blocks);
+        Write(chunkData.Coord);
+    }
 
-    void Write(BlockData[,,] blocks)
+    void Write(Block[,,] blocks)
     {
         for (var z = 0; z < _chunkSize; z++)
             for (var y = 0; y < _chunkSize; y++)
@@ -172,7 +186,7 @@ public class PersistentStorage
                     Write(blocks[x, y, z]);
     }
 
-    void Write(BlockData value)
+    void Write(Block value)
     {
         _writer.Write((byte)value.Faces);
         _writer.Write((byte)value.Type);
@@ -195,6 +209,13 @@ public class PersistentStorage
     }
 
     void Write(Vector3 value)
+    {
+        _writer.Write(value.x);
+        _writer.Write(value.y);
+        _writer.Write(value.z);
+    }
+
+    void Write(Vector3Int value)
     {
         _writer.Write(value.x);
         _writer.Write(value.y);
