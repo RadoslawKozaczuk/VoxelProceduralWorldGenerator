@@ -980,6 +980,11 @@ Prefab:
       propertyPath: m_RootOrder
       value: 2
       objectReference: {fileID: 0}
+    - target: {fileID: 114898284949759366, guid: 1fcd5e8ae70ba1e44a1f577082c26d51,
+        type: 2}
+      propertyPath: _playerStartPosition.y
+      value: 180
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 1fcd5e8ae70ba1e44a1f577082c26d51, type: 2}
   m_IsPrefabAsset: 0

@@ -26,8 +26,8 @@ public struct Block
 
 public class Chunk
 {
-    public Block[,,] Blocks;
     public Vector3Int Coord;
+    public Vector3Int Position;
     public GameObject Terrain;
     public GameObject Water;
     public ChunkStatus Status;

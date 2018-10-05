@@ -37,7 +37,7 @@ public class PersistentStorage
                 for (int y = 0; y < world.WorldSizeY; y++)
                     Write(new Chunk()
                     {
-                        Blocks = world.Chunks[x, y, z].Blocks
+                        //Blocks = world.Chunks[x, y, z].Blocks
                     });
 
         _writer.Close();
@@ -86,7 +86,7 @@ public class PersistentStorage
     #region Reading Methods
     Chunk ReadChunkData() => new Chunk()
     {
-        Blocks = ReadBlockDataArray(),
+        //Blocks = ReadBlockDataArray(),
         Coord = ReadVector3Int(),
         Status = ChunkStatus.NeedToBeRedrawn
     };
@@ -174,7 +174,7 @@ public class PersistentStorage
     #region Writing Methods
     void Write(Chunk chunkData)
     {
-        Write(chunkData.Blocks);
+        //Write(chunkData.Blocks);
         Write(chunkData.Coord);
     }
 
