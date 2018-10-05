@@ -98,7 +98,7 @@ public class Game : MonoBehaviour
 
             CreatePlayer(save.PlayerPosition, save.PlayerRotation);
 
-            StartCoroutine(_world.LoadWorld(save, false));
+            //StartCoroutine(_world.LoadWorld(save, false));
         }
     }
 
@@ -211,8 +211,7 @@ public class Game : MonoBehaviour
         // right check
         if (blockX == _world.ChunkSize - 1 && chunkX + 1 < _world.WorldSizeX)
             _world.Chunks[chunkX + 1, chunkY, chunkZ].Status = ChunkStatus.NeedToBeRecreated;
-
-        // BUG: there are sometimes faces not beinf rendered on this axis - dunno why
+        
         // left check
         if (blockX == 0 && chunkX - 1 >= 0)
             _world.Chunks[chunkX - 1, chunkY, chunkZ].Status = ChunkStatus.NeedToBeRecreated;

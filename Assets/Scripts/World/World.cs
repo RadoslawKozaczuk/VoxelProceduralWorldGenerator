@@ -51,25 +51,24 @@ public class World : ScriptableObject
         AlreadyGenerated = 0;
         
         Blocks = new Block[WorldSizeX * ChunkSize, WorldSizeY * ChunkSize, WorldSizeZ * ChunkSize];
-        _stopwatch.Stop();
-        var q1 = _stopwatch.ElapsedTicks / TimeSpan.TicksPerMillisecond;
+        //_stopwatch.Stop();
+        //var q1 = _stopwatch.ElapsedTicks / TimeSpan.TicksPerMillisecond;
 
-        _stopwatch.Restart();
+        //_stopwatch.Restart();
         var heights = _terrainGenerator.CalculateHeights();
-        _stopwatch.Stop();
-        var q2 = _stopwatch.ElapsedTicks / TimeSpan.TicksPerMillisecond;
+        //_stopwatch.Stop();
+        //var q2 = _stopwatch.ElapsedTicks / TimeSpan.TicksPerMillisecond;
 
-        _stopwatch.Restart();
+        //_stopwatch.Restart();
         _terrainGenerator.CalculateBlockTypes(ref Blocks, heights);
-        _stopwatch.Stop();
-        var q3 = _stopwatch.ElapsedTicks / TimeSpan.TicksPerMillisecond;
+        //_stopwatch.Stop();
+        //var q3 = _stopwatch.ElapsedTicks / TimeSpan.TicksPerMillisecond;
 
-        _stopwatch.Restart();
+        //_stopwatch.Restart();
         _terrainGenerator.AddTrees(ref Blocks);
-        _stopwatch.Stop();
-        var q4 = _stopwatch.ElapsedTicks / TimeSpan.TicksPerMillisecond;
-
-
+        //_stopwatch.Stop();
+        //var q4 = _stopwatch.ElapsedTicks / TimeSpan.TicksPerMillisecond;
+        
         _stopwatch.Restart();
         Status = WorldGeneratorStatus.CreatingGameObjects;
         if (firstRun)
@@ -102,17 +101,18 @@ public class World : ScriptableObject
                     yield return null; // give back control
                 }
 
-        _stopwatch.Stop();
-        var q5 = _stopwatch.ElapsedTicks / TimeSpan.TicksPerMillisecond;
+        //_stopwatch.Stop();
+        //var q5 = _stopwatch.ElapsedTicks / TimeSpan.TicksPerMillisecond;
 
-        _stopwatch.Restart();
+        //_stopwatch.Restart();
         Status = WorldGeneratorStatus.CalculatingFaces;
         _meshGenerator.CalculateFaces(ref Blocks);
-        _stopwatch.Stop();
-        var q6 = _stopwatch.ElapsedTicks / TimeSpan.TicksPerMillisecond;
+        //_stopwatch.Stop();
+        
 
         Status = WorldGeneratorStatus.TerrainReady;
         _stopwatch.Stop();
+        var q6 = _stopwatch.ElapsedTicks / TimeSpan.TicksPerMillisecond;
         _accumulatedTerrainGenerationTime += _stopwatch.ElapsedMilliseconds;
         UnityEngine.Debug.Log($"It took {_accumulatedTerrainGenerationTime} ms to generate all terrain.");
     }

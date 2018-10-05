@@ -51,7 +51,7 @@ public class TerrainGenerator
             // deflattenization - extract coords from the index
             int x, y, z;
             IndexDeflattenizer3D(i, TotalBlockNumberX, TotalBlockNumberY, out x, out y, out z);
-            Result[i] = DetermineType(ref x, ref y, ref z, ref Heights);
+            Result[i] = DetermineType(x, y, z, Heights[IndexFlattenizer2D(x, z, TotalBlockNumberX)]);
         }
     }
 
@@ -124,15 +124,15 @@ public class TerrainGenerator
     public static float Map(float newmin, float newmax, float origmin, float origmax, float value) =>
         Mathf.Lerp(newmin, newmax, Mathf.InverseLerp(origmin, origmax, value));
 
-    static BlockTypes DetermineType(ref int worldX, ref int worldY, ref int worldZ, ref NativeArray<HeightData> heights)
+    static BlockTypes DetermineType(int worldX, int worldY, int worldZ, HeightData height)
     {
         BlockTypes type;
 
         if (worldY == 0) return BlockTypes.Bedrock;
 
-        if (worldY <= heights[IndexFlattenizer2D(worldX, worldY, worldX)].Bedrock)
+        if (worldY <= height.Bedrock)
             type = BlockTypes.Bedrock;
-        else if (worldY <= heights[IndexFlattenizer2D(worldX, worldY, worldX)].Stone)
+        else if (worldY <= height.Stone)
         {
             if (FractalFunc(worldX, worldY, worldZ, DiamondSmooth, DiamondOctaves) < DiamondProbability
                 && worldY < DiamondMaxHeight)
@@ -145,10 +145,9 @@ public class TerrainGenerator
         }
         else
         {
-            var height = heights[IndexFlattenizer2D(worldX, worldY, worldX)].Dirt;
-            if (worldY == height)
+            if (worldY == height.Dirt)
                 type = BlockTypes.Grass;
-            else if (worldY < height)
+            else if (worldY < height.Dirt)
                 type = BlockTypes.Dirt;
             //else if (worldY <= WaterLevel)
             //    type = BlockTypes.Water;
@@ -303,9 +302,9 @@ public class TerrainGenerator
     public void AddTrees(ref Block[,,] blocks)
     {
         for (var x = 1; x < _totalBlockNumberX - 1; x++)
-            // this 50 is hard coded as for now but generally it would be nice if 
+            // this 20 is hard coded as for now but generally it would be nice if 
             // this loop could know in advance where is the lowest grass
-            for (var y = 50; y < _totalBlockNumberY - TreeHeight; y++)
+            for (var y = 20; y < _totalBlockNumberY - TreeHeight; y++)
                 for (var z = 1; z < _totalBlockNumberZ - 1; z++)
                 {
                     if (blocks[x, y, z].Type != BlockTypes.Grass) continue;
