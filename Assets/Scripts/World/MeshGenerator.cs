@@ -285,23 +285,33 @@ public class MeshGenerator
     {
         WorldBoundariesCheck(ref blocks);
         
-        for (int x = 0; x < _totalBlockNumberX - 1; x++)
-            for (int y = 0; y < _totalBlockNumberY - 1; y++)
-                for (int z = 0; z < _totalBlockNumberZ - 1; z++)
+        for (int x = 0; x < _totalBlockNumberX; x++)
+            for (int y = 0; y < _totalBlockNumberY; y++)
+                for (int z = 0; z < _totalBlockNumberZ; z++)
                 {
                     var type = blocks[x, y, z].Type;
 
                     if(type == BlockTypes.Air)
                     {
-                        if (blocks[x + 1, y, z].Type != BlockTypes.Air) blocks[x + 1, y, z].Faces |= Cubesides.Left;
-                        if (blocks[x, y + 1, z].Type != BlockTypes.Air) blocks[x, y + 1, z].Faces |= Cubesides.Bottom;
-                        if (blocks[x, y, z + 1].Type != BlockTypes.Air) blocks[x, y, z + 1].Faces |= Cubesides.Back;
+                        if(x < _totalBlockNumberX - 1)
+                            if (blocks[x + 1, y, z].Type != BlockTypes.Air) blocks[x + 1, y, z].Faces |= Cubesides.Left;
+
+                        if (y < _totalBlockNumberY - 1)
+                            if (blocks[x, y + 1, z].Type != BlockTypes.Air) blocks[x, y + 1, z].Faces |= Cubesides.Bottom;
+
+                        if (z < _totalBlockNumberZ - 1)
+                            if (blocks[x, y, z + 1].Type != BlockTypes.Air) blocks[x, y, z + 1].Faces |= Cubesides.Back;
                     }
                     else
                     {
-                        if (blocks[x + 1, y, z].Type == BlockTypes.Air) blocks[x, y, z].Faces |= Cubesides.Right;
-                        if (blocks[x, y + 1, z].Type == BlockTypes.Air) blocks[x, y, z].Faces |= Cubesides.Top;
-                        if (blocks[x, y, z + 1].Type == BlockTypes.Air) blocks[x, y, z].Faces |= Cubesides.Front;
+                        if (x < _totalBlockNumberX - 1)
+                            if (blocks[x + 1, y, z].Type == BlockTypes.Air) blocks[x, y, z].Faces |= Cubesides.Right;
+
+                        if (y < _totalBlockNumberY - 1)
+                            if (blocks[x, y + 1, z].Type == BlockTypes.Air) blocks[x, y, z].Faces |= Cubesides.Top;
+
+                        if (z < _totalBlockNumberZ - 1)
+                            if (blocks[x, y, z + 1].Type == BlockTypes.Air) blocks[x, y, z].Faces |= Cubesides.Front;
                     }
                 }
     }
