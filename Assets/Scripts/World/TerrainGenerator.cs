@@ -21,7 +21,7 @@ public class TerrainGenerator
         public void Execute(int i)
         {
             int x, z;
-            IndexDeflattenizer2D(i, TotalBlockNumberX, out x, out z);
+            Utils.IndexDeflattenizer2D(i, TotalBlockNumberX, out x, out z);
 
             Result[i] = new HeightData()
             {
@@ -50,8 +50,8 @@ public class TerrainGenerator
         {
             // deflattenization - extract coords from the index
             int x, y, z;
-            IndexDeflattenizer3D(i, TotalBlockNumberX, TotalBlockNumberY, out x, out y, out z);
-            Result[i] = DetermineType(x, y, z, Heights[IndexFlattenizer2D(x, z, TotalBlockNumberX)]);
+            Utils.IndexDeflattenizer3D(i, TotalBlockNumberX, TotalBlockNumberY, out x, out y, out z);
+            Result[i] = DetermineType(x, y, z, Heights[Utils.IndexFlattenizer2D(x, z, TotalBlockNumberX)]);
         }
     }
 
@@ -226,42 +226,8 @@ public class TerrainGenerator
 
         return heights;
     }
-
-    /// <summary>
-    /// Converts coordinates to index in 2D space.
-    /// </summary>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    static int IndexFlattenizer2D(int x, int y, int lengthX) => y * lengthX + x;
-
-    /// <summary>
-    /// Extracts coordinates from the index in 2D space.
-    /// </summary>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    static void IndexDeflattenizer2D(int index, int lengthX, out int x, out int y)
-    {
-        y = index / lengthX;
-        x = index - y * lengthX;
-    }
-
-    /// <summary>
-    /// Converts coordinates to index in 3D space.
-    /// </summary>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    static int IndexFlattenizer3D(int x, int y, int z, int lengthX, int lengthY) => z * lengthY * lengthX + y * lengthX + x;
-
-    /// <summary>
-    /// Extracts coordinates from the index in 3D space.
-    /// </summary>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    static void IndexDeflattenizer3D(int index, int lengthX, int lengthY, out int x, out int y, out int z)
-    {
-        z = index / (lengthX * lengthY); // 10 / (3*2) = 1
-        var rest = index - z * lengthX * lengthY; // 10 - 1 * 3 * 2 = 4
-        y = rest / lengthX; // 4 / 3 = 1
-        x = rest - y * lengthX; // 4 - 1 * 2 = 1
-    }
     
-    public void CalculateBlockTypes(ref Block[,,] blocks, HeightData[] heights)
+    public BlockTypes[] CalculateBlockTypes(HeightData[] heights)
     {
         var inputSize = _totalBlockNumberX * _totalBlockNumberY * _totalBlockNumberZ;
 
@@ -288,24 +254,16 @@ public class TerrainGenerator
         typeJob.Result.Dispose();
         typeJob.Heights.Dispose();
 
-        // output deflattenization
-        for (var x = 0; x < _totalBlockNumberX; x++)
-            for (var y = 0; y < _totalBlockNumberY; y++)
-                for (var z = 0; z < _totalBlockNumberZ; z++)
-                {
-                    var type = types[IndexFlattenizer3D(x, y, z, _totalBlockNumberX, _totalBlockNumberY)];
-                    blocks[x, y, z].Type = type;
-                    blocks[x, y, z].Hp = LookupTables.BlockHealthMax[(int)type];
-                }
+        return types;
     }
 
     public void AddTrees(ref Block[,,] blocks)
     {
-        for (var x = 1; x < _totalBlockNumberX - 1; x++)
+        for (var x = 1; x < _totalBlockNumberX - 3; x++)
             // this 20 is hard coded as for now but generally it would be nice if 
             // this loop could know in advance where is the lowest grass
-            for (var y = 20; y < _totalBlockNumberY - TreeHeight; y++)
-                for (var z = 1; z < _totalBlockNumberZ - 1; z++)
+            for (var y = 20; y < _totalBlockNumberY - TreeHeight - 2; y++)
+                for (var z = 1; z < _totalBlockNumberZ - 3; z++)
                 {
                     if (blocks[x, y, z].Type != BlockTypes.Grass) continue;
 

@@ -283,8 +283,6 @@ public class MeshGenerator
 
     public void CalculateFaces(ref Block[,,] blocks)
     {
-        WorldBoundariesCheck(ref blocks);
-        
         for (int x = 0; x < _totalBlockNumberX; x++)
             for (int y = 0; y < _totalBlockNumberY; y++)
                 for (int z = 0; z < _totalBlockNumberZ; z++)
@@ -316,7 +314,7 @@ public class MeshGenerator
                 }
     }
     
-    void WorldBoundariesCheck(ref Block[,,] blocks)
+    public void WorldBoundariesCheck(ref Block[,,] blocks)
     {
         // right world boundaries check
         int x = _totalBlockNumberX - 1, y = 0, z = 0;

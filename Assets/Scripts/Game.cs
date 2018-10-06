@@ -40,8 +40,9 @@ public class Game : MonoBehaviour
         var progress = Mathf.Clamp01(_world.AlreadyGenerated / (_world.ChunkObjectsToGenerate + _world.ChunkTerrainToGenerate));
         _progressBar.value = progress;
         _progressText.text = Mathf.RoundToInt(progress * 100) + "%";
-        _description.text = $"Created objects { _world.AlreadyGenerated } "
-            + $"out of { _world.ChunkObjectsToGenerate + _world.ChunkTerrainToGenerate }";
+        //_description.text = $"Created objects { _world.AlreadyGenerated } "
+        //    + $"out of { _world.ChunkObjectsToGenerate + _world.ChunkTerrainToGenerate }";
+        _description.text = _world.ProgressDescription;
         _internalStatus.text = "Game Status: " + Enum.GetName(_gameState.GetType(), _gameState) + Environment.NewLine
             + "Generator Status: " + Enum.GetName(_world.Status.GetType(), _world.Status);
 
