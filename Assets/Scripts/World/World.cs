@@ -89,8 +89,7 @@ public class World : ScriptableObject
         ProgressDescription = "Creating game objects";
         if (firstRun)
             _worldScene = SceneManager.CreateScene(name);
-
-        // creating game objects
+        
         Chunks = new Chunk[WorldSizeX, WorldSizeY, WorldSizeZ];
         CreateGameObjects(firstRun);
         AlreadyGenerated += _progressStep;
