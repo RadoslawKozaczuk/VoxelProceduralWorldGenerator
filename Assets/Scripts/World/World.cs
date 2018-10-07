@@ -149,6 +149,51 @@ public class World : ScriptableObject
                 }
     }
 
+    /// <summary>
+    /// Returns true if the block has been destroyed.
+    /// </summary>
+    public bool BlockHit(int blockX, int blockY, int blockZ, Chunk c)
+    {
+        var retVal = false;
+
+        byte previousHpLevel = Blocks[blockX, blockY, blockZ].HealthLevel;
+        Blocks[blockX, blockY, blockZ].Hp--;
+        byte currentHpLevel = CalculateHealthLevel(
+            Blocks[blockX, blockY, blockZ].Hp,
+            LookupTables.BlockHealthMax[(int)Blocks[blockX, blockY, blockZ].Type]);
+
+        if (currentHpLevel != previousHpLevel)
+        {
+            Blocks[blockX, blockY, blockZ].HealthLevel = currentHpLevel;
+
+            if (Blocks[blockX, blockY, blockZ].Hp == 0)
+            {
+                Blocks[blockX, blockY, blockZ].Type = BlockTypes.Air;
+                _meshGenerator.RecalculateFacesAfterBlockDestroy(ref Blocks, blockX, blockY, blockZ);
+                c.Status = ChunkStatus.NeedToBeRecreated;
+                retVal = true;
+            }
+            else
+            {
+                c.Status = ChunkStatus.NeedToBeRedrawn;
+            }
+        }
+
+        return retVal;
+    }
+    
+    byte CalculateHealthLevel(int hp, int maxHp)
+    {
+        float proportion = (float)hp / maxHp; // 0.625f
+
+        // TODO: this require information from MeshGenerator which breaks the encapsulation rule
+        float step = (float)1 / 11; // _crackUVs.Length; // 0.09f
+        float value = proportion / step; // 6.94f
+        int level = Mathf.RoundToInt(value); // 7
+
+        return (byte)(11 - level); // array is in reverse order so we subtract our value from 1
+    }
+
     public IEnumerator RedrawChunksIfNecessaryAsync()
     {
         _stopwatch.Restart();
@@ -266,7 +311,7 @@ public class World : ScriptableObject
     void RecreateMeshAndCollider(Chunk c)
     {
         DestroyImmediate(c.Terrain.GetComponent<Collider>());
-
+        
         MeshData t, w;
         _meshGenerator.ExtractMeshData(ref Blocks, ref c.Position, out t, out w);
         var tm = _meshGenerator.CreateMesh(t);

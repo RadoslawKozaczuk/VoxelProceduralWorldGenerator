@@ -281,6 +281,35 @@ public class MeshGenerator
     //    return true;
     //}
 
+    public void RecalculateFacesAfterBlockDestroy(ref Block[,,] blocks, int blockX, int blockY, int blockZ)
+    {
+        blocks[blockX, blockY, blockZ].Faces = 0;
+
+        if (blockX > 0)
+            if (blocks[blockX - 1, blockY, blockZ].Type != BlockTypes.Air)
+                blocks[blockX - 1, blockY, blockZ].Faces |= Cubesides.Right;
+
+        if (blockX < _totalBlockNumberX - 1)
+            if (blocks[blockX + 1, blockY, blockZ].Type != BlockTypes.Air)
+                blocks[blockX + 1, blockY, blockZ].Faces |= Cubesides.Left;
+
+        if (blockY > 0)
+            if (blocks[blockX, blockY - 1, blockZ].Type != BlockTypes.Air)
+                blocks[blockX, blockY - 1, blockZ].Faces |= Cubesides.Top;
+
+        if (blockY < _totalBlockNumberY - 1)
+            if (blocks[blockX, blockY + 1, blockZ].Type != BlockTypes.Air)
+                blocks[blockX, blockY + 1, blockZ].Faces |= Cubesides.Bottom;
+
+        if (blockZ > 0)
+            if (blocks[blockX, blockY, blockZ - 1].Type != BlockTypes.Air)
+                blocks[blockX, blockY, blockZ - 1].Faces |= Cubesides.Front;
+
+        if (blockZ < _totalBlockNumberZ - 1)
+            if (blocks[blockX, blockY, blockZ + 1].Type != BlockTypes.Air)
+                blocks[blockX, blockY, blockZ + 1].Faces |= Cubesides.Back;
+    }
+
     public void CalculateFaces(ref Block[,,] blocks)
     {
         for (int x = 0; x < _totalBlockNumberX; x++)

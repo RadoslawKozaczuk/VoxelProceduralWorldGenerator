@@ -40,8 +40,6 @@ public class Game : MonoBehaviour
         var progress = Mathf.Clamp01(_world.AlreadyGenerated / (_world.ChunkObjectsToGenerate + _world.ChunkTerrainToGenerate));
         _progressBar.value = progress;
         _progressText.text = Mathf.RoundToInt(progress * 100) + "%";
-        //_description.text = $"Created objects { _world.AlreadyGenerated } "
-        //    + $"out of { _world.ChunkObjectsToGenerate + _world.ChunkTerrainToGenerate }";
         _description.text = _world.ProgressDescription;
         _internalStatus.text = "Game Status: " + Enum.GetName(_gameState.GetType(), _gameState) + Environment.NewLine
             + "Generator Status: " + Enum.GetName(_world.Status.GetType(), _world.Status);
@@ -113,54 +111,10 @@ public class Game : MonoBehaviour
         var c = _world.Chunks[chunkX, chunkY, chunkZ];
 
         // was block destroyed
-        //if (BlockHit(blockX, blockY, blockZ, c))
-        //    CheckNeighboringChunks(blockX, blockY, blockZ, chunkX, chunkY, chunkZ);
+        if (_world.BlockHit(blockX, blockY, blockZ, c))
+            CheckNeighboringChunks(blockX, blockY, blockZ, chunkX, chunkY, chunkZ);
     }
-
-    /// <summary>
-    /// Returns true if the block has been destroyed.
-    /// </summary>
-    //bool BlockHit(int x, int y, int z, Chunk c)
-    //{
-    //    var retVal = false;
-
-    //    byte previousHpLevel = c.Blocks[x, y, z].HealthLevel;
-    //    c.Blocks[x, y, z].Hp--;
-    //    byte currentHpLevel = CalculateHealthLevel(
-    //        c.Blocks[x, y, z].Hp,
-    //        LookupTables.BlockHealthMax[(int)c.Blocks[x, y, z].Type]);
-
-    //    if (currentHpLevel != previousHpLevel)
-    //    {
-    //        c.Blocks[x, y, z].HealthLevel = currentHpLevel;
-
-    //        if (c.Blocks[x, y, z].Hp == 0)
-    //        {
-    //            c.Blocks[x, y, z].Type = BlockTypes.Air;
-    //            c.Status = ChunkStatus.NeedToBeRecreated;
-    //            retVal = true;
-    //        }
-    //        else
-    //        {
-    //            c.Status = ChunkStatus.NeedToBeRedrawn;
-    //        }
-    //    }
-
-    //    return retVal;
-    //}
-
-    byte CalculateHealthLevel(int hp, int maxHp)
-    {
-        float proportion = (float)hp / maxHp; // 0.625f
-
-        // TODO: this require information from MeshGenerator which breaks the encapsulation rule
-        float step = (float)1 / 11; // _crackUVs.Length; // 0.09f
-        float value = proportion / step; // 6.94f
-        int level = Mathf.RoundToInt(value); // 7
-
-        return (byte)(11 - level); // array is in reverse order so we subtract our value from 1
-    }
-
+    
     public void ProcessBuildBlock(Vector3 hitBlock, BlockTypes type)
     {
         int chunkX, chunkY, chunkZ, blockX, blockY, blockZ;
@@ -171,25 +125,25 @@ public class Game : MonoBehaviour
         var c = _world.Chunks[chunkX, chunkY, chunkZ];
 
         // was block built
-        //if (BuildBlock(blockX, blockY, blockZ, type, c))
-        //    CheckNeighboringChunks(blockX, blockY, blockZ, chunkX, chunkY, chunkZ);
+        if (BuildBlock(blockX, blockY, blockZ, type, c))
+            CheckNeighboringChunks(blockX, blockY, blockZ, chunkX, chunkY, chunkZ);
     }
 
     /// <summary>
     /// Returns true if a new block has been built.
     /// </summary>
-    //bool BuildBlock(int x, int y, int z, BlockTypes type, Chunk c)
-    //{
-    //    if (c.Blocks[x, y, z].Type != BlockTypes.Air) return false;
+    bool BuildBlock(int x, int y, int z, BlockTypes type, Chunk c)
+    {
+        if (_world.Blocks[x, y, z].Type != BlockTypes.Air) return false;
 
-    //    c.Blocks[x, y, z].Type = type;
-    //    c.Blocks[x, y, z].Hp = LookupTables.BlockHealthMax[(int)type];
-    //    c.Blocks[x, y, z].HealthLevel = 0;
+        _world.Blocks[x, y, z].Type = type;
+        _world.Blocks[x, y, z].Hp = LookupTables.BlockHealthMax[(int)type];
+        _world.Blocks[x, y, z].HealthLevel = 0;
 
-    //    c.Status = ChunkStatus.NeedToBeRecreated;
+        c.Status = ChunkStatus.NeedToBeRecreated;
 
-    //    return true;
-    //}
+        return true;
+    }
 
     void FindChunkAndBlock(Vector3 hitBlock,
         out int chunkX, out int chunkY, out int chunkZ,
@@ -199,9 +153,9 @@ public class Game : MonoBehaviour
         chunkY = hitBlock.y < 0 ? 0 : (int)(hitBlock.y / _world.ChunkSize);
         chunkZ = hitBlock.z < 0 ? 0 : (int)(hitBlock.z / _world.ChunkSize);
 
-        blockX = (int)hitBlock.x - chunkX * _world.ChunkSize;
-        blockY = (int)hitBlock.y - chunkY * _world.ChunkSize;
-        blockZ = (int)hitBlock.z - chunkZ * _world.ChunkSize;
+        blockX = (int)hitBlock.x;
+        blockY = (int)hitBlock.y;
+        blockZ = (int)hitBlock.z;
     }
 
     /// <summary>

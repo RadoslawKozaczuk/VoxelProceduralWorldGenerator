@@ -259,11 +259,11 @@ public class TerrainGenerator
 
     public void AddTrees(ref Block[,,] blocks)
     {
-        for (var x = 1; x < _totalBlockNumberX - 3; x++)
+        for (var x = 1; x < _totalBlockNumberX - 1; x++)
             // this 20 is hard coded as for now but generally it would be nice if 
             // this loop could know in advance where is the lowest grass
-            for (var y = 20; y < _totalBlockNumberY - TreeHeight - 2; y++)
-                for (var z = 1; z < _totalBlockNumberZ - 3; z++)
+            for (var y = 20; y < _totalBlockNumberY - TreeHeight - 1; y++)
+                for (var z = 1; z < _totalBlockNumberZ - 1; z++)
                 {
                     if (blocks[x, y, z].Type != BlockTypes.Grass) continue;
 
@@ -272,7 +272,6 @@ public class TerrainGenerator
                         if (FractalFunc(x, y, z, WoodbaseSmooth, WoodbaseOctaves) < WoodbaseProbability)
                         {
                             BuildTree(ref blocks, x, y, z);
-                            x += 2; // no trees can be that close
                         }
                     }
                 }
