@@ -125,26 +125,10 @@ public class Game : MonoBehaviour
         var c = _world.Chunks[chunkX, chunkY, chunkZ];
 
         // was block built
-        if (BuildBlock(blockX, blockY, blockZ, type, c))
+        if (_world.BuildBlock(blockX, blockY, blockZ, type, c))
             CheckNeighboringChunks(blockX, blockY, blockZ, chunkX, chunkY, chunkZ);
     }
-
-    /// <summary>
-    /// Returns true if a new block has been built.
-    /// </summary>
-    bool BuildBlock(int x, int y, int z, BlockTypes type, Chunk c)
-    {
-        if (_world.Blocks[x, y, z].Type != BlockTypes.Air) return false;
-
-        _world.Blocks[x, y, z].Type = type;
-        _world.Blocks[x, y, z].Hp = LookupTables.BlockHealthMax[(int)type];
-        _world.Blocks[x, y, z].HealthLevel = 0;
-
-        c.Status = ChunkStatus.NeedToBeRecreated;
-
-        return true;
-    }
-
+    
     void FindChunkAndBlock(Vector3 hitBlock,
         out int chunkX, out int chunkY, out int chunkZ,
         out int blockX, out int blockY, out int blockZ)

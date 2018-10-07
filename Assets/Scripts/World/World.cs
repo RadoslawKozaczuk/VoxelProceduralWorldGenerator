@@ -38,8 +38,10 @@ public class World : ScriptableObject
         _meshGenerator = new MeshGenerator(ChunkSize, WorldSizeX, WorldSizeY, WorldSizeZ);
         
         ChunkObjectsToGenerate = WorldSizeX * WorldSizeY * WorldSizeZ;
+
         while (8 * _progressStep * 1.33f < ChunkObjectsToGenerate)
             _progressStep++;
+
         ChunkTerrainToGenerate = 8 * _progressStep;
 
         _totalBlockNumberX = WorldSizeX * ChunkSize;
@@ -181,7 +183,25 @@ public class World : ScriptableObject
 
         return retVal;
     }
-    
+
+    /// <summary>
+    /// Returns true if a new block has been built.
+    /// </summary>
+    public bool BuildBlock(int blockX, int blockY, int blockZ, BlockTypes type, Chunk c)
+    {
+        if (Blocks[blockX, blockY, blockZ].Type != BlockTypes.Air) return false;
+
+        Blocks[blockX, blockY, blockZ].Type = type;
+        _meshGenerator.RecalculateFacesAfterBlockBuild(ref Blocks, blockX, blockY, blockZ);
+
+        Blocks[blockX, blockY, blockZ].Hp = LookupTables.BlockHealthMax[(int)type];
+        Blocks[blockX, blockY, blockZ].HealthLevel = 0;
+
+        c.Status = ChunkStatus.NeedToBeRecreated;
+
+        return true;
+    }
+
     byte CalculateHealthLevel(int hp, int maxHp)
     {
         float proportion = (float)hp / maxHp; // 0.625f

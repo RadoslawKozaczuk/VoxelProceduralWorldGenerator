@@ -239,50 +239,17 @@ public class MeshGenerator
         else if (blocks[blockX, blockY + 1, blockZ].Type == BlockTypes.Air)
         { blocks[blockX, blockY + 1, blockZ].Faces |= Cubesides.Top; meshSize += 4; }
     }
-
-    /// <summary>
-    /// Return true if the particular block could be find in the the chunk.
-    /// False if otherwise. In case of false a new dummy block will be returned.
-    /// </summary>
-    bool TryGetBlockFromChunk(int blockX, int blockY, int blockZ, ref Block[,,] blocks, out Block block)
-    {
-        if (blockX >= _worldSizeX || blockX < 0
-            || blockY >= _worldSizeY || blockY < 0
-            || blockZ >= _worldSizeZ || blockZ < 0)
-        {
-            // we are outside of the world!
-            block = new Block(); // dummy data
-            return false;
-        }
-
-        block = blocks[blockX, blockY, blockZ];
-
-        return true;
-    }
-
-    /// <summary>
-    /// Return true if the particular block could be find in the the chunk.
-    /// False if otherwise. In case of false a new dummy block will be returned.
-    /// </summary>
-    //bool TryGetBlockFromChunk(int chunkX, int chunkY, int chunkZ, int blockX, int blockY, int blockZ,
-    //    ref Block[,,] blocks, out Block block)
-    //{
-    //    if (chunkX >= _worldSizeX || chunkX < 0
-    //        || chunkY >= _worldSizeY || chunkY < 0
-    //        || chunkZ >= _worldSizeZ || chunkZ < 0)
-    //    {
-    //        // we are outside of the world!
-    //        block = new Block(); // dummy data
-    //        return false;
-    //    }
-
-    //    block = blocks[blockX, blockY, blockZ];
-
-    //    return true;
-    //}
-
+    
     public void RecalculateFacesAfterBlockDestroy(ref Block[,,] blocks, int blockX, int blockY, int blockZ)
     {
+        //var trol = Cubesides.Back;
+        //trol |= Cubesides.Front;
+
+        //var trsstt = trol &= ~Cubesides.Back; // AND= negacja oznacza odemij back
+        //var trsst0 = trsstt &= ~Cubesides.Back; // ponowne odjęcie nic nie zmienia
+        //var trsst1 = trsstt |= ~Cubesides.Back; // OR= negacja oznacza wszystko tylko nie back
+        //var trsst2 = trol |= ~Cubesides.Back; // równa się wszystko tylko nie back
+        
         blocks[blockX, blockY, blockZ].Faces = 0;
 
         if (blockX > 0)
@@ -310,6 +277,71 @@ public class MeshGenerator
                 blocks[blockX, blockY, blockZ + 1].Faces |= Cubesides.Back;
     }
 
+    // as for now it is only possible to build solid blocks
+    // water will come later
+    public void RecalculateFacesAfterBlockBuild(ref Block[,,] blocks, int blockX, int blockY, int blockZ)
+    {
+        if (blockX > 0)
+        {
+            var type = blocks[blockX - 1, blockY, blockZ].Type;
+            if (type == BlockTypes.Air || type == BlockTypes.Water)
+                blocks[blockX, blockY, blockZ].Faces |= Cubesides.Left;
+            else
+                blocks[blockX - 1, blockY, blockZ].Faces &= ~Cubesides.Right;
+        }
+        else blocks[blockX, blockY, blockZ].Faces |= Cubesides.Left;
+
+        if (blockX < _totalBlockNumberX - 1)
+        {
+            var type = blocks[blockX + 1, blockY, blockZ].Type;
+            if (type == BlockTypes.Air || type == BlockTypes.Water)
+                blocks[blockX, blockY, blockZ].Faces |= Cubesides.Right;
+            else
+                blocks[blockX + 1, blockY, blockZ].Faces &= ~Cubesides.Left;
+        }
+        else blocks[blockX, blockY, blockZ].Faces |= Cubesides.Right;
+
+        if (blockY > 0)
+        {
+            var type = blocks[blockX, blockY - 1, blockZ].Type;
+            if (type == BlockTypes.Air || type == BlockTypes.Water)
+                blocks[blockX, blockY, blockZ].Faces |= Cubesides.Bottom;
+            else
+                blocks[blockX, blockY - 1, blockZ].Faces &= ~Cubesides.Top;
+        }
+        else blocks[blockX, blockY, blockZ].Faces |= Cubesides.Bottom;
+
+        if (blockY < _totalBlockNumberY - 1)
+        {
+            var type = blocks[blockX, blockY + 1, blockZ].Type;
+            if (type == BlockTypes.Air || type == BlockTypes.Water)
+                blocks[blockX, blockY, blockZ].Faces |= Cubesides.Top;
+            else
+                blocks[blockX, blockY + 1, blockZ].Faces &= ~Cubesides.Bottom;
+        }
+        else blocks[blockX, blockY, blockZ].Faces |= Cubesides.Top;
+
+        if (blockZ > 0)
+        {
+            var type = blocks[blockX, blockY, blockZ - 1].Type;
+            if (type == BlockTypes.Air || type == BlockTypes.Water)
+                blocks[blockX, blockY, blockZ].Faces |= Cubesides.Back;
+            else
+                blocks[blockX, blockY, blockZ - 1].Faces &= ~Cubesides.Front;
+        }
+        else blocks[blockX, blockY, blockZ].Faces |= Cubesides.Back;
+
+        if (blockZ < _totalBlockNumberZ - 1)
+        {
+            var type = blocks[blockX, blockY, blockZ + 1].Type;
+            if (type == BlockTypes.Air || type == BlockTypes.Water)
+                blocks[blockX, blockY, blockZ].Faces |= Cubesides.Front;
+            else
+                blocks[blockX, blockY, blockZ + 1].Faces &= ~Cubesides.Back;
+        }
+        else blocks[blockX, blockY, blockZ].Faces |= Cubesides.Front;
+    }
+
     public void CalculateFaces(ref Block[,,] blocks)
     {
         for (int x = 0; x < _totalBlockNumberX; x++)
@@ -321,24 +353,30 @@ public class MeshGenerator
                     if(type == BlockTypes.Air)
                     {
                         if(x < _totalBlockNumberX - 1)
-                            if (blocks[x + 1, y, z].Type != BlockTypes.Air) blocks[x + 1, y, z].Faces |= Cubesides.Left;
+                            if (blocks[x + 1, y, z].Type != BlockTypes.Air)
+                                blocks[x + 1, y, z].Faces |= Cubesides.Left;
 
                         if (y < _totalBlockNumberY - 1)
-                            if (blocks[x, y + 1, z].Type != BlockTypes.Air) blocks[x, y + 1, z].Faces |= Cubesides.Bottom;
+                            if (blocks[x, y + 1, z].Type != BlockTypes.Air)
+                                blocks[x, y + 1, z].Faces |= Cubesides.Bottom;
 
                         if (z < _totalBlockNumberZ - 1)
-                            if (blocks[x, y, z + 1].Type != BlockTypes.Air) blocks[x, y, z + 1].Faces |= Cubesides.Back;
+                            if (blocks[x, y, z + 1].Type != BlockTypes.Air)
+                                blocks[x, y, z + 1].Faces |= Cubesides.Back;
                     }
                     else
                     {
                         if (x < _totalBlockNumberX - 1)
-                            if (blocks[x + 1, y, z].Type == BlockTypes.Air) blocks[x, y, z].Faces |= Cubesides.Right;
+                            if (blocks[x + 1, y, z].Type == BlockTypes.Air)
+                                blocks[x, y, z].Faces |= Cubesides.Right;
 
                         if (y < _totalBlockNumberY - 1)
-                            if (blocks[x, y + 1, z].Type == BlockTypes.Air) blocks[x, y, z].Faces |= Cubesides.Top;
+                            if (blocks[x, y + 1, z].Type == BlockTypes.Air)
+                                blocks[x, y, z].Faces |= Cubesides.Top;
 
                         if (z < _totalBlockNumberZ - 1)
-                            if (blocks[x, y, z + 1].Type == BlockTypes.Air) blocks[x, y, z].Faces |= Cubesides.Front;
+                            if (blocks[x, y, z + 1].Type == BlockTypes.Air)
+                                blocks[x, y, z].Faces |= Cubesides.Front;
                     }
                 }
     }
