@@ -11,12 +11,11 @@ public class World : ScriptableObject
     public Block[,,] Blocks;
     public WorldGeneratorStatus Status { get; private set; }
 
-    public byte ChunkSize = 32;
-    public byte WorldSizeX = 7;
-    public byte WorldSizeY = 4;
-    public byte WorldSizeZ = 7;
-    public float ChunkTerrainToGenerate { get; private set; }
-    public float ChunkObjectsToGenerate { get; private set; }
+    public int ChunkSize = 32, WorldSizeX = 7, WorldSizeY = 4, WorldSizeZ = 7;
+
+    // progress bar related variables
+    public float TerrainProgressSteps { get; private set; }
+    public float MeshProgressSteps { get; private set; }
     public float AlreadyGenerated { get; private set; }
     public string ProgressDescription;
     
@@ -25,28 +24,36 @@ public class World : ScriptableObject
     [SerializeField] Material _terrainTexture;
     [SerializeField] Material _waterTexture;
 
+    public readonly int TotalBlockNumberX, TotalBlockNumberY, TotalBlockNumberZ;
+
     Stopwatch _stopwatch = new Stopwatch();
     Scene _worldScene;
     long _accumulatedTerrainGenerationTime, _accumulatedMeshCreationTime;
-
-    int _totalBlockNumberX, _totalBlockNumberY, _totalBlockNumberZ;
+    
     int _progressStep = 1;
+
+    World()
+    {
+        TotalBlockNumberX = WorldSizeX * ChunkSize;
+        TotalBlockNumberY = WorldSizeY * ChunkSize;
+        TotalBlockNumberZ = WorldSizeZ * ChunkSize;
+    }
 
     void OnEnable()
     {
+        // Unity editor remembers the state of the asset classes so these values have to reinitialized
+        _progressStep = 1;
+        AlreadyGenerated = 0;
+
         _terrainGenerator = new TerrainGenerator(ChunkSize, WorldSizeX, WorldSizeY, WorldSizeZ);
         _meshGenerator = new MeshGenerator(ChunkSize, WorldSizeX, WorldSizeY, WorldSizeZ);
         
-        ChunkObjectsToGenerate = WorldSizeX * WorldSizeY * WorldSizeZ;
+        MeshProgressSteps = WorldSizeX * WorldSizeY * WorldSizeZ;
 
-        while (8 * _progressStep * 1.33f < ChunkObjectsToGenerate)
+        while (8 * _progressStep * 2f < MeshProgressSteps)
             _progressStep++;
 
-        ChunkTerrainToGenerate = 8 * _progressStep;
-
-        _totalBlockNumberX = WorldSizeX * ChunkSize;
-        _totalBlockNumberY = WorldSizeY * ChunkSize;
-        _totalBlockNumberZ = WorldSizeZ * ChunkSize;
+        TerrainProgressSteps = 8 * _progressStep;
     }
 
     /// <summary>
@@ -61,32 +68,32 @@ public class World : ScriptableObject
         Status = WorldGeneratorStatus.GeneratingTerrain;
 
         yield return null;
-        ProgressDescription = "Initialization";
+        ProgressDescription = "Initialization...";
         Blocks = new Block[WorldSizeX * ChunkSize, WorldSizeY * ChunkSize, WorldSizeZ * ChunkSize];
         AlreadyGenerated += _progressStep;
 
         yield return null;
-        ProgressDescription = "Calculating heights";
+        ProgressDescription = "Calculating heights...";
         var heights = _terrainGenerator.CalculateHeights();
         AlreadyGenerated += _progressStep;
 
         yield return null;
-        ProgressDescription = "Generating terrain";
+        ProgressDescription = "Generating terrain...";
         var types = _terrainGenerator.CalculateBlockTypes(heights);
         AlreadyGenerated += _progressStep;
 
         yield return null;
-        ProgressDescription = "Output deflattenization";
+        ProgressDescription = "Output deflattenization...";
         DeflattenizeOutput(ref types);
         AlreadyGenerated += _progressStep;
 
         yield return null;
-        ProgressDescription = "Generating trees";
+        ProgressDescription = "Generating trees...";
         _terrainGenerator.AddTrees(ref Blocks);
         AlreadyGenerated += _progressStep;
 
         yield return null;
-        ProgressDescription = "Creating game objects";
+        ProgressDescription = "Creating game objects...";
         if (firstRun)
             _worldScene = SceneManager.CreateScene(name);
         
@@ -95,12 +102,12 @@ public class World : ScriptableObject
         AlreadyGenerated += _progressStep;
 
         yield return null;
-        ProgressDescription = "Calculating faces";
+        ProgressDescription = "Calculating faces...";
         _meshGenerator.CalculateFaces(ref Blocks);
         AlreadyGenerated += _progressStep;
 
         yield return null;
-        ProgressDescription = "World boundaries check";
+        ProgressDescription = "World boundaries check...";
         _meshGenerator.WorldBoundariesCheck(ref Blocks);
         AlreadyGenerated += _progressStep;
 
@@ -109,47 +116,7 @@ public class World : ScriptableObject
         _stopwatch.Stop();
         UnityEngine.Debug.Log($"It took {_stopwatch.ElapsedTicks / TimeSpan.TicksPerMillisecond} ms to generate all terrain.");
     }
-
-    void DeflattenizeOutput(ref BlockTypes[] types)
-    {
-        for (var x = 0; x < _totalBlockNumberX; x++)
-        {
-            for (var y = 0; y < _totalBlockNumberY; y++)
-                for (var z = 0; z < _totalBlockNumberZ; z++)
-                {
-                    var type = types[Utils.IndexFlattenizer3D(x, y, z, _totalBlockNumberX, _totalBlockNumberY)];
-                    Blocks[x, y, z].Type = type;
-                    Blocks[x, y, z].Hp = LookupTables.BlockHealthMax[(int)type];
-                }
-        }
-    }
-
-    void CreateGameObjects(bool firstRun)
-    {
-        for (int x = 0; x < WorldSizeX; x++)
-            for (int z = 0; z < WorldSizeZ; z++)
-                for (int y = 0; y < WorldSizeY; y++)
-                {
-                    var chunkCoord = new Vector3Int(x, y, z);
-
-                    var c = new Chunk()
-                    {
-                        Position = new Vector3Int(chunkCoord.x * ChunkSize, chunkCoord.y * ChunkSize, chunkCoord.z * ChunkSize),
-                        Coord = chunkCoord
-                    };
-
-                    if (firstRun)
-                    {
-                        CreateGameObjects(c);
-
-                        SceneManager.MoveGameObjectToScene(c.Terrain.gameObject, _worldScene);
-                        SceneManager.MoveGameObjectToScene(c.Water.gameObject, _worldScene);
-                    }
-
-                    Chunks[x, y, z] = c;
-                }
-    }
-
+    
     /// <summary>
     /// Returns true if the block has been destroyed.
     /// </summary>
@@ -200,19 +167,7 @@ public class World : ScriptableObject
 
         return true;
     }
-
-    byte CalculateHealthLevel(int hp, int maxHp)
-    {
-        float proportion = (float)hp / maxHp; // 0.625f
-
-        // TODO: this require information from MeshGenerator which breaks the encapsulation rule
-        float step = (float)1 / 11; // _crackUVs.Length; // 0.09f
-        float value = proportion / step; // 6.94f
-        int level = Mathf.RoundToInt(value); // 7
-
-        return (byte)(11 - level); // array is in reverse order so we subtract our value from 1
-    }
-
+    
     public IEnumerator RedrawChunksIfNecessaryAsync()
     {
         _stopwatch.Restart();
@@ -325,6 +280,58 @@ public class World : ScriptableObject
         UnityEngine.Debug.Log("It took "
             + _accumulatedMeshCreationTime
             + " ms to create all meshes.");
+    }
+
+    byte CalculateHealthLevel(int hp, int maxHp)
+    {
+        float proportion = (float)hp / maxHp; // 0.625f
+
+        // TODO: this require information from MeshGenerator which breaks the encapsulation rule
+        float step = (float)1 / 11; // _crackUVs.Length; // 0.09f
+        float value = proportion / step; // 6.94f
+        int level = Mathf.RoundToInt(value); // 7
+
+        return (byte)(11 - level); // array is in reverse order so we subtract our value from 1
+    }
+
+    void DeflattenizeOutput(ref BlockTypes[] types)
+    {
+        for (var x = 0; x < TotalBlockNumberX; x++)
+        {
+            for (var y = 0; y < TotalBlockNumberY; y++)
+                for (var z = 0; z < TotalBlockNumberZ; z++)
+                {
+                    var type = types[Utils.IndexFlattenizer3D(x, y, z, TotalBlockNumberX, TotalBlockNumberY)];
+                    Blocks[x, y, z].Type = type;
+                    Blocks[x, y, z].Hp = LookupTables.BlockHealthMax[(int)type];
+                }
+        }
+    }
+
+    void CreateGameObjects(bool firstRun)
+    {
+        for (int x = 0; x < WorldSizeX; x++)
+            for (int z = 0; z < WorldSizeZ; z++)
+                for (int y = 0; y < WorldSizeY; y++)
+                {
+                    var chunkCoord = new Vector3Int(x, y, z);
+
+                    var c = new Chunk()
+                    {
+                        Position = new Vector3Int(chunkCoord.x * ChunkSize, chunkCoord.y * ChunkSize, chunkCoord.z * ChunkSize),
+                        Coord = chunkCoord
+                    };
+
+                    if (firstRun)
+                    {
+                        CreateGameObjects(c);
+
+                        SceneManager.MoveGameObjectToScene(c.Terrain.gameObject, _worldScene);
+                        SceneManager.MoveGameObjectToScene(c.Water.gameObject, _worldScene);
+                    }
+
+                    Chunks[x, y, z] = c;
+                }
     }
 
     void RecreateMeshAndCollider(Chunk c)

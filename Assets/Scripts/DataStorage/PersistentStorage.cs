@@ -35,10 +35,12 @@ public class PersistentStorage
         for (int x = 0; x < world.WorldSizeX; x++)
             for (int z = 0; z < world.WorldSizeZ; z++)
                 for (int y = 0; y < world.WorldSizeY; y++)
-                    Write(new Chunk()
-                    {
-                        //Blocks = world.Chunks[x, y, z].Blocks
-                    });
+                    Write(world.Chunks[x, y, z]);
+
+        for (int x = 0; x < world.TotalBlockNumberX; x++)
+            for (int z = 0; z < world.TotalBlockNumberZ; z++)
+                for (int y = 0; y < world.TotalBlockNumberY; y++)
+                    Write(world.Blocks[x, y, z]);
 
         _writer.Close();
         _writer.Dispose();
@@ -64,18 +66,25 @@ public class PersistentStorage
 
         int sizeX = loadGameData.WorldSizeX,
             sizeY = loadGameData.WorldSizeY,
-            sizeZ = loadGameData.WorldSizeX;
+            sizeZ = loadGameData.WorldSizeX,
+            totalSizeX = sizeX * loadGameData.ChunkSize,
+            totalSizeY = sizeY * loadGameData.ChunkSize,
+            totalSizeZ = sizeZ * loadGameData.ChunkSize;
 
         var chunks = new Chunk[sizeX, sizeY, sizeZ];
-
-        // chunks data
         for (int x = 0; x < sizeX; x++)
             for (int z = 0; z < sizeZ; z++)
                 for (int y = 0; y < sizeY; y++)
-                    chunks[x, y, z] = ReadChunkData();
+                    chunks[x, y, z] = ReadChunk();
 
+        var blocks = new Block[totalSizeX, totalSizeY, totalSizeZ];
+        for (int x = 0; x < totalSizeX; x++)
+            for (int z = 0; z < totalSizeZ; z++)
+                for (int y = 0; y < totalSizeY; y++)
+                    blocks[x, y, z] = ReadBlock();
 
         loadGameData.Chunks = chunks;
+        loadGameData.Blocks = blocks;
 
         _reader.Close();
         _reader.Dispose();
@@ -84,10 +93,10 @@ public class PersistentStorage
     }
 
     #region Reading Methods
-    Chunk ReadChunkData() => new Chunk()
+    Chunk ReadChunk() => new Chunk()
     {
-        //Blocks = ReadBlockDataArray(),
         Coord = ReadVector3Int(),
+        Position = ReadVector3Int(),
         Status = ChunkStatus.NeedToBeRedrawn
     };
 
@@ -172,10 +181,10 @@ public class PersistentStorage
     #endregion
 
     #region Writing Methods
-    void Write(Chunk chunkData)
+    void Write(Chunk chunk)
     {
-        //Write(chunkData.Blocks);
-        Write(chunkData.Coord);
+        Write(chunk.Coord);
+        Write(chunk.Position);
     }
 
     void Write(Block[,,] blocks)

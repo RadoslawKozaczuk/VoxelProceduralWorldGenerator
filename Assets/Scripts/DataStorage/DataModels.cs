@@ -12,8 +12,9 @@ public class SaveGameData
     public byte WorldSizeY;
     public byte WorldSizeZ;
 
-    // chunks
+    // chunks & blocks
     public Chunk[,,] Chunks;
+    public Block[,,] Blocks;
 }
 
 public struct Block

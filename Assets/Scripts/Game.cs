@@ -37,7 +37,7 @@ public class Game : MonoBehaviour
 
     void Update()
     {
-        var progress = Mathf.Clamp01(_world.AlreadyGenerated / (_world.ChunkObjectsToGenerate + _world.ChunkTerrainToGenerate));
+        var progress = Mathf.Clamp01(_world.AlreadyGenerated / (_world.MeshProgressSteps + _world.TerrainProgressSteps));
         _progressBar.value = progress;
         _progressText.text = Mathf.RoundToInt(progress * 100) + "%";
         _description.text = _world.ProgressDescription;
@@ -97,7 +97,7 @@ public class Game : MonoBehaviour
 
             CreatePlayer(save.PlayerPosition, save.PlayerRotation);
 
-            //StartCoroutine(_world.LoadWorld(save, false));
+            StartCoroutine(_world.LoadWorld(save, false));
         }
     }
 
