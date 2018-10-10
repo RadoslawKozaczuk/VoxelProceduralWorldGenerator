@@ -9,6 +9,8 @@ public class LevelLoader : MonoBehaviour
     [SerializeField] Slider _slider;
     [SerializeField] Text _progressText;
     [SerializeField] Text _description;
+    [SerializeField] InputField _worldSizeX;
+    [SerializeField] InputField _worldSizeZ;
 
     public void LoadLevel(int sceneIndex)
     {
@@ -17,9 +19,12 @@ public class LevelLoader : MonoBehaviour
         StartCoroutine(LoadLevelAsync(1));
     }
 
+    public void QuitGame() => Application.Quit();
+
     IEnumerator LoadLevelAsync(int sceneIndex)
     {
         AsyncOperation operation = SceneManager.LoadSceneAsync(sceneIndex);
+        Scenes.parameters = parameters;
 
         while (!operation.isDone)
         {

@@ -12,24 +12,24 @@ public class World : ScriptableObject
     public WorldGeneratorStatus Status { get; private set; }
 
     public int ChunkSize = 32, WorldSizeX = 7, WorldSizeY = 4, WorldSizeZ = 7;
+    public readonly int TotalBlockNumberX, TotalBlockNumberY, TotalBlockNumberZ;
 
     // progress bar related variables
     public float TerrainProgressSteps { get; private set; }
     public float MeshProgressSteps { get; private set; }
     public float AlreadyGenerated { get; private set; }
     public string ProgressDescription;
+
+    public Vector3 PlayerLoadedRotation, PlayerLoadedPosition;
     
     [SerializeField] TerrainGenerator _terrainGenerator;
     [SerializeField] MeshGenerator _meshGenerator;
     [SerializeField] Material _terrainTexture;
     [SerializeField] Material _waterTexture;
-
-    public readonly int TotalBlockNumberX, TotalBlockNumberY, TotalBlockNumberZ;
-
+    
     Stopwatch _stopwatch = new Stopwatch();
     Scene _worldScene;
     long _accumulatedTerrainGenerationTime, _accumulatedMeshCreationTime;
-    
     int _progressStep = 1;
 
     World()
@@ -41,13 +41,18 @@ public class World : ScriptableObject
 
     void OnEnable()
     {
+        _terrainGenerator = new TerrainGenerator(ChunkSize, WorldSizeX, WorldSizeY, WorldSizeZ);
+        _meshGenerator = new MeshGenerator(ChunkSize, WorldSizeX, WorldSizeY, WorldSizeZ);
+    }
+
+    void ResetProgressBarVariables()
+    {
         // Unity editor remembers the state of the asset classes so these values have to reinitialized
+        _accumulatedTerrainGenerationTime = 0;
+        _accumulatedMeshCreationTime = 0;
         _progressStep = 1;
         AlreadyGenerated = 0;
 
-        _terrainGenerator = new TerrainGenerator(ChunkSize, WorldSizeX, WorldSizeY, WorldSizeZ);
-        _meshGenerator = new MeshGenerator(ChunkSize, WorldSizeX, WorldSizeY, WorldSizeZ);
-        
         MeshProgressSteps = WorldSizeX * WorldSizeY * WorldSizeZ;
 
         while (8 * _progressStep * 2f < MeshProgressSteps)
@@ -64,7 +69,8 @@ public class World : ScriptableObject
     public IEnumerator GenerateWorld(bool firstRun)
     {
         _stopwatch.Restart();
-        
+        ResetProgressBarVariables();
+
         Status = WorldGeneratorStatus.GeneratingTerrain;
 
         yield return null;
@@ -208,15 +214,33 @@ public class World : ScriptableObject
                 }
     }
 
-    public IEnumerator LoadWorld(SaveGameData save, bool firstRun)
+    public IEnumerator LoadWorld(bool firstRun)
     {
-        _accumulatedTerrainGenerationTime = 0;
+        ResetProgressBarVariables();
         _stopwatch.Restart();
         Status = WorldGeneratorStatus.GeneratingTerrain;
-        AlreadyGenerated = 0;
+        ProgressDescription = "Loading data...";
+        yield return null; // give back control
+
+        var storage = new PersistentStorage(ChunkSize);
+        var save = storage.LoadGame();
+
+        ChunkSize = save.ChunkSize;
+        WorldSizeX = save.WorldSizeX;
+        WorldSizeY = save.WorldSizeY;
+        WorldSizeZ = save.WorldSizeZ;
+        PlayerLoadedPosition = save.PlayerPosition;
+        PlayerLoadedRotation = save.PlayerRotation;
+
+        AlreadyGenerated += 4;
+        ProgressDescription = "Creating game objects...";
+        yield return null; // give back control
 
         if (firstRun)
             _worldScene = SceneManager.CreateScene(name);
+
+        //CreateGameObjects(firstRun);
+        AlreadyGenerated += 4;
 
         for (int x = 0; x < WorldSizeX; x++)
             for (int z = 0; z < WorldSizeZ; z++)

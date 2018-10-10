@@ -50,7 +50,10 @@ public class Game : MonoBehaviour
             StartCoroutine(_world.GenerateMeshes());
 
         if (_world.Status == WorldGeneratorStatus.TerrainReady && _gameState == GameState.ReStarting)
+        {
+            CreatePlayer(_world.PlayerLoadedPosition, _world.PlayerLoadedRotation);
             StartCoroutine(_world.RedrawChunksIfNecessaryAsync());
+        }
 
         if (_world.Status == WorldGeneratorStatus.AllReady)
         {
@@ -87,17 +90,7 @@ public class Game : MonoBehaviour
         {
             _gameState = GameState.ReStarting;
             _player.SetActive(false);
-            var storage = new PersistentStorage(_world.ChunkSize);
-
-            var save = storage.LoadGame();
-            _world.ChunkSize = save.ChunkSize;
-            _world.WorldSizeX = save.WorldSizeX;
-            _world.WorldSizeY = save.WorldSizeY;
-            _world.WorldSizeZ = save.WorldSizeZ;
-
-            CreatePlayer(save.PlayerPosition, save.PlayerRotation);
-
-            StartCoroutine(_world.LoadWorld(save, false));
+            StartCoroutine(_world.LoadWorld(false));
         }
     }
 
