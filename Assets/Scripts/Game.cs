@@ -74,7 +74,7 @@ public class Game : MonoBehaviour
     {
         if (Input.GetKeyDown(_saveKey))
         {
-            var storage = new PersistentStorage(_world.ChunkSize);
+            var storage = new PersistentStorage(World.ChunkSize);
 
             var t = _player.transform;
 
@@ -126,9 +126,9 @@ public class Game : MonoBehaviour
         out int chunkX, out int chunkY, out int chunkZ,
         out int blockX, out int blockY, out int blockZ)
     {
-        chunkX = hitBlock.x < 0 ? 0 : (int)(hitBlock.x / _world.ChunkSize);
-        chunkY = hitBlock.y < 0 ? 0 : (int)(hitBlock.y / _world.ChunkSize);
-        chunkZ = hitBlock.z < 0 ? 0 : (int)(hitBlock.z / _world.ChunkSize);
+        chunkX = hitBlock.x < 0 ? 0 : (int)(hitBlock.x / World.ChunkSize);
+        chunkY = hitBlock.y < 0 ? 0 : (int)(hitBlock.y / World.ChunkSize);
+        chunkZ = hitBlock.z < 0 ? 0 : (int)(hitBlock.z / World.ChunkSize);
 
         blockX = (int)hitBlock.x;
         blockY = (int)hitBlock.y;
@@ -141,7 +141,7 @@ public class Game : MonoBehaviour
     void CheckNeighboringChunks(int blockX, int blockY, int blockZ, int chunkX, int chunkY, int chunkZ)
     {
         // right check
-        if (blockX == _world.ChunkSize - 1 && chunkX + 1 < _world.WorldSizeX)
+        if (blockX == World.ChunkSize - 1 && chunkX + 1 < World.WorldSizeX)
             _world.Chunks[chunkX + 1, chunkY, chunkZ].Status = ChunkStatus.NeedToBeRecreated;
         
         // left check
@@ -149,7 +149,7 @@ public class Game : MonoBehaviour
             _world.Chunks[chunkX - 1, chunkY, chunkZ].Status = ChunkStatus.NeedToBeRecreated;
 
         // top check
-        if (blockY == _world.ChunkSize - 1 && chunkY + 1 < _world.WorldSizeY)
+        if (blockY == World.ChunkSize - 1 && chunkY + 1 < World.WorldSizeY)
             _world.Chunks[chunkX, chunkY + 1, chunkZ].Status = ChunkStatus.NeedToBeRecreated;
 
         // bottom check
@@ -157,7 +157,7 @@ public class Game : MonoBehaviour
             _world.Chunks[chunkX, chunkY - 1, chunkZ].Status = ChunkStatus.NeedToBeRecreated;
 
         // front check
-        if (blockZ == _world.ChunkSize - 1 && chunkZ + 1 < _world.WorldSizeZ)
+        if (blockZ == World.ChunkSize - 1 && chunkZ + 1 < World.WorldSizeZ)
             _world.Chunks[chunkX, chunkY, chunkZ + 1].Status = ChunkStatus.NeedToBeRecreated;
 
         // back check

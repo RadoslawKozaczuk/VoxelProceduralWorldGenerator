@@ -11,7 +11,7 @@ public class World : ScriptableObject
     public Block[,,] Blocks;
     public WorldGeneratorStatus Status { get; private set; }
 
-    public int ChunkSize = 32, WorldSizeX = 7, WorldSizeY = 4, WorldSizeZ = 7;
+    public static int ChunkSize = 32, WorldSizeX = 7, WorldSizeY = 4, WorldSizeZ = 7;
     public readonly int TotalBlockNumberX, TotalBlockNumberY, TotalBlockNumberZ;
 
     // progress bar related variables

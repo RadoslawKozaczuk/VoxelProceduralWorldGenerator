@@ -21,10 +21,15 @@ public class LevelLoader : MonoBehaviour
 
     public void QuitGame() => Application.Quit();
 
+    public void WorldParametersChange()
+    {
+        World.WorldSizeX = int.Parse(_worldSizeX.text);
+        World.WorldSizeZ = int.Parse(_worldSizeZ.text);
+    }
+
     IEnumerator LoadLevelAsync(int sceneIndex)
     {
         AsyncOperation operation = SceneManager.LoadSceneAsync(sceneIndex);
-        Scenes.parameters = parameters;
 
         while (!operation.isDone)
         {

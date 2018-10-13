@@ -356,6 +356,7 @@ RectTransform:
   m_Children:
   - {fileID: 991160479}
   - {fileID: 821014982}
+  - {fileID: 1356482871}
   m_Father: {fileID: 1475973567}
   m_RootOrder: 3
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -412,7 +413,18 @@ MonoBehaviour:
   m_CharacterLimit: 2
   m_OnEndEdit:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 1350892293}
+        m_MethodName: WorldParametersChange
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
     m_TypeName: UnityEngine.UI.InputField+SubmitEvent, UnityEngine.UI, Version=1.0.0.0,
       Culture=neutral, PublicKeyToken=null
   m_OnValueChanged:
@@ -511,7 +523,7 @@ Prefab:
     - target: {fileID: 224764248845838888, guid: da3ebdf5a1ff77c478fa476e43e45e14,
         type: 2}
       propertyPath: m_AnchoredPosition.x
-      value: -0.000005722
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 224764248845838888, guid: da3ebdf5a1ff77c478fa476e43e45e14,
         type: 2}
@@ -1057,7 +1069,7 @@ GameObject:
   - component: {fileID: 843154879}
   - component: {fileID: 843154878}
   m_Layer: 5
-  m_Name: InputY
+  m_Name: InputZ
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1075,6 +1087,7 @@ RectTransform:
   m_Children:
   - {fileID: 810613114}
   - {fileID: 699684975}
+  - {fileID: 1301931696}
   m_Father: {fileID: 1475973567}
   m_RootOrder: 4
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -1131,7 +1144,18 @@ MonoBehaviour:
   m_CharacterLimit: 2
   m_OnEndEdit:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 1350892293}
+        m_MethodName: WorldParametersChange
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
     m_TypeName: UnityEngine.UI.InputField+SubmitEvent, UnityEngine.UI, Version=1.0.0.0,
       Culture=neutral, PublicKeyToken=null
   m_OnValueChanged:
@@ -1272,7 +1296,7 @@ GameObject:
   - component: {fileID: 1301931698}
   - component: {fileID: 1301931697}
   m_Layer: 5
-  m_Name: World Size X
+  m_Name: World Size Z
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1284,16 +1308,16 @@ RectTransform:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 1301931695}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
-  m_Father: {fileID: 1475973567}
-  m_RootOrder: 5
+  m_Father: {fileID: 843154877}
+  m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 134.65001, y: 33}
+  m_AnchoredPosition: {x: -65.349976, y: 0}
   m_SizeDelta: {x: 89.3, y: 30}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1301931697
@@ -1328,7 +1352,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: 'World Size X
+  m_Text: 'World Size Z
 
 '
 --- !u!222 &1301931698
@@ -1375,6 +1399,8 @@ MonoBehaviour:
   _slider: {fileID: 1810153052}
   _progressText: {fileID: 1306885682}
   _description: {fileID: 1237329747}
+  _worldSizeX: {fileID: 213865910}
+  _worldSizeZ: {fileID: 843154878}
 --- !u!4 &1350892294
 Transform:
   m_ObjectHideFlags: 0
@@ -1382,7 +1408,7 @@ Transform:
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 1350892292}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 32.22279, y: 67.52954, z: 17.616377}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
@@ -1399,7 +1425,7 @@ GameObject:
   - component: {fileID: 1356482873}
   - component: {fileID: 1356482872}
   m_Layer: 5
-  m_Name: World Size X (1)
+  m_Name: World Size X
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1415,12 +1441,12 @@ RectTransform:
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
-  m_Father: {fileID: 1475973567}
-  m_RootOrder: 6
+  m_Father: {fileID: 213865909}
+  m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 134.65, y: 63}
+  m_AnchoredPosition: {x: -65.350006, y: 0}
   m_SizeDelta: {x: 89.3, y: 30}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1356482872
@@ -1611,8 +1637,6 @@ RectTransform:
   - {fileID: 1810153051}
   - {fileID: 213865909}
   - {fileID: 843154877}
-  - {fileID: 1301931696}
-  - {fileID: 1356482871}
   - {fileID: 162667001}
   - {fileID: 683249181}
   m_Father: {fileID: 104168281}
