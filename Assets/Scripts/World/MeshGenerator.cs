@@ -196,9 +196,7 @@ public class MeshGenerator
             if (blocks[blockX, blockY, blockZ + 1].Type != BlockTypes.Air)
                 blocks[blockX, blockY, blockZ + 1].Faces |= Cubesides.Back;
     }
-
-    // as for now it is only possible to build solid blocks
-    // water will come later
+    
     public void RecalculateFacesAfterBlockBuild(ref Block[,,] blocks, int blockX, int blockY, int blockZ)
     {
         if (blockX > 0)
@@ -267,6 +265,8 @@ public class MeshGenerator
     /// </summary>
     public void CalculateFaces(ref Block[,,] blocks)
     {
+        // TODO: this is not a very scalable solution. 
+        // The number of checks that need to be changed with every potential change is enormous.
         for (int x = 0; x < _totalBlockNumberX; x++)
             for (int y = 0; y < _totalBlockNumberY; y++)
                 for (int z = 0; z < _totalBlockNumberZ; z++)
@@ -275,14 +275,38 @@ public class MeshGenerator
 
                     if(type == BlockTypes.Air)
                     {
+                        // check block on the right
                         if(x < _totalBlockNumberX - 1)
                             if (blocks[x + 1, y, z].Type != BlockTypes.Air)
                                 blocks[x + 1, y, z].Faces |= Cubesides.Left;
 
+                        // check block above
                         if (y < _totalBlockNumberY - 1)
                             if (blocks[x, y + 1, z].Type != BlockTypes.Air)
                                 blocks[x, y + 1, z].Faces |= Cubesides.Bottom;
 
+                        // check block in front
+                        if (z < _totalBlockNumberZ - 1)
+                            if (blocks[x, y, z + 1].Type != BlockTypes.Air)
+                                blocks[x, y, z + 1].Faces |= Cubesides.Back;
+                    }
+                    else if(type == BlockTypes.Water)
+                    {
+                        if (y < _totalBlockNumberY - 1)
+                            if (blocks[x, y + 1, z].Type == BlockTypes.Air)
+                                blocks[x, y, z].Faces |= Cubesides.Top;
+
+                        // check block on the right
+                        if (x < _totalBlockNumberX - 1)
+                            if (blocks[x + 1, y, z].Type != BlockTypes.Air)
+                                blocks[x + 1, y, z].Faces |= Cubesides.Left;
+
+                        // check block above
+                        if (y < _totalBlockNumberY - 1)
+                            if (blocks[x, y + 1, z].Type != BlockTypes.Air)
+                                blocks[x, y + 1, z].Faces |= Cubesides.Bottom;
+
+                        // check block in front
                         if (z < _totalBlockNumberZ - 1)
                             if (blocks[x, y, z + 1].Type != BlockTypes.Air)
                                 blocks[x, y, z + 1].Faces |= Cubesides.Back;
@@ -290,15 +314,15 @@ public class MeshGenerator
                     else
                     {
                         if (x < _totalBlockNumberX - 1)
-                            if (blocks[x + 1, y, z].Type == BlockTypes.Air)
+                            if (blocks[x + 1, y, z].Type == BlockTypes.Air || blocks[x + 1, y, z].Type == BlockTypes.Water)
                                 blocks[x, y, z].Faces |= Cubesides.Right;
 
                         if (y < _totalBlockNumberY - 1)
-                            if (blocks[x, y + 1, z].Type == BlockTypes.Air)
+                            if (blocks[x, y + 1, z].Type == BlockTypes.Air || blocks[x, y + 1, z].Type == BlockTypes.Water)
                                 blocks[x, y, z].Faces |= Cubesides.Top;
 
                         if (z < _totalBlockNumberZ - 1)
-                            if (blocks[x, y, z + 1].Type == BlockTypes.Air)
+                            if (blocks[x, y, z + 1].Type == BlockTypes.Air || blocks[x, y, z + 1].Type == BlockTypes.Water)
                                 blocks[x, y, z].Faces |= Cubesides.Front;
                     }
                 }
@@ -328,7 +352,7 @@ public class MeshGenerator
         y = _totalBlockNumberY - 1;
         for (x = 0; x < _totalBlockNumberX; x++)
             for (z = 0; z < _totalBlockNumberZ; z++)
-                    blocks[x, y, z].Faces |= Cubesides.Top; // there will always be air
+                blocks[x, y, z].Faces |= Cubesides.Top; // there will always be air
 
         // bottom world boundaries check
         y = 0;
@@ -518,7 +542,6 @@ public class MeshGenerator
             AddQuadComponents(ref index, ref triIndex, ref data, Vector3.up,
                 uv11, uv01, uv00, uv10,
                 _p7 + localBlockCoord, _p6 + localBlockCoord, _p5 + localBlockCoord, _p4 + localBlockCoord);
-
     }
 
     void AddQuadComponents(ref int index, ref int triIndex,

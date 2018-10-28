@@ -31,6 +31,8 @@ public class World : ScriptableObject
     Scene _worldScene;
     long _accumulatedTerrainGenerationTime, _accumulatedMeshCreationTime;
     int _progressStep = 1;
+    const int OverallNumberOfGenerationSteps = 9;
+
 
     World()
     {
@@ -55,10 +57,10 @@ public class World : ScriptableObject
 
         MeshProgressSteps = WorldSizeX * WorldSizeY * WorldSizeZ;
 
-        while (8 * _progressStep * 2f < MeshProgressSteps)
+        while (OverallNumberOfGenerationSteps * _progressStep * 2f < MeshProgressSteps)
             _progressStep++;
 
-        TerrainProgressSteps = 8 * _progressStep;
+        TerrainProgressSteps = OverallNumberOfGenerationSteps * _progressStep;
     }
 
     /// <summary>
@@ -91,6 +93,11 @@ public class World : ScriptableObject
         yield return null;
         ProgressDescription = "Output deflattenization...";
         DeflattenizeOutput(ref types);
+        AlreadyGenerated += _progressStep;
+        
+        yield return null;
+        ProgressDescription = "Generating water...";
+        _terrainGenerator.AddWater(ref Blocks);
         AlreadyGenerated += _progressStep;
 
         yield return null;
@@ -315,7 +322,7 @@ public class World : ScriptableObject
         float value = proportion / step; // 6.94f
         int level = Mathf.RoundToInt(value); // 7
 
-        return (byte)(11 - level); // array is in reverse order so we subtract our value from 1
+        return (byte)(11 - level); // array is in reverse order so we subtract our value from 11
     }
 
     void DeflattenizeOutput(ref BlockTypes[] types)

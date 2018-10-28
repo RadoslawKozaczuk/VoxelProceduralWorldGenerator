@@ -9,7 +9,7 @@ public class TerrainGenerator
         public float Bedrock, Stone, Dirt;
     }
 
-    public struct HeightJob : IJobParallelFor
+    struct HeightJob : IJobParallelFor
     {
         [ReadOnly]
         public int TotalBlockNumberX;
@@ -59,7 +59,7 @@ public class TerrainGenerator
     const float CaveProbability = 0.44f;
     const float CaveSmooth = 0.09f;
     const int CaveOctaves = 3; // reduced a bit to lower workload but not to much to maintain randomness
-    const int WaterLevel = 65; // inclusive
+    const int WaterLevel = 33; // inclusive
 
     // shiny diamonds!
     const float DiamondProbability = 0.38f; // this is not percentage chance because we are using Perlin function
@@ -96,7 +96,7 @@ public class TerrainGenerator
     #endregion
 
     readonly int _chunkSize, _worldSizeX, _worldSizeY, _worldSizeZ, _totalBlockNumberX, _totalBlockNumberY, _totalBlockNumberZ;
-
+    
     public TerrainGenerator(int chunkSize, int worldSizeX, int worldSizeY, int worldSizeZ)
     {
         _chunkSize = chunkSize;
@@ -125,41 +125,34 @@ public class TerrainGenerator
 
     static BlockTypes DetermineType(int worldX, int worldY, int worldZ, HeightData height)
     {
-        BlockTypes type;
-
         if (worldY == 0) return BlockTypes.Bedrock;
 
-        if (worldY <= height.Bedrock)
-            type = BlockTypes.Bedrock;
-        else if (worldY <= height.Stone)
+        // check if this suppose to be a cave
+        if (FractalFunc(worldX, worldY, worldZ, CaveSmooth, CaveOctaves) < CaveProbability)
+            return BlockTypes.Air;
+
+        // bedrock
+        if (worldY <= height.Bedrock) return BlockTypes.Bedrock;
+
+        // stone
+        if (worldY <= height.Stone)
         {
             if (FractalFunc(worldX, worldY, worldZ, DiamondSmooth, DiamondOctaves) < DiamondProbability
                 && worldY < DiamondMaxHeight)
-                type = BlockTypes.Diamond;
-            else if (FractalFunc(worldX, worldY, worldZ, RedstoneSmooth, RedstoneOctaves) < RedstoneProbability
+                return BlockTypes.Diamond;
+
+            if (FractalFunc(worldX, worldY, worldZ, RedstoneSmooth, RedstoneOctaves) < RedstoneProbability
                 && worldY < RedstoneMaxHeight)
-                type = BlockTypes.Redstone;
-            else
-                type = BlockTypes.Stone;
-        }
-        else
-        {
-            if (worldY == height.Dirt)
-                type = BlockTypes.Grass;
-            else if (worldY < height.Dirt)
-                type = BlockTypes.Dirt;
-            //else if (worldY <= WaterLevel)
-            //    type = BlockTypes.Water;
-            else
-                type = BlockTypes.Air;
+                return BlockTypes.Redstone;
+            
+            return BlockTypes.Stone;
         }
 
-        // BUG: caves are sometimes generated under or next to water 
-        // generate caves
-        if (type != BlockTypes.Water && FractalFunc(worldX, worldY, worldZ, CaveSmooth, CaveOctaves) < CaveProbability)
-            type = BlockTypes.Air;
+        // dirt
+        if (worldY == height.Dirt) return BlockTypes.Grass;
+        if (worldY < height.Dirt) return BlockTypes.Dirt;
 
-        return type;
+        return BlockTypes.Air;
     }
 
     // good noise generator
@@ -255,6 +248,90 @@ public class TerrainGenerator
 
         return types;
     }
+    
+    public void AddWater(ref Block[,,] blocks)
+    {
+        // first run - changes Air blocks of the WaterLevel and one level below into Water blocks
+        for (int x = 0; x < _totalBlockNumberX; x++)
+        {
+            for (int z = 0; z < _totalBlockNumberZ; z++)
+            {
+                if (blocks[x, WaterLevel, z].Type == BlockTypes.Air)
+                {
+                    blocks[x, WaterLevel, z].Type = BlockTypes.Water;
+                    if (blocks[x, WaterLevel - 1, z].Type == BlockTypes.Air) // level down scan
+                        blocks[x, WaterLevel - 1, z].Type = BlockTypes.Water;
+                }
+            }
+        }
+        PropagateWaterHorizontally(ref blocks, WaterLevel - 1);
+        
+        int currentY = WaterLevel - 1;
+        bool waterAdded = true;
+        while (waterAdded)
+        {
+            waterAdded = AddWaterBelow(ref blocks, currentY);
+            if (waterAdded)
+            {
+                PropagateWaterHorizontally(ref blocks, currentY - 1);
+                currentY--;
+            }
+        }
+    }
+
+    // this is very computationally heavy in relation to the relative simplicity of the task
+    // TODO: optimize it somehow
+    void PropagateWaterHorizontally(ref Block[,,] blocks, int currentY)
+    {
+        bool reiterate = true;
+
+        while (reiterate)
+        {
+            reiterate = false;
+            for (int x = 0; x < _totalBlockNumberX; x++)
+                for (int z = 0; z < _totalBlockNumberZ; z++)
+                    if (blocks[x, currentY, z].Type == BlockTypes.Water)
+                    {
+                        if (x < _totalBlockNumberX - 1 && blocks[x + 1, currentY, z].Type == BlockTypes.Air) // right
+                        {
+                            blocks[x + 1, currentY, z].Type = BlockTypes.Water;
+                            reiterate = true;
+                        }
+                        else if (x > 0 && blocks[x - 1, currentY, z].Type == BlockTypes.Air) // left
+                        {
+                            blocks[x - 1, currentY, z].Type = BlockTypes.Water;
+                            reiterate = true;
+                        }
+                        else if (z < _totalBlockNumberZ - 1 && blocks[x, currentY, z + 1].Type == BlockTypes.Air) // front
+                        {
+                            blocks[x, currentY, z + 1].Type = BlockTypes.Water;
+                            reiterate = true;
+                        }
+                        else if (z > 0 && blocks[x, currentY, z - 1].Type == BlockTypes.Air) // back
+                        {
+                            blocks[x, currentY, z - 1].Type = BlockTypes.Water;
+                            reiterate = true;
+                        }
+                    }
+        }
+    }
+
+    /// <summary>
+    /// Returns true if at least on block was changed
+    /// </summary>
+    bool AddWaterBelow(ref Block[,,] blocks, int currentY)
+    {
+        bool waterAdded = false;
+        for (int x = 0; x < _totalBlockNumberX; x++)
+            for (int z = 0; z < _totalBlockNumberZ; z++)
+                if (blocks[x, currentY, z].Type == BlockTypes.Water && blocks[x, currentY - 1, z].Type == BlockTypes.Air)
+                {
+                    blocks[x, currentY - 1, z].Type = BlockTypes.Water;
+                    waterAdded = true;
+                }
+
+        return waterAdded;
+    }
 
     public void AddTrees(ref Block[,,] blocks)
     {
@@ -267,12 +344,8 @@ public class TerrainGenerator
                     if (blocks[x, y, z].Type != BlockTypes.Grass) continue;
 
                     if (IsThereEnoughSpaceForTree(ref blocks, x, y, z))
-                    {
                         if (FractalFunc(x, y, z, WoodbaseSmooth, WoodbaseOctaves) < WoodbaseProbability)
-                        {
                             BuildTree(ref blocks, x, y, z);
-                        }
-                    }
                 }
     }
 
