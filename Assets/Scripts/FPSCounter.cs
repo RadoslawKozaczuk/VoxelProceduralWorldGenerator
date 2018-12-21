@@ -7,8 +7,8 @@ public class FPSCounter : MonoBehaviour
     [Serializable]
     struct FPSColor
     {
-        public Color color;
-        public int minimumFPS;
+        public Color Color;
+        public int MinimumFPS;
     }
 
     // strings are pre-prepered to avoid coountless string concatenation and memory pollution
@@ -37,6 +37,8 @@ public class FPSCounter : MonoBehaviour
     int[] _fpsBuffer; // we store all values from the last second
     int _fpsBufferIndex; // index of the curretly stored value
 
+    private void Awake() => Array.Sort(_coloring, (a, b) => a.MinimumFPS > b.MinimumFPS ? -1 : 1);
+
     void Update()
     {
         Display(HighestFPSLabel, HighestFPS);
@@ -55,13 +57,13 @@ public class FPSCounter : MonoBehaviour
         // find appriopraite color
         for (int i = 0; i < _coloring.Length; i++)
         {
-            if (fps >= _coloring[i].minimumFPS)
+            if (fps >= _coloring[i].MinimumFPS)
             {
-                label.color = _coloring[i].color;
+                label.color = _coloring[i].Color;
                 break;
             }
         }
-
+        
         label.text = stringsFrom00To99[Mathf.Clamp(fps, 0, 99)];
     }
 

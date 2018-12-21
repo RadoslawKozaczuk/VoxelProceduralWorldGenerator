@@ -1,13 +1,16 @@
 ﻿using UnityEngine;
+using UnityEngine.UI;
 
 public class BlockInteraction : MonoBehaviour
 {
-    public Game Game;
-    public GameObject Camera;
-    const float AttackRange = 4.0f;
-    [SerializeField] AudioClip _stonehitSound;
-    AudioSource _audioSource;
+    const float AttackRange = 3.0f;
 
+    public Game Game;
+    
+    [SerializeField] AudioClip _stonehitSound;
+    [SerializeField] Camera _weaponCamera;
+
+    AudioSource _audioSource;
     BlockTypes _buildBlockType = BlockTypes.Stone;
 
     void Start() => _audioSource = GetComponent<AudioSource>();
@@ -38,7 +41,8 @@ public class BlockInteraction : MonoBehaviour
 
         RaycastHit hit;
         // Does the ray intersect any objects excluding the player layer
-        if (!Physics.Raycast(Camera.transform.position, Camera.transform.forward, out hit, Mathf.Infinity, layerMask))
+        if (!Physics.Raycast(_weaponCamera.ViewportToWorldPoint(new Vector3(0.5f, 0.5f, 0)), 
+            _weaponCamera.transform.forward, out hit, AttackRange, layerMask))
             return;
 
         Vector3 hitBlock = hit.point - hit.normal / 2.0f; // central point
@@ -58,7 +62,8 @@ public class BlockInteraction : MonoBehaviour
 
         RaycastHit hit;
         // Does the ray intersect any objects excluding the player layer
-        if (!Physics.Raycast(Camera.transform.position, Camera.transform.forward, out hit, AttackRange, layerMask))
+        if (!Physics.Raycast(_weaponCamera.ViewportToWorldPoint(new Vector3(0.5f, 0.5f, 0)),
+            _weaponCamera.transform.forward, out hit, AttackRange, layerMask))
             return;
 
         Vector3 hitBlock = hit.point + hit.normal / 2.0f; // next to the one that we are pointing at
