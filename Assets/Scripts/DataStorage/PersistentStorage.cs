@@ -27,13 +27,13 @@ public class PersistentStorage
 
         // world parameters
         _writer.Write(World.ChunkSize);
-        _writer.Write(World.WorldSizeX);
+        _writer.Write(World.Settings.WorldSizeX);
         _writer.Write(World.WorldSizeY);
-        _writer.Write(World.WorldSizeZ);
+        _writer.Write(World.Settings.WorldSizeZ);
 
         // chunk data
-        for (int x = 0; x < World.WorldSizeX; x++)
-            for (int z = 0; z < World.WorldSizeZ; z++)
+        for (int x = 0; x < World.Settings.WorldSizeX; x++)
+            for (int z = 0; z < World.Settings.WorldSizeZ; z++)
                 for (int y = 0; y < World.WorldSizeY; y++)
                     Write(world.Chunks[x, y, z]);
 

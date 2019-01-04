@@ -17,10 +17,24 @@ public class LevelLoader : MonoBehaviour
 
     int _waterLevel = 30;
 
+    GameSettings _settings = new GameSettings()
+    {
+        // default settings
+        IsWater = true,
+        WaterLevel = 30,
+        SeedValue = 32000,
+        TreeProbability = TreeProbability.Some,
+        WorldSizeX = 3,
+        WorldSizeZ = 3
+    };
+
     public void LoadLevel(int sceneIndex)
     {
+        World.Settings = _settings;
+
         _progressBar.SetActive(true);
         _description.text = "Level loading...";
+
         StartCoroutine(LoadLevelAsync(1));
     }
 
@@ -28,8 +42,8 @@ public class LevelLoader : MonoBehaviour
 
     public void WorldParametersChange()
     {
-        World.WorldSizeX = int.Parse(_worldSizeX.text);
-        World.WorldSizeZ = int.Parse(_worldSizeZ.text);
+        _settings.WorldSizeX = int.Parse(_worldSizeX.text);
+        _settings.WorldSizeZ = int.Parse(_worldSizeZ.text);
     }
 
     IEnumerator LoadLevelAsync(int sceneIndex)
@@ -56,31 +70,25 @@ public class LevelLoader : MonoBehaviour
     {
         var newSeed = Random.Range(10000, 1000000);
         _seedInputField.text = newSeed.ToString();
-        World.SeedValue = newSeed;
+        _settings.SeedValue = newSeed;
     }
 
-    public void SetTreeProbability(float value) => World.TreeProbability = (TreeProbability)(int)value;
+    public void SetTreeProbability(float value) => _settings.TreeProbability = (TreeProbability)(int)value;
 
     public void WaterLevelChanged(float value)
     {
-        _waterLevel = (int)value;
-        World.WaterLevel = _waterLevel;
-        _waterLevelText.text = "Water Level" + System.Environment.NewLine + _waterLevel.ToString();
+        _settings.WaterLevel = (int)value;
+        _waterLevelText.text = "Water Level" + System.Environment.NewLine + _settings.WaterLevel.ToString();
     }
 
     public void WaterToggleChanged(bool value)
     {
-        if (value)
-        {
-            _waterLevelText.text = "Water Level" + System.Environment.NewLine + _waterLevel.ToString();
-            World.WaterLevel = _waterLevel;
-        }
-        else
-        {
-            _waterLevelText.text = "No Water";
-            World.WaterLevel = 0;
-        }
+        _settings.IsWater = value;
 
+        _waterLevelText.text = _settings.IsWater 
+            ? "Water Level" + System.Environment.NewLine + _waterLevel.ToString() 
+            : "No Water";
+        
         _waterSlider.enabled = value;
         _waterSlider.interactable = value;
     }

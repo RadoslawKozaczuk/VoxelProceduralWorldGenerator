@@ -141,7 +141,7 @@ public class Game : MonoBehaviour
     void CheckNeighboringChunks(int blockX, int blockY, int blockZ, int chunkX, int chunkY, int chunkZ)
     {
         // right check
-        if (blockX == World.ChunkSize - 1 && chunkX + 1 < World.WorldSizeX)
+        if (blockX == World.ChunkSize - 1 && chunkX + 1 < World.Settings.WorldSizeX)
             _world.Chunks[chunkX + 1, chunkY, chunkZ].Status = ChunkStatus.NeedToBeRecreated;
         
         // left check
@@ -157,7 +157,7 @@ public class Game : MonoBehaviour
             _world.Chunks[chunkX, chunkY - 1, chunkZ].Status = ChunkStatus.NeedToBeRecreated;
 
         // front check
-        if (blockZ == World.ChunkSize - 1 && chunkZ + 1 < World.WorldSizeZ)
+        if (blockZ == World.ChunkSize - 1 && chunkZ + 1 < World.Settings.WorldSizeZ)
             _world.Chunks[chunkX, chunkY, chunkZ + 1].Status = ChunkStatus.NeedToBeRecreated;
 
         // back check

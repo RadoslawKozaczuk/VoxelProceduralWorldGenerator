@@ -99,23 +99,21 @@ public class TerrainGenerator
     public static float SeedValue;
     public TreeProbability TreeProbability;
 
-    readonly int _chunkSize, _worldSizeX, _worldSizeY, _worldSizeZ, _totalBlockNumberX, _totalBlockNumberY, _totalBlockNumberZ;
+    readonly int _worldSizeX, _worldSizeZ, _totalBlockNumberX, _totalBlockNumberY, _totalBlockNumberZ;
     
     // Perlin function value of x is equal to its value of -x. Same for y.
     // To avoid it we need an offset, quite large one to be sure.
-    public TerrainGenerator(int chunkSize, int worldSizeX, int worldSizeY, int worldSizeZ, TreeProbability treeProbability, int waterLevel, float seedValue = 32000f)
+    public TerrainGenerator(GameSettings options)
     {
-        _chunkSize = chunkSize;
-        _worldSizeX = worldSizeX;
-        _worldSizeY = worldSizeY;
-        _worldSizeZ = worldSizeZ;
-        _totalBlockNumberX = _worldSizeX * _chunkSize;
-        _totalBlockNumberY = _worldSizeY * _chunkSize;
-        _totalBlockNumberZ = _worldSizeZ * _chunkSize;
+        _worldSizeX = options.WorldSizeX;
+        _worldSizeZ = options.WorldSizeZ;
+        _totalBlockNumberX = _worldSizeX * World.ChunkSize;
+        _totalBlockNumberY = World.WorldSizeY * World.ChunkSize;
+        _totalBlockNumberZ = _worldSizeZ * World.ChunkSize;
 
-        TreeProbability = treeProbability;
-        WaterLevel = waterLevel;
-        SeedValue = seedValue;
+        TreeProbability = options.TreeProbability;
+        WaterLevel = options.WaterLevel;
+        SeedValue = options.SeedValue;
     }
     
     public static int GenerateBedrockHeight(float x, float z) =>

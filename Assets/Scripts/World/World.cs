@@ -7,12 +7,13 @@ using UnityEngine.SceneManagement;
 [CreateAssetMenu]
 public class World : ScriptableObject
 {
+    public const int WorldSizeY = 4, ChunkSize = 32;
+
     public Chunk[,,] Chunks;
     public Block[,,] Blocks;
     public WorldGeneratorStatus Status { get; private set; }
-
-    public static int ChunkSize = 32, WorldSizeX = 3, WorldSizeY = 4, WorldSizeZ = 3, SeedValue = 32000, WaterLevel = 30;
-    public static TreeProbability TreeProbability = TreeProbability.Some;
+    
+    public static GameSettings Settings;
 
     public readonly int TotalBlockNumberX, TotalBlockNumberY, TotalBlockNumberZ;
 
@@ -37,33 +38,17 @@ public class World : ScriptableObject
     
     World()
     {
-        TotalBlockNumberX = WorldSizeX * ChunkSize;
+        TotalBlockNumberX = Settings.WorldSizeX * ChunkSize;
         TotalBlockNumberY = WorldSizeY * ChunkSize;
-        TotalBlockNumberZ = WorldSizeZ * ChunkSize;
+        TotalBlockNumberZ = Settings.WorldSizeZ * ChunkSize;
     }
 
     void OnEnable()
     {
-        _terrainGenerator = new TerrainGenerator(ChunkSize, WorldSizeX, WorldSizeY, WorldSizeZ, TreeProbability, WaterLevel, SeedValue);
-        _meshGenerator = new MeshGenerator(ChunkSize, WorldSizeX, WorldSizeY, WorldSizeZ);
+        _terrainGenerator = new TerrainGenerator(Settings);
+        _meshGenerator = new MeshGenerator(Settings);
     }
-
-    void ResetProgressBarVariables()
-    {
-        // Unity editor remembers the state of the asset classes so these values have to reinitialized
-        _accumulatedTerrainGenerationTime = 0;
-        _accumulatedMeshCreationTime = 0;
-        _progressStep = 1;
-        AlreadyGenerated = 0;
-
-        MeshProgressSteps = WorldSizeX * WorldSizeY * WorldSizeZ;
-
-        while (OverallNumberOfGenerationSteps * _progressStep * 2f < MeshProgressSteps)
-            _progressStep++;
-
-        TerrainProgressSteps = OverallNumberOfGenerationSteps * _progressStep;
-    }
-
+    
     /// <summary>
     /// Generates block types with hp and hp level. 
     /// Chunks and their objects (if first run = true). 
@@ -78,7 +63,7 @@ public class World : ScriptableObject
 
         yield return null;
         ProgressDescription = "Initialization...";
-        Blocks = new Block[WorldSizeX * ChunkSize, WorldSizeY * ChunkSize, WorldSizeZ * ChunkSize];
+        Blocks = new Block[Settings.WorldSizeX * ChunkSize, WorldSizeY * ChunkSize, Settings.WorldSizeZ * ChunkSize];
         AlreadyGenerated += _progressStep;
 
         yield return null;
@@ -97,8 +82,8 @@ public class World : ScriptableObject
         AlreadyGenerated += _progressStep;
         
         yield return null;
-        UnityEngine.Debug.Log("WaterLevel " + WaterLevel);
-        if(WaterLevel > 0)
+        UnityEngine.Debug.Log("WaterLevel " + Settings.WaterLevel);
+        if(Settings.IsWater)
         {
             ProgressDescription = "Generating water...";
             _terrainGenerator.AddWater(ref Blocks);
@@ -115,7 +100,7 @@ public class World : ScriptableObject
         if (firstRun)
             _worldScene = SceneManager.CreateScene(name);
         
-        Chunks = new Chunk[WorldSizeX, WorldSizeY, WorldSizeZ];
+        Chunks = new Chunk[Settings.WorldSizeX, WorldSizeY, Settings.WorldSizeZ];
         CreateGameObjects(firstRun);
         AlreadyGenerated += _progressStep;
 
@@ -191,8 +176,8 @@ public class World : ScriptableObject
         _stopwatch.Restart();
         Status = WorldGeneratorStatus.GeneratingMeshes;
 
-        for (int x = 0; x < WorldSizeX; x++)
-            for (int z = 0; z < WorldSizeZ; z++)
+        for (int x = 0; x < Settings.WorldSizeX; x++)
+            for (int z = 0; z < Settings.WorldSizeZ; z++)
                 for (int y = 0; y < WorldSizeY; y++)
                 {
                     Chunk c = Chunks[x, y, z];
@@ -214,8 +199,8 @@ public class World : ScriptableObject
 
     public void RedrawChunksIfNecessary()
     {
-        for (int x = 0; x < WorldSizeX; x++)
-            for (int z = 0; z < WorldSizeZ; z++)
+        for (int x = 0; x < Settings.WorldSizeX; x++)
+            for (int z = 0; z < Settings.WorldSizeZ; z++)
                 for (int y = 0; y < WorldSizeY; y++)
                 {
                     Chunk c = Chunks[x, y, z];
@@ -237,10 +222,8 @@ public class World : ScriptableObject
         var storage = new PersistentStorage(ChunkSize);
         var save = storage.LoadGame();
 
-        ChunkSize = save.ChunkSize;
-        WorldSizeX = save.WorldSizeX;
-        WorldSizeY = save.WorldSizeY;
-        WorldSizeZ = save.WorldSizeZ;
+        Settings.WorldSizeX = save.WorldSizeX;
+        Settings.WorldSizeZ = save.WorldSizeZ;
         PlayerLoadedPosition = save.PlayerPosition;
         PlayerLoadedRotation = save.PlayerRotation;
 
@@ -254,8 +237,8 @@ public class World : ScriptableObject
         //CreateGameObjects(firstRun);
         AlreadyGenerated += 4;
 
-        for (int x = 0; x < WorldSizeX; x++)
-            for (int z = 0; z < WorldSizeZ; z++)
+        for (int x = 0; x < Settings.WorldSizeX; x++)
+            for (int z = 0; z < Settings.WorldSizeZ; z++)
                 for (int y = 0; y < WorldSizeY; y++)
                 {
                     var loaded = save.Chunks[x, y, z];
@@ -293,8 +276,8 @@ public class World : ScriptableObject
         _stopwatch.Restart();
         Status = WorldGeneratorStatus.GeneratingMeshes;
 
-        for (int x = 0; x < WorldSizeX; x++)
-            for (int z = 0; z < WorldSizeZ; z++)
+        for (int x = 0; x < Settings.WorldSizeX; x++)
+            for (int z = 0; z < Settings.WorldSizeZ; z++)
                 for (int y = 0; y < WorldSizeY; y++)
                 {
                     var c = Chunks[x, y, z];
@@ -316,6 +299,22 @@ public class World : ScriptableObject
         UnityEngine.Debug.Log("It took "
             + _accumulatedMeshCreationTime
             + " ms to create all meshes.");
+    }
+
+    void ResetProgressBarVariables()
+    {
+        // Unity editor remembers the state of the asset classes so these values have to reinitialized
+        _accumulatedTerrainGenerationTime = 0;
+        _accumulatedMeshCreationTime = 0;
+        _progressStep = 1;
+        AlreadyGenerated = 0;
+
+        MeshProgressSteps = Settings.WorldSizeX * WorldSizeY * Settings.WorldSizeZ;
+
+        while (OverallNumberOfGenerationSteps * _progressStep * 2f < MeshProgressSteps)
+            _progressStep++;
+
+        TerrainProgressSteps = OverallNumberOfGenerationSteps * _progressStep;
     }
 
     byte CalculateHealthLevel(int hp, int maxHp)
@@ -346,8 +345,8 @@ public class World : ScriptableObject
 
     void CreateGameObjects(bool firstRun)
     {
-        for (int x = 0; x < WorldSizeX; x++)
-            for (int z = 0; z < WorldSizeZ; z++)
+        for (int x = 0; x < Settings.WorldSizeX; x++)
+            for (int z = 0; z < Settings.WorldSizeZ; z++)
                 for (int y = 0; y < WorldSizeY; y++)
                 {
                     var chunkCoord = new Vector3Int(x, y, z);

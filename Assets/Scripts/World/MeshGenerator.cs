@@ -63,17 +63,15 @@ public class MeshGenerator
                      _p7 = new Vector3(-0.5f, 0.5f, -0.5f);
     #endregion
 
-    readonly int _chunkSize, _worldSizeX, _worldSizeY, _worldSizeZ, _totalBlockNumberX, _totalBlockNumberY, _totalBlockNumberZ;
+    readonly int _worldSizeX, _worldSizeZ, _totalBlockNumberX, _totalBlockNumberY, _totalBlockNumberZ;
 
-    public MeshGenerator(int chunkSize, int worldSizeX, int worldSizeY, int worldSizeZ)
+    public MeshGenerator(GameSettings options)
     {
-        _chunkSize = chunkSize;
-        _worldSizeX = worldSizeX;
-        _worldSizeY = worldSizeY;
-        _worldSizeZ = worldSizeZ;
-        _totalBlockNumberX = _worldSizeX * _chunkSize;
-        _totalBlockNumberY = _worldSizeY * _chunkSize;
-        _totalBlockNumberZ = _worldSizeZ * _chunkSize;
+        _worldSizeX = options.WorldSizeX;
+        _worldSizeZ = options.WorldSizeZ;
+        _totalBlockNumberX = _worldSizeX * World.ChunkSize;
+        _totalBlockNumberY = World.WorldSizeY * World.ChunkSize;
+        _totalBlockNumberZ = _worldSizeZ * World.ChunkSize;
 
         _crackUVs = FillCrackUvTable();
     }
@@ -110,9 +108,9 @@ public class MeshGenerator
 
         int index = 0, triIndex = 0, waterIndex = 0, waterTriIndex = 0;
         
-        for (int x = 0; x < _chunkSize; x++)
-            for (int y = 0; y < _chunkSize; y++)
-                for (int z = 0; z < _chunkSize; z++)
+        for (int x = 0; x < World.ChunkSize; x++)
+            for (int y = 0; y < World.ChunkSize; y++)
+                for (int z = 0; z < World.ChunkSize; z++)
                 {
                     // offset need to be included
                     var b = blocks[x + chunkPos.x, y + chunkPos.y, z + chunkPos.z];
@@ -381,9 +379,9 @@ public class MeshGenerator
         wSize = 0;
 
         // offset needs to be calculated
-        for (int x = chunkCoord.x; x < chunkCoord.x + _chunkSize; x++)
-            for (int y = chunkCoord.y; y < chunkCoord.y + _chunkSize; y++)
-                for (int z = chunkCoord.z; z < chunkCoord.z + _chunkSize; z++)
+        for (int x = chunkCoord.x; x < chunkCoord.x + World.ChunkSize; x++)
+            for (int y = chunkCoord.y; y < chunkCoord.y + World.ChunkSize; y++)
+                for (int z = chunkCoord.z; z < chunkCoord.z + World.ChunkSize; z++)
                 {
                     if (blocks[x, y, z].Type == BlockTypes.Water)
                     {
@@ -529,7 +527,7 @@ public class MeshGenerator
 
     void CreateWaterQuads(ref Block block, ref int index, ref int triIndex, ref MeshData data, Vector3 localBlockCoord)
     {
-        float uvConst = 1.0f / _chunkSize;
+        float uvConst = 1.0f / World.ChunkSize;
 
         // all possible UVs
         // left-top, right-top, left-bottom, right-bottom
