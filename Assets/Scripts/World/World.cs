@@ -11,7 +11,7 @@ public class World : ScriptableObject
     public Block[,,] Blocks;
     public WorldGeneratorStatus Status { get; private set; }
 
-    public static int ChunkSize = 32, WorldSizeX = 3, WorldSizeY = 4, WorldSizeZ = 3, SeedValue = 32000;
+    public static int ChunkSize = 32, WorldSizeX = 3, WorldSizeY = 4, WorldSizeZ = 3, SeedValue = 32000, WaterLevel = 30;
     public static TreeProbability TreeProbability = TreeProbability.Some;
 
     public readonly int TotalBlockNumberX, TotalBlockNumberY, TotalBlockNumberZ;
@@ -34,8 +34,7 @@ public class World : ScriptableObject
     long _accumulatedTerrainGenerationTime, _accumulatedMeshCreationTime;
     int _progressStep = 1;
     const int OverallNumberOfGenerationSteps = 9;
-
-
+    
     World()
     {
         TotalBlockNumberX = WorldSizeX * ChunkSize;
@@ -45,7 +44,7 @@ public class World : ScriptableObject
 
     void OnEnable()
     {
-        _terrainGenerator = new TerrainGenerator(ChunkSize, WorldSizeX, WorldSizeY, WorldSizeZ, TreeProbability, SeedValue);
+        _terrainGenerator = new TerrainGenerator(ChunkSize, WorldSizeX, WorldSizeY, WorldSizeZ, TreeProbability, WaterLevel, SeedValue);
         _meshGenerator = new MeshGenerator(ChunkSize, WorldSizeX, WorldSizeY, WorldSizeZ);
     }
 
@@ -98,8 +97,12 @@ public class World : ScriptableObject
         AlreadyGenerated += _progressStep;
         
         yield return null;
-        ProgressDescription = "Generating water...";
-        _terrainGenerator.AddWater(ref Blocks);
+        UnityEngine.Debug.Log("WaterLevel " + WaterLevel);
+        if(WaterLevel > 0)
+        {
+            ProgressDescription = "Generating water...";
+            _terrainGenerator.AddWater(ref Blocks);
+        }
         AlreadyGenerated += _progressStep;
 
         yield return null;

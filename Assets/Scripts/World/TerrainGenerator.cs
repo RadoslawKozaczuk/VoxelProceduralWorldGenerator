@@ -59,8 +59,7 @@ public class TerrainGenerator
     const float CaveProbability = 0.44f;
     const float CaveSmooth = 0.09f;
     const int CaveOctaves = 3; // reduced a bit to lower workload but not to much to maintain randomness
-    const int WaterLevel = 33; // inclusive
-
+    
     // shiny diamonds!
     const float DiamondProbability = 0.38f; // this is not percentage chance because we are using Perlin function
     const float DiamondSmooth = 0.06f;
@@ -95,7 +94,8 @@ public class TerrainGenerator
     const int OctavesBedrock = 1;
     const float PersistenceBedrock = 0.5f;
     #endregion
-
+    
+    public static int WaterLevel; // inclusive
     public static float SeedValue;
     public TreeProbability TreeProbability;
 
@@ -103,7 +103,7 @@ public class TerrainGenerator
     
     // Perlin function value of x is equal to its value of -x. Same for y.
     // To avoid it we need an offset, quite large one to be sure.
-    public TerrainGenerator(int chunkSize, int worldSizeX, int worldSizeY, int worldSizeZ, TreeProbability treeProbability, float seedValue = 32000f)
+    public TerrainGenerator(int chunkSize, int worldSizeX, int worldSizeY, int worldSizeZ, TreeProbability treeProbability, int waterLevel, float seedValue = 32000f)
     {
         _chunkSize = chunkSize;
         _worldSizeX = worldSizeX;
@@ -114,6 +114,7 @@ public class TerrainGenerator
         _totalBlockNumberZ = _worldSizeZ * _chunkSize;
 
         TreeProbability = treeProbability;
+        WaterLevel = waterLevel;
         SeedValue = seedValue;
     }
     

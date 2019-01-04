@@ -12,6 +12,10 @@ public class LevelLoader : MonoBehaviour
     [SerializeField] InputField _worldSizeX;
     [SerializeField] InputField _worldSizeZ;
     [SerializeField] InputField _seedInputField;
+    [SerializeField] Text _waterLevelText;
+    [SerializeField] Slider _waterSlider;
+
+    int _waterLevel = 30;
 
     public void LoadLevel(int sceneIndex)
     {
@@ -56,4 +60,28 @@ public class LevelLoader : MonoBehaviour
     }
 
     public void SetTreeProbability(float value) => World.TreeProbability = (TreeProbability)(int)value;
+
+    public void WaterLevelChanged(float value)
+    {
+        _waterLevel = (int)value;
+        World.WaterLevel = _waterLevel;
+        _waterLevelText.text = "Water Level" + System.Environment.NewLine + _waterLevel.ToString();
+    }
+
+    public void WaterToggleChanged(bool value)
+    {
+        if (value)
+        {
+            _waterLevelText.text = "Water Level" + System.Environment.NewLine + _waterLevel.ToString();
+            World.WaterLevel = _waterLevel;
+        }
+        else
+        {
+            _waterLevelText.text = "No Water";
+            World.WaterLevel = 0;
+        }
+
+        _waterSlider.enabled = value;
+        _waterSlider.interactable = value;
+    }
 }
