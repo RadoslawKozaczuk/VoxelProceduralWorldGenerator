@@ -74,7 +74,8 @@ public class TerrainGenerator
     const int RedstoneMaxHeight = 50;
 
     // woodbase
-    const float WoodbaseProbability = 0.35f;
+    const float WoodbaseHighProbability = 0.36f;
+    const float WoodbaseSomeProbability = 0.31f;
     const float WoodbaseSmooth = 0.4f;
     const int WoodbaseOctaves = 1;
     const int TreeHeight = 7;
@@ -96,14 +97,14 @@ public class TerrainGenerator
     #endregion
 
     public static float SeedValue;
+    public TreeProbability TreeProbability;
 
     readonly int _chunkSize, _worldSizeX, _worldSizeY, _worldSizeZ, _totalBlockNumberX, _totalBlockNumberY, _totalBlockNumberZ;
     
     // Perlin function value of x is equal to its value of -x. Same for y.
     // To avoid it we need an offset, quite large one to be sure.
-    public TerrainGenerator(int chunkSize, int worldSizeX, int worldSizeY, int worldSizeZ, float seedValue = 32000f)
+    public TerrainGenerator(int chunkSize, int worldSizeX, int worldSizeY, int worldSizeZ, TreeProbability treeProbability, float seedValue = 32000f)
     {
-        SeedValue = seedValue;
         _chunkSize = chunkSize;
         _worldSizeX = worldSizeX;
         _worldSizeY = worldSizeY;
@@ -111,6 +112,9 @@ public class TerrainGenerator
         _totalBlockNumberX = _worldSizeX * _chunkSize;
         _totalBlockNumberY = _worldSizeY * _chunkSize;
         _totalBlockNumberZ = _worldSizeZ * _chunkSize;
+
+        TreeProbability = treeProbability;
+        SeedValue = seedValue;
     }
     
     public static int GenerateBedrockHeight(float x, float z) =>
@@ -336,6 +340,14 @@ public class TerrainGenerator
 
     public void AddTrees(ref Block[,,] blocks)
     {
+        // no trees
+        if (TreeProbability == TreeProbability.None)
+            return;
+
+        float woodbaseProbability = TreeProbability == TreeProbability.Some 
+            ? WoodbaseSomeProbability 
+            : WoodbaseHighProbability;
+
         for (var x = 1; x < _totalBlockNumberX - 1; x++)
             // this 20 is hard coded as for now but generally it would be nice if 
             // this loop could know in advance where is the lowest grass
@@ -345,7 +357,7 @@ public class TerrainGenerator
                     if (blocks[x, y, z].Type != BlockTypes.Grass) continue;
 
                     if (IsThereEnoughSpaceForTree(ref blocks, x, y, z))
-                        if (FractalFunc(x, y, z, WoodbaseSmooth, WoodbaseOctaves) < WoodbaseProbability)
+                        if (FractalFunc(x, y, z, WoodbaseSmooth, WoodbaseOctaves) < woodbaseProbability)
                             BuildTree(ref blocks, x, y, z);
                 }
     }

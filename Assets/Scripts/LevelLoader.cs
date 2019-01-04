@@ -54,4 +54,6 @@ public class LevelLoader : MonoBehaviour
         _seedInputField.text = newSeed.ToString();
         World.SeedValue = newSeed;
     }
+
+    public void SetTreeProbability(float value) => World.TreeProbability = (TreeProbability)(int)value;
 }

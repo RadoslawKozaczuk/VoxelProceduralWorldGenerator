@@ -16,3 +16,5 @@ public enum WorldGeneratorStatus { Idle, GeneratingTerrain, TerrainReady, Genera
 public enum ChunkStatus { NotInitialized, Created, NeedToBeRedrawn, NeedToBeRecreated }
 
 public enum GameState { NotInitialized, Starting, ReStarting, Started }
+
+public enum TreeProbability { None, Some, Lots }
