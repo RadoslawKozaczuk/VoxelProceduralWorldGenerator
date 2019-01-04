@@ -95,10 +95,15 @@ public class TerrainGenerator
     const float PersistenceBedrock = 0.5f;
     #endregion
 
+    public static float SeedValue;
+
     readonly int _chunkSize, _worldSizeX, _worldSizeY, _worldSizeZ, _totalBlockNumberX, _totalBlockNumberY, _totalBlockNumberZ;
     
-    public TerrainGenerator(int chunkSize, int worldSizeX, int worldSizeY, int worldSizeZ)
+    // Perlin function value of x is equal to its value of -x. Same for y.
+    // To avoid it we need an offset, quite large one to be sure.
+    public TerrainGenerator(int chunkSize, int worldSizeX, int worldSizeY, int worldSizeZ, float seedValue = 32000f)
     {
+        SeedValue = seedValue;
         _chunkSize = chunkSize;
         _worldSizeX = worldSizeX;
         _worldSizeY = worldSizeY;
@@ -161,14 +166,10 @@ public class TerrainGenerator
     static float FractalBrownianMotion(float x, float z, int oct, float pers)
     {
         float total = 0, frequency = 1, amplitude = 1, maxValue = 0;
-
-        // Perlin function value of x is equal to its value of -x. Same for y.
-        // to avoid it we need an offset, quite large one to be sure.
-        const float offset = 32000f;
-
+        
         for (int i = 0; i < oct; i++)
         {
-            total += Mathf.PerlinNoise((x + offset) * frequency, (z + offset) * frequency) * amplitude;
+            total += Mathf.PerlinNoise((x + SeedValue) * frequency, (z + SeedValue) * frequency) * amplitude;
 
             maxValue += amplitude;
 

@@ -11,6 +11,7 @@ public class LevelLoader : MonoBehaviour
     [SerializeField] Text _description;
     [SerializeField] InputField _worldSizeX;
     [SerializeField] InputField _worldSizeZ;
+    [SerializeField] InputField _seedInputField;
 
     public void LoadLevel(int sceneIndex)
     {
@@ -45,5 +46,12 @@ public class LevelLoader : MonoBehaviour
 
             yield return null;
         }
+    }
+
+    public void RandomSeed()
+    {
+        var newSeed = Random.Range(10000, 1000000);
+        _seedInputField.text = newSeed.ToString();
+        World.SeedValue = newSeed;
     }
 }

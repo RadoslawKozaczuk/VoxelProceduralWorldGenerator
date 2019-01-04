@@ -11,7 +11,7 @@ public class World : ScriptableObject
     public Block[,,] Blocks;
     public WorldGeneratorStatus Status { get; private set; }
 
-    public static int ChunkSize = 32, WorldSizeX = 3, WorldSizeY = 4, WorldSizeZ = 3;
+    public static int ChunkSize = 32, WorldSizeX = 3, WorldSizeY = 4, WorldSizeZ = 3, SeedValue = 32000;
     public readonly int TotalBlockNumberX, TotalBlockNumberY, TotalBlockNumberZ;
 
     // progress bar related variables
@@ -43,7 +43,7 @@ public class World : ScriptableObject
 
     void OnEnable()
     {
-        _terrainGenerator = new TerrainGenerator(ChunkSize, WorldSizeX, WorldSizeY, WorldSizeZ);
+        _terrainGenerator = new TerrainGenerator(ChunkSize, WorldSizeX, WorldSizeY, WorldSizeZ, SeedValue);
         _meshGenerator = new MeshGenerator(ChunkSize, WorldSizeX, WorldSizeY, WorldSizeZ);
     }
 
