@@ -59,7 +59,7 @@ public class TerrainGenerator
     const float CaveProbability = 0.44f;
     const float CaveSmooth = 0.09f;
     const int CaveOctaves = 3; // reduced a bit to lower workload but not to much to maintain randomness
-    
+
     // shiny diamonds!
     const float DiamondProbability = 0.38f; // this is not percentage chance because we are using Perlin function
     const float DiamondSmooth = 0.06f;
@@ -94,13 +94,13 @@ public class TerrainGenerator
     const int OctavesBedrock = 1;
     const float PersistenceBedrock = 0.5f;
     #endregion
-    
+
     public static int WaterLevel; // inclusive
     public static float SeedValue;
     public TreeProbability TreeProbability;
 
     readonly int _worldSizeX, _worldSizeZ, _totalBlockNumberX, _totalBlockNumberY, _totalBlockNumberZ;
-    
+
     // Perlin function value of x is equal to its value of -x. Same for y.
     // To avoid it we need an offset, quite large one to be sure.
     public TerrainGenerator(GameSettings options)
@@ -115,7 +115,7 @@ public class TerrainGenerator
         WaterLevel = options.WaterLevel;
         SeedValue = options.SeedValue;
     }
-    
+
     public static int GenerateBedrockHeight(float x, float z) =>
         (int)Map(0, MaxHeightBedrock, 0, 1,
             FractalBrownianMotion(x * SmoothBedrock, z * SmoothBedrock, OctavesBedrock, PersistenceBedrock));
@@ -152,7 +152,7 @@ public class TerrainGenerator
             if (FractalFunc(worldX, worldY, worldZ, RedstoneSmooth, RedstoneOctaves) < RedstoneProbability
                 && worldY < RedstoneMaxHeight)
                 return BlockTypes.Redstone;
-            
+
             return BlockTypes.Stone;
         }
 
@@ -169,7 +169,7 @@ public class TerrainGenerator
     static float FractalBrownianMotion(float x, float z, int oct, float pers)
     {
         float total = 0, frequency = 1, amplitude = 1, maxValue = 0;
-        
+
         for (int i = 0; i < oct; i++)
         {
             total += Mathf.PerlinNoise((x + SeedValue) * frequency, (z + SeedValue) * frequency) * amplitude;
@@ -222,7 +222,7 @@ public class TerrainGenerator
 
         return heights;
     }
-    
+
     public BlockTypes[] CalculateBlockTypes(HeightData[] heights)
     {
         var inputSize = _totalBlockNumberX * _totalBlockNumberY * _totalBlockNumberZ;
@@ -252,7 +252,7 @@ public class TerrainGenerator
 
         return types;
     }
-    
+
     public void AddWater(ref Block[,,] blocks)
     {
         // first run - changes Air blocks of the WaterLevel and one level below into Water blocks
@@ -269,7 +269,7 @@ public class TerrainGenerator
             }
         }
         PropagateWaterHorizontally(ref blocks, WaterLevel - 1);
-        
+
         int currentY = WaterLevel - 1;
         bool waterAdded = true;
         while (waterAdded)
@@ -343,12 +343,12 @@ public class TerrainGenerator
         if (TreeProbability == TreeProbability.None)
             return;
 
-        float woodbaseProbability = TreeProbability == TreeProbability.Some 
-            ? WoodbaseSomeProbability 
+        float woodbaseProbability = TreeProbability == TreeProbability.Some
+            ? WoodbaseSomeProbability
             : WoodbaseHighProbability;
 
         for (var x = 1; x < _totalBlockNumberX - 1; x++)
-            // this 20 is hard coded as for now but generally it would be nice if 
+            // this 20 is hard coded as for now but generally it would be nice if
             // this loop could know in advance where is the lowest grass
             for (var y = 20; y < _totalBlockNumberY - TreeHeight - 1; y++)
                 for (var z = 1; z < _totalBlockNumberZ - 1; z++)

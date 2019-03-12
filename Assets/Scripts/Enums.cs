@@ -2,10 +2,10 @@
 
 public enum BlockTypes : byte
 {
-    Dirt, Stone, Diamond, Bedrock, Redstone, Sand, Leaves, Wood, Woodbase,
-    Water,
-    Grass, // types that have different textures on sides and bottom
-    Air
+	Dirt, Stone, Diamond, Bedrock, Redstone, Sand, Leaves, Wood, Woodbase,
+	Water,
+	Grass, // types that have different textures on sides and bottom
+	Air
 }
 
 [Flags]
