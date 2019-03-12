@@ -13,6 +13,8 @@ public struct MeshData
 
 public class MeshGenerator
 {
+	const float waterUvConst = 1.0f / World.ChunkSize;
+
 	Stopwatch _stopwatch = new Stopwatch();
 	long _accumulatedExtractMeshDataTime, _accumulatedCreateMeshTime;
 
@@ -523,14 +525,12 @@ public class MeshGenerator
 
 	void CreateWaterQuads(ref Block block, ref int index, ref int triIndex, ref MeshData data, Vector3 localBlockCoord)
 	{
-		float uvConst = 1.0f / World.ChunkSize;
-
 		// all possible UVs
 		// left-top, right-top, left-bottom, right-bottom
-		Vector2 uv00 = new Vector2(uvConst * localBlockCoord.x, 1 - uvConst * localBlockCoord.z),
-				uv10 = new Vector2(uvConst * (localBlockCoord.x + 1), 1 - uvConst * localBlockCoord.z),
-				uv01 = new Vector2(uvConst * localBlockCoord.x, 1 - uvConst * (localBlockCoord.z + 1)),
-				uv11 = new Vector2(uvConst * (localBlockCoord.x + 1), 1 - uvConst * (localBlockCoord.z + 1));
+		Vector2 uv00 = new Vector2(waterUvConst * localBlockCoord.x, 1 - waterUvConst * localBlockCoord.z),
+				uv10 = new Vector2(waterUvConst * (localBlockCoord.x + 1), 1 - waterUvConst * localBlockCoord.z),
+				uv01 = new Vector2(waterUvConst * localBlockCoord.x, 1 - waterUvConst * (localBlockCoord.z + 1)),
+				uv11 = new Vector2(waterUvConst * (localBlockCoord.x + 1), 1 - waterUvConst * (localBlockCoord.z + 1));
 
 		if (block.Faces.HasFlag(Cubesides.Top))
 			AddQuadComponents(ref index, ref triIndex, ref data, Vector3.up,
