@@ -73,13 +73,9 @@ public class MouseLook
     private void InternalLockUpdate()
     {
         if (Input.GetKeyUp(KeyCode.Escape))
-        {
             _cursorIsLocked = false;
-        }
         else if (Input.GetMouseButtonUp(0))
-        {
             _cursorIsLocked = true;
-        }
 
         if (_cursorIsLocked)
         {

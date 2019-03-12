@@ -1,12 +1,11 @@
 ﻿using UnityEngine;
-using UnityEngine.UI;
 
 public class BlockInteraction : MonoBehaviour
 {
     const float AttackRange = 3.0f;
 
     public Game Game;
-    
+
     [SerializeField] AudioClip _stonehitSound;
     [SerializeField] Camera _weaponCamera;
 
@@ -39,13 +38,12 @@ public class BlockInteraction : MonoBehaviour
         // But instead we want to collide against everything except layer 8. The ~ operator does this, it inverts a bitmask.
         layerMask = ~layerMask;
 
-        RaycastHit hit;
-        // Does the ray intersect any objects excluding the player layer
-        if (!Physics.Raycast(_weaponCamera.ViewportToWorldPoint(new Vector3(0.5f, 0.5f, 0)), 
-            _weaponCamera.transform.forward, out hit, AttackRange, layerMask))
-            return;
+		// Does the ray intersect any objects excluding the player layer
+		if (!Physics.Raycast(_weaponCamera.ViewportToWorldPoint(new Vector3(0.5f, 0.5f, 0)),
+			_weaponCamera.transform.forward, out RaycastHit hit, AttackRange, layerMask))
+			return;
 
-        Vector3 hitBlock = hit.point - hit.normal / 2.0f; // central point
+		Vector3 hitBlock = hit.point - hit.normal / 2.0f; // central point
 
         _audioSource.PlayOneShot(_stonehitSound);
         Game.ProcessBlockHit(hitBlock);
