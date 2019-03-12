@@ -8,22 +8,20 @@ using UnityEngine.SceneManagement;
 public class World : ScriptableObject
 {
 	public const int WorldSizeY = 4, ChunkSize = 32;
-
-	public Chunk[,,] Chunks;
-	public Block[,,] Blocks;
-	public WorldGeneratorStatus Status { get; private set; }
+	const int OverallNumberOfGenerationSteps = 9;
 
 	public static GameSettings Settings;
 
 	public readonly int TotalBlockNumberX, TotalBlockNumberY, TotalBlockNumberZ;
 
-	// progress bar related variables
+	public Chunk[,,] Chunks;
+	public Block[,,] Blocks;
+	public Vector3 PlayerLoadedRotation, PlayerLoadedPosition;
+	public WorldGeneratorStatus Status { get; private set; }
 	public float TerrainProgressSteps { get; private set; }
 	public float MeshProgressSteps { get; private set; }
 	public float AlreadyGenerated { get; private set; }
 	public string ProgressDescription;
-
-	public Vector3 PlayerLoadedRotation, PlayerLoadedPosition;
 
 	[SerializeField] TerrainGenerator _terrainGenerator;
 	[SerializeField] MeshGenerator _meshGenerator;
@@ -34,7 +32,6 @@ public class World : ScriptableObject
 	Scene _worldScene;
 	long _accumulatedTerrainGenerationTime, _accumulatedMeshCreationTime;
 	int _progressStep = 1;
-	const int OverallNumberOfGenerationSteps = 9;
 
 	World()
 	{
@@ -82,7 +79,6 @@ public class World : ScriptableObject
 		AlreadyGenerated += _progressStep;
 
 		yield return null;
-		UnityEngine.Debug.Log("WaterLevel " + Settings.WaterLevel);
 		if (Settings.IsWater)
 		{
 			ProgressDescription = "Generating water...";
@@ -265,7 +261,7 @@ public class World : ScriptableObject
 		Status = WorldGeneratorStatus.TerrainReady;
 		_stopwatch.Stop();
 		_accumulatedTerrainGenerationTime += _stopwatch.ElapsedMilliseconds;
-		UnityEngine.Debug.Log($"It took {_accumulatedTerrainGenerationTime} ms to load all terrain.");
+		UnityEngine.Debug.Log($"It took { _accumulatedTerrainGenerationTime } ms to load all terrain.");
 	}
 
 	public IEnumerator GenerateMeshes()
@@ -295,9 +291,7 @@ public class World : ScriptableObject
 		_accumulatedMeshCreationTime += _stopwatch.ElapsedMilliseconds;
 		ProgressDescription = "Ready";
 
-		UnityEngine.Debug.Log("It took "
-			+ _accumulatedMeshCreationTime
-			+ " ms to create all meshes.");
+		UnityEngine.Debug.Log($"It took { _accumulatedMeshCreationTime } ms to create all meshes.");
 	}
 
 	void ResetProgressBarVariables()

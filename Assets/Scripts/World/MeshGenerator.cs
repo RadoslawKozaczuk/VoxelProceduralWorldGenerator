@@ -260,7 +260,6 @@ public class MeshGenerator
 	/// </summary>
 	public void CalculateFaces(ref Block[,,] blocks)
 	{
-		// TODO: this is not a very scalable solution.
 		// The number of checks that need to be changed with every potential change is enormous.
 		for (int x = 0; x < _totalBlockNumberX; x++)
 			for (int y = 0; y < _totalBlockNumberY; y++)

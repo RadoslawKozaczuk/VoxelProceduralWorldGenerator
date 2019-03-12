@@ -70,30 +70,6 @@ public class Game : MonoBehaviour
 		}
 	}
 
-	void HandleInput()
-	{
-		if (Input.GetKeyDown(_saveKey))
-		{
-			var storage = new PersistentStorage(World.ChunkSize);
-
-			var t = _player.transform;
-
-			var playerRotation = new Vector3(
-				t.GetChild(0).gameObject.transform.eulerAngles.x,
-				t.rotation.eulerAngles.y,
-				0);
-
-			storage.SaveGame(t.position, playerRotation, _world);
-			Debug.Log("Game Saved");
-		}
-		else if (Input.GetKeyDown(_loadKey))
-		{
-			_gameState = GameState.ReStarting;
-			_player.SetActive(false);
-			StartCoroutine(_world.LoadWorld(false));
-		}
-	}
-
 	public void ProcessBlockHit(Vector3 hitBlock)
 	{
 		FindChunkAndBlock(hitBlock, out int chunkX, out int chunkY, out int chunkZ, out int blockX, out int blockY, out int blockZ);
@@ -116,6 +92,30 @@ public class Game : MonoBehaviour
 		// was block built
 		if (_world.BuildBlock(blockX, blockY, blockZ, type, c))
 			CheckNeighboringChunks(blockX, blockY, blockZ, chunkX, chunkY, chunkZ);
+	}
+
+	void HandleInput()
+	{
+		if (Input.GetKeyDown(_saveKey))
+		{
+			var storage = new PersistentStorage(World.ChunkSize);
+
+			var t = _player.transform;
+
+			var playerRotation = new Vector3(
+				t.GetChild(0).gameObject.transform.eulerAngles.x,
+				t.rotation.eulerAngles.y,
+				0);
+
+			storage.SaveGame(t.position, playerRotation, _world);
+			Debug.Log("Game Saved");
+		}
+		else if (Input.GetKeyDown(_loadKey))
+		{
+			_gameState = GameState.ReStarting;
+			_player.SetActive(false);
+			StartCoroutine(_world.LoadWorld(false));
+		}
 	}
 
 	void FindChunkAndBlock(Vector3 hitBlock,

@@ -5,6 +5,9 @@ using UnityStandardAssets.CrossPlatformInput;
 [Serializable]
 public class MouseLook
 {
+	public Quaternion CharacterTargetRot;
+	public Quaternion CameraTargetRot;
+
 	public float XSensitivity = 2f;
 	public float YSensitivity = 2f;
 	public bool clampVerticalRotation = true;
@@ -14,9 +17,6 @@ public class MouseLook
 	public float smoothTime = 5f;
 	public bool lockCursor = true;
 
-	public Quaternion CharacterTargetRot;
-	public Quaternion CameraTargetRot;
-
 	bool _cursorIsLocked = true;
 
 	public void Init(Transform character, Transform camera)
@@ -24,7 +24,6 @@ public class MouseLook
 		CharacterTargetRot = character.localRotation;
 		CameraTargetRot = camera.localRotation;
 	}
-
 
 	public void LookRotation(Transform character, Transform camera)
 	{

@@ -15,8 +15,6 @@ public class LevelLoader : MonoBehaviour
 	[SerializeField] Text _waterLevelText;
 	[SerializeField] Slider _waterSlider;
 
-	int _waterLevel = 30;
-
 	GameSettings _settings = new GameSettings()
 	{
 		// default settings
@@ -27,6 +25,8 @@ public class LevelLoader : MonoBehaviour
 		WorldSizeX = 3,
 		WorldSizeZ = 3
 	};
+
+	int _waterLevel = 30;
 
 	public void LoadLevel(int sceneIndex)
 	{
@@ -44,26 +44,6 @@ public class LevelLoader : MonoBehaviour
 	{
 		_settings.WorldSizeX = int.Parse(_worldSizeX.text);
 		_settings.WorldSizeZ = int.Parse(_worldSizeZ.text);
-	}
-
-	IEnumerator LoadLevelAsync(int sceneIndex)
-	{
-		AsyncOperation operation = SceneManager.LoadSceneAsync(sceneIndex);
-
-		while (!operation.isDone)
-		{
-			// Unity load scenes in two stages:
-			// 1. Loading - loading all the stuff
-			// 2. Activation - deleting all previously used stuff and replacing it with the newly loaded stuff
-			// the progress value increments from 0 to 0.9 during the first stage and 0.9 to 1 during the second stage
-			// isDone is set to true as soon as the loading stage is done
-			// that is why we need to multiply the value by .9f before we clamp it
-			float progress = Mathf.Clamp01(operation.progress / .9f); // clamps value between min (0) and max (1) and returns value.
-			_slider.value = progress;
-			_progressText.text = Mathf.RoundToInt(progress * 100) + "%";
-
-			yield return null;
-		}
 	}
 
 	public void RandomSeed()
@@ -91,5 +71,25 @@ public class LevelLoader : MonoBehaviour
 
 		_waterSlider.enabled = value;
 		_waterSlider.interactable = value;
+	}
+
+	IEnumerator LoadLevelAsync(int sceneIndex)
+	{
+		AsyncOperation operation = SceneManager.LoadSceneAsync(sceneIndex);
+
+		while (!operation.isDone)
+		{
+			// Unity load scenes in two stages:
+			// 1. Loading - loading all the stuff
+			// 2. Activation - deleting all previously used stuff and replacing it with the newly loaded stuff
+			// the progress value increments from 0 to 0.9 during the first stage and 0.9 to 1 during the second stage
+			// isDone is set to true as soon as the loading stage is done
+			// that is why we need to multiply the value by .9f before we clamp it
+			float progress = Mathf.Clamp01(operation.progress / .9f); // clamps value between min (0) and max (1) and returns value.
+			_slider.value = progress;
+			_progressText.text = Mathf.RoundToInt(progress * 100) + "%";
+
+			yield return null;
+		}
 	}
 }

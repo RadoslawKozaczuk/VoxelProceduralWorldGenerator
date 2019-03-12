@@ -37,7 +37,7 @@ public class FPSCounter : MonoBehaviour
 	int[] _fpsBuffer; // we store all values from the last second
 	int _fpsBufferIndex; // index of the curretly stored value
 
-	private void Awake() => Array.Sort(_coloring, (a, b) => a.MinimumFPS > b.MinimumFPS ? -1 : 1);
+	void Awake() => Array.Sort(_coloring, (a, b) => a.MinimumFPS > b.MinimumFPS ? -1 : 1);
 
 	void Update()
 	{

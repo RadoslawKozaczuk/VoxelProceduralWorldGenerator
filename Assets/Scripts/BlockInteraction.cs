@@ -65,7 +65,7 @@ public class BlockInteraction : MonoBehaviour
 
 		Vector3 hitBlock = hit.point + hit.normal / 2.0f; // next to the one that we are pointing at
 
-		_audioSource.PlayOneShot(_stonehitSound); // TODO: find a good build block sounds
+		_audioSource.PlayOneShot(_stonehitSound);
 		Game.ProcessBuildBlock(hitBlock, _buildBlockType);
 	}
 
