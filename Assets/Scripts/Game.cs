@@ -1,6 +1,7 @@
 ﻿using System;
 using UnityEngine;
 using UnityEngine.UI;
+using Assets.Scripts.World;
 
 public class Game : MonoBehaviour
 {
