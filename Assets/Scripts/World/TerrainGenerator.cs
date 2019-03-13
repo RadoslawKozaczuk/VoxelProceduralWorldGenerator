@@ -306,13 +306,13 @@ namespace Assets.Scripts.World
 					{
 						if (blocks[x, y, z].Type != BlockTypes.Grass) continue;
 
-						if (IsThereEnoughSpaceForTree(ref blocks, x, y, z))
+						if (IsThereEnoughSpaceForTree(in blocks, x, y, z))
 							if (FractalFunc(x, y, z, WoodbaseSmooth, WoodbaseOctaves) < woodbaseProbability)
 								BuildTree(ref blocks, x, y, z);
 					}
 		}
 
-		bool IsThereEnoughSpaceForTree(ref Block[,,] blocks, int x, int y, int z)
+		bool IsThereEnoughSpaceForTree(in Block[,,] blocks, int x, int y, int z)
 		{
 			for (int i = 2; i < TreeHeight; i++)
 			{

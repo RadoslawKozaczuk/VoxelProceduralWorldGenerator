@@ -8,7 +8,6 @@ namespace Assets.Scripts.World
 		[ReadOnly]
 		public int TotalBlockNumberX;
 
-		// result
 		public NativeArray<HeightData> Result;
 
 		public void Execute(int i)

@@ -123,32 +123,29 @@ namespace Assets.Scripts.World
 		/// </summary>
 		public bool BlockHit(int blockX, int blockY, int blockZ, Chunk c)
 		{
-			var retVal = false;
+			bool destroyed = false;
 
-			byte previousHpLevel = Blocks[blockX, blockY, blockZ].HealthLevel;
-			Blocks[blockX, blockY, blockZ].Hp--;
-			byte currentHpLevel = CalculateHealthLevel(
-				Blocks[blockX, blockY, blockZ].Hp,
-				LookupTables.BlockHealthMax[(int)Blocks[blockX, blockY, blockZ].Type]);
+			ref Block b = ref Blocks[blockX, blockY, blockZ];
+
+			byte previousHpLevel = b.HealthLevel--;
+			byte currentHpLevel = CalculateHealthLevel(b.Hp, LookupTables.BlockHealthMax[(int)b.Type]);
 
 			if (currentHpLevel != previousHpLevel)
 			{
-				Blocks[blockX, blockY, blockZ].HealthLevel = currentHpLevel;
+				b.HealthLevel = currentHpLevel;
 
-				if (Blocks[blockX, blockY, blockZ].Hp == 0)
+				if (b.Hp == 0)
 				{
-					Blocks[blockX, blockY, blockZ].Type = BlockTypes.Air;
+					b.Type = BlockTypes.Air;
 					_meshGenerator.RecalculateFacesAfterBlockDestroy(ref Blocks, blockX, blockY, blockZ);
 					c.Status = ChunkStatus.NeedToBeRecreated;
-					retVal = true;
+					destroyed = true;
 				}
 				else
-				{
 					c.Status = ChunkStatus.NeedToBeRedrawn;
-				}
 			}
 
-			return retVal;
+			return destroyed;
 		}
 
 		/// <summary>
@@ -156,13 +153,15 @@ namespace Assets.Scripts.World
 		/// </summary>
 		public bool BuildBlock(int blockX, int blockY, int blockZ, BlockTypes type, Chunk c)
 		{
-			if (Blocks[blockX, blockY, blockZ].Type != BlockTypes.Air) return false;
+			ref Block b = ref Blocks[blockX, blockY, blockZ];
 
-			Blocks[blockX, blockY, blockZ].Type = type;
+			if (b.Type != BlockTypes.Air) return false;
+
 			_meshGenerator.RecalculateFacesAfterBlockBuild(ref Blocks, blockX, blockY, blockZ);
 
-			Blocks[blockX, blockY, blockZ].Hp = LookupTables.BlockHealthMax[(int)type];
-			Blocks[blockX, blockY, blockZ].HealthLevel = 0;
+			b.Type = type;
+			b.Hp = LookupTables.BlockHealthMax[(int)type];
+			b.HealthLevel = 0;
 
 			c.Status = ChunkStatus.NeedToBeRecreated;
 
@@ -174,9 +173,9 @@ namespace Assets.Scripts.World
 			_stopwatch.Restart();
 			Status = WorldGeneratorStatus.GeneratingMeshes;
 
-			for (int x = 0; x < Settings.WorldSizeX; x++)
-				for (int z = 0; z < Settings.WorldSizeZ; z++)
-					for (int y = 0; y < WorldSizeY; y++)
+			for (int x = 0, y, z; x < Settings.WorldSizeX; x++)
+				for (z = 0; z < Settings.WorldSizeZ; z++)
+					for (y = 0; y < WorldSizeY; y++)
 					{
 						Chunk c = Chunks[x, y, z];
 						if (c.Status == ChunkStatus.NeedToBeRecreated)
@@ -197,9 +196,9 @@ namespace Assets.Scripts.World
 
 		public void RedrawChunksIfNecessary()
 		{
-			for (int x = 0; x < Settings.WorldSizeX; x++)
-				for (int z = 0; z < Settings.WorldSizeZ; z++)
-					for (int y = 0; y < WorldSizeY; y++)
+			for (int x = 0, y, z; x < Settings.WorldSizeX; x++)
+				for (z = 0; z < Settings.WorldSizeZ; z++)
+					for (y = 0; y < WorldSizeY; y++)
 					{
 						Chunk c = Chunks[x, y, z];
 						if (c.Status == ChunkStatus.NeedToBeRecreated)
@@ -232,20 +231,14 @@ namespace Assets.Scripts.World
 			if (firstRun)
 				_worldScene = SceneManager.CreateScene(name);
 
-			//CreateGameObjects(firstRun);
 			AlreadyGenerated += 4;
 
-			for (int x = 0; x < Settings.WorldSizeX; x++)
-				for (int z = 0; z < Settings.WorldSizeZ; z++)
-					for (int y = 0; y < WorldSizeY; y++)
+			for (int x = 0, y, z; x < Settings.WorldSizeX; x++)
+				for (z = 0; z < Settings.WorldSizeZ; z++)
+					for (y = 0; y < WorldSizeY; y++)
 					{
 						var loaded = save.Chunks[x, y, z];
-						var c = new Chunk()
-						{
-							Coord = loaded.Coord,
-							Position = loaded.Position,
-							Status = ChunkStatus.NeedToBeRedrawn
-						};
+						var c = new Chunk(loaded.Coord, loaded.Position, ChunkStatus.NeedToBeRedrawn);
 
 						if (firstRun)
 						{
@@ -274,12 +267,18 @@ namespace Assets.Scripts.World
 			_stopwatch.Restart();
 			Status = WorldGeneratorStatus.GeneratingMeshes;
 
-			for (int x = 0; x < Settings.WorldSizeX; x++)
-				for (int z = 0; z < Settings.WorldSizeZ; z++)
-					for (int y = 0; y < WorldSizeY; y++)
+			for (int x = 0, y, z; x < Settings.WorldSizeX; x++)
+				for (z = 0; z < Settings.WorldSizeZ; z++)
+					for (y = 0; y < WorldSizeY; y++)
 					{
-						var c = Chunks[x, y, z];
-						_meshGenerator.ExtractMeshData(ref Blocks, ref c.Position, out MeshData terrainData, out MeshData waterData);
+						Chunk c = Chunks[x, y, z];
+
+						// out: This method sets the value of the argument used as this parameter.
+						// ref: This method may set the value of the argument used as this parameter.
+						// in: This method doesn't modify the value of the argument used as this parameter,
+						//		it should only be applied to readonly structs, otherwise it harms the performance
+						//		because the compilator has to make defensive copies just to be safe.
+						_meshGenerator.ExtractMeshData(ref Blocks, in c.Position, out MeshData terrainData, out MeshData waterData);
 						CreateRenderingComponents(c, terrainData, waterData);
 						c.Status = ChunkStatus.Created;
 
@@ -326,35 +325,31 @@ namespace Assets.Scripts.World
 
 		void DeflattenizeOutput(ref BlockTypes[] types)
 		{
-			for (var x = 0; x < TotalBlockNumberX; x++)
-			{
-				for (var y = 0; y < TotalBlockNumberY; y++)
-					for (var z = 0; z < TotalBlockNumberZ; z++)
+			ref Block b = ref Blocks[0, 0, 0];
+			for (int x = 0, y, z; x < TotalBlockNumberX; x++)
+				for (y = 0; y < TotalBlockNumberY; y++)
+					for (z = 0; z < TotalBlockNumberZ; z++)
 					{
 						var type = types[Utils.IndexFlattenizer3D(x, y, z, TotalBlockNumberX, TotalBlockNumberY)];
-						Blocks[x, y, z].Type = type;
-						Blocks[x, y, z].Hp = LookupTables.BlockHealthMax[(int)type];
+
+						b = ref Blocks[x, y, z];
+						b.Type = type;
+						b.Hp = LookupTables.BlockHealthMax[(int)type];
 					}
-			}
 		}
 
 		void CreateGameObjects(bool firstRun)
 		{
-			for (int x = 0; x < Settings.WorldSizeX; x++)
-				for (int z = 0; z < Settings.WorldSizeZ; z++)
-					for (int y = 0; y < WorldSizeY; y++)
+			for (int x = 0, y, z; x < Settings.WorldSizeX; x++)
+				for (z = 0; z < Settings.WorldSizeZ; z++)
+					for (y = 0; y < WorldSizeY; y++)
 					{
-						var chunkCoord = new Vector3Int(x, y, z);
-
-						var c = new Chunk()
-						{
-							Position = new Vector3Int(chunkCoord.x * ChunkSize, chunkCoord.y * ChunkSize, chunkCoord.z * ChunkSize),
-							Coord = chunkCoord
-						};
+						var c = new Chunk(new Vector3Int(x, y, z), new Vector3Int(x * ChunkSize, y * ChunkSize, z * ChunkSize));
 
 						if (firstRun)
 						{
 							CreateGameObjects(c);
+							c.Status = ChunkStatus.NeedToBeRedrawn;
 
 							SceneManager.MoveGameObjectToScene(c.Terrain.gameObject, _worldScene);
 							SceneManager.MoveGameObjectToScene(c.Water.gameObject, _worldScene);
@@ -367,7 +362,7 @@ namespace Assets.Scripts.World
 		void RecreateMeshAndCollider(Chunk c)
 		{
 			DestroyImmediate(c.Terrain.GetComponent<Collider>());
-			_meshGenerator.ExtractMeshData(ref Blocks, ref c.Position, out MeshData t, out MeshData w);
+			_meshGenerator.ExtractMeshData(ref Blocks, in c.Position, out MeshData t, out MeshData w);
 			var tm = _meshGenerator.CreateMesh(t);
 			var wm = _meshGenerator.CreateMesh(w);
 
@@ -388,7 +383,7 @@ namespace Assets.Scripts.World
 		/// </summary>
 		void RecreateTerrainMesh(Chunk c)
 		{
-			_meshGenerator.ExtractMeshData(ref Blocks, ref c.Position, out MeshData t, out MeshData w);
+			_meshGenerator.ExtractMeshData(ref Blocks, in c.Position, out MeshData t, out MeshData w);
 			var tm = _meshGenerator.CreateMesh(t);
 
 			var meshFilter = c.Terrain.GetComponent<MeshFilter>();
@@ -399,12 +394,11 @@ namespace Assets.Scripts.World
 
 		void CreateGameObjects(Chunk c)
 		{
-			string name = "" + c.Coord.x + c.Coord.y + c.Coord.z;
+			string name = c.Coord.x.ToString() + c.Coord.y + c.Coord.z;
 			c.Terrain = new GameObject(name + "_terrain");
 			c.Terrain.transform.position = c.Position;
 			c.Water = new GameObject(name + "_water");
 			c.Water.transform.position = c.Position;
-			c.Status = ChunkStatus.NeedToBeRedrawn;
 		}
 
 		void CreateRenderingComponents(Chunk chunk, MeshData terrainData, MeshData waterData)

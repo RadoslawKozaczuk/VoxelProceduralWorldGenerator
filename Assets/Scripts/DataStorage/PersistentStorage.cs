@@ -1,7 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using Assets.Scripts.World;
+using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
-using Assets.Scripts.World;
 
 public class PersistentStorage
 {
@@ -33,14 +33,15 @@ public class PersistentStorage
 		_writer.Write(World.Settings.WorldSizeZ);
 
 		// chunk data
-		for (int x = 0; x < World.Settings.WorldSizeX; x++)
-			for (int z = 0; z < World.Settings.WorldSizeZ; z++)
-				for (int y = 0; y < World.WorldSizeY; y++)
+		int x, y, z;
+		for (x = 0; x < World.Settings.WorldSizeX; x++)
+			for (z = 0; z < World.Settings.WorldSizeZ; z++)
+				for (y = 0; y < World.WorldSizeY; y++)
 					Write(world.Chunks[x, y, z]);
 
-		for (int x = 0; x < world.TotalBlockNumberX; x++)
-			for (int z = 0; z < world.TotalBlockNumberZ; z++)
-				for (int y = 0; y < world.TotalBlockNumberY; y++)
+		for (x = 0; x < world.TotalBlockNumberX; x++)
+			for (z = 0; z < world.TotalBlockNumberZ; z++)
+				for (y = 0; y < world.TotalBlockNumberY; y++)
 					Write(world.Blocks[x, y, z]);
 
 		_writer.Close();
@@ -73,15 +74,16 @@ public class PersistentStorage
 			totalSizeZ = sizeZ * loadGameData.ChunkSize;
 
 		var chunks = new Chunk[sizeX, sizeY, sizeZ];
-		for (int x = 0; x < sizeX; x++)
-			for (int z = 0; z < sizeZ; z++)
-				for (int y = 0; y < sizeY; y++)
+		int x, y, z;
+		for (x = 0; x < sizeX; x++)
+			for (z = 0; z < sizeZ; z++)
+				for (y = 0; y < sizeY; y++)
 					chunks[x, y, z] = ReadChunk();
 
 		var blocks = new Block[totalSizeX, totalSizeY, totalSizeZ];
-		for (int x = 0; x < totalSizeX; x++)
-			for (int z = 0; z < totalSizeZ; z++)
-				for (int y = 0; y < totalSizeY; y++)
+		for (x = 0; x < totalSizeX; x++)
+			for (z = 0; z < totalSizeZ; z++)
+				for (y = 0; y < totalSizeY; y++)
 					blocks[x, y, z] = ReadBlock();
 
 		loadGameData.Chunks = chunks;
@@ -94,19 +96,17 @@ public class PersistentStorage
 	}
 
 	#region Reading Methods
-	Chunk ReadChunk() => new Chunk()
+	Chunk ReadChunk() => new Chunk(ReadVector3Int(), ReadVector3Int())
 	{
-		Coord = ReadVector3Int(),
-		Position = ReadVector3Int(),
 		Status = ChunkStatus.NeedToBeRedrawn
 	};
 
 	Block[,,] ReadBlockDataArray()
 	{
 		var blocks = new Block[_chunkSize, _chunkSize, _chunkSize];
-		for (var z = 0; z < _chunkSize; z++)
-			for (var y = 0; y < _chunkSize; y++)
-				for (var x = 0; x < _chunkSize; x++)
+		for (int z = 0, y, x; z < _chunkSize; z++)
+			for (y = 0; y < _chunkSize; y++)
+				for (x = 0; x < _chunkSize; x++)
 					blocks[x, y, z] = ReadBlock();
 
 		return blocks;
@@ -190,9 +190,9 @@ public class PersistentStorage
 
 	void Write(Block[,,] blocks)
 	{
-		for (var z = 0; z < _chunkSize; z++)
-			for (var y = 0; y < _chunkSize; y++)
-				for (var x = 0; x < _chunkSize; x++)
+		for (int z = 0, y, x; z < _chunkSize; z++)
+			for (y = 0; y < _chunkSize; y++)
+				for (x = 0; x < _chunkSize; x++)
 					Write(blocks[x, y, z]);
 	}
 
@@ -234,7 +234,7 @@ public class PersistentStorage
 
 	void Write(List<Vector2> list)
 	{
-		foreach (var v in list)
+		foreach (Vector2 v in list)
 			Write(v);
 	}
 

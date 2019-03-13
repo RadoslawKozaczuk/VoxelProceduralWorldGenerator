@@ -73,12 +73,12 @@ namespace Assets.Scripts.World
 
 		/// <summary>
 		/// This method creates mesh data necessary to create a mesh.
-		/// Data for both terrain and water meshes are created.
+		/// Data for both terrain and water meshes is created.
 		/// </summary>
-		public void ExtractMeshData(ref Block[,,] blocks, ref Vector3Int chunkPos, out MeshData terrain, out MeshData water)
+		public void ExtractMeshData(ref Block[,,] blocks, in Vector3Int chunkPos, out MeshData terrain, out MeshData water)
 		{
 			_stopwatch.Restart();
-			CalculateMeshSize(ref blocks, ref chunkPos, out int tSize, out int wSize);
+			CalculateMeshSize(ref blocks, in chunkPos, out int tSize, out int wSize);
 
 			var terrainData = new MeshData
 			{
@@ -100,23 +100,32 @@ namespace Assets.Scripts.World
 
 			int index = 0, triIndex = 0, waterIndex = 0, waterTriIndex = 0;
 
-			for (int x = 0; x < World.ChunkSize; x++)
-				for (int y = 0; y < World.ChunkSize; y++)
-					for (int z = 0; z < World.ChunkSize; z++)
+			Vector3Int localBlockCoodinates = new Vector3Int();
+			for (int x = 0, y, z; x < World.ChunkSize; x++)
+			{
+				localBlockCoodinates.x = x;
+				for (y = 0; y < World.ChunkSize; y++)
+				{
+					localBlockCoodinates.y = y;
+					for (z = 0; z < World.ChunkSize; z++)
 					{
+						localBlockCoodinates.z = z;
+
 						// offset need to be included
-						var b = blocks[x + chunkPos.x, y + chunkPos.y, z + chunkPos.z];
+						ref Block b = ref blocks[x + chunkPos.x, y + chunkPos.y, z + chunkPos.z];
 
 						if (b.Faces == 0 || b.Type == BlockTypes.Air)
 							continue;
 
 						if (b.Type == BlockTypes.Water)
-							CreateWaterQuads(ref b, ref waterIndex, ref waterTriIndex, ref waterData, new Vector3(x, y, z));
+							CreateWaterQuads(ref b, ref waterIndex, ref waterTriIndex, ref waterData, ref localBlockCoodinates);
 						else if (b.Type == BlockTypes.Grass)
-							CreateGrassQuads(ref b, ref index, ref triIndex, ref terrainData, new Vector3(x, y, z));
+							CreateGrassQuads(ref b, ref index, ref triIndex, ref terrainData, ref localBlockCoodinates);
 						else
-							CreateStandardQuads(ref b, ref index, ref triIndex, ref terrainData, new Vector3(x, y, z));
+							CreateStandardQuads(ref b, ref index, ref triIndex, ref terrainData, ref localBlockCoodinates);
 					}
+				}
+			}
 
 			terrain = terrainData;
 			water = waterData;
@@ -189,65 +198,67 @@ namespace Assets.Scripts.World
 
 		public void RecalculateFacesAfterBlockBuild(ref Block[,,] blocks, int blockX, int blockY, int blockZ)
 		{
+			ref Block b = ref blocks[blockX, blockY, blockZ];
+
 			if (blockX > 0)
 			{
 				var type = blocks[blockX - 1, blockY, blockZ].Type;
 				if (type == BlockTypes.Air || type == BlockTypes.Water)
-					blocks[blockX, blockY, blockZ].Faces |= Cubesides.Left;
+					b.Faces |= Cubesides.Left;
 				else
 					blocks[blockX - 1, blockY, blockZ].Faces &= ~Cubesides.Right;
 			}
-			else blocks[blockX, blockY, blockZ].Faces |= Cubesides.Left;
+			else b.Faces |= Cubesides.Left;
 
 			if (blockX < _totalBlockNumberX - 1)
 			{
 				var type = blocks[blockX + 1, blockY, blockZ].Type;
 				if (type == BlockTypes.Air || type == BlockTypes.Water)
-					blocks[blockX, blockY, blockZ].Faces |= Cubesides.Right;
+					b.Faces |= Cubesides.Right;
 				else
 					blocks[blockX + 1, blockY, blockZ].Faces &= ~Cubesides.Left;
 			}
-			else blocks[blockX, blockY, blockZ].Faces |= Cubesides.Right;
+			else b.Faces |= Cubesides.Right;
 
 			if (blockY > 0)
 			{
 				var type = blocks[blockX, blockY - 1, blockZ].Type;
 				if (type == BlockTypes.Air || type == BlockTypes.Water)
-					blocks[blockX, blockY, blockZ].Faces |= Cubesides.Bottom;
+					b.Faces |= Cubesides.Bottom;
 				else
 					blocks[blockX, blockY - 1, blockZ].Faces &= ~Cubesides.Top;
 			}
-			else blocks[blockX, blockY, blockZ].Faces |= Cubesides.Bottom;
+			else b.Faces |= Cubesides.Bottom;
 
 			if (blockY < _totalBlockNumberY - 1)
 			{
 				var type = blocks[blockX, blockY + 1, blockZ].Type;
 				if (type == BlockTypes.Air || type == BlockTypes.Water)
-					blocks[blockX, blockY, blockZ].Faces |= Cubesides.Top;
+					b.Faces |= Cubesides.Top;
 				else
 					blocks[blockX, blockY + 1, blockZ].Faces &= ~Cubesides.Bottom;
 			}
-			else blocks[blockX, blockY, blockZ].Faces |= Cubesides.Top;
+			else b.Faces |= Cubesides.Top;
 
 			if (blockZ > 0)
 			{
 				var type = blocks[blockX, blockY, blockZ - 1].Type;
 				if (type == BlockTypes.Air || type == BlockTypes.Water)
-					blocks[blockX, blockY, blockZ].Faces |= Cubesides.Back;
+					b.Faces |= Cubesides.Back;
 				else
 					blocks[blockX, blockY, blockZ - 1].Faces &= ~Cubesides.Front;
 			}
-			else blocks[blockX, blockY, blockZ].Faces |= Cubesides.Back;
+			else b.Faces |= Cubesides.Back;
 
 			if (blockZ < _totalBlockNumberZ - 1)
 			{
 				var type = blocks[blockX, blockY, blockZ + 1].Type;
 				if (type == BlockTypes.Air || type == BlockTypes.Water)
-					blocks[blockX, blockY, blockZ].Faces |= Cubesides.Front;
+					b.Faces |= Cubesides.Front;
 				else
 					blocks[blockX, blockY, blockZ + 1].Faces &= ~Cubesides.Back;
 			}
-			else blocks[blockX, blockY, blockZ].Faces |= Cubesides.Front;
+			else b.Faces |= Cubesides.Front;
 		}
 
 		/// <summary>
@@ -255,12 +266,12 @@ namespace Assets.Scripts.World
 		/// </summary>
 		public void CalculateFaces(ref Block[,,] blocks)
 		{
-			// The number of checks that need to be changed with every potential change is enormous.
-			for (int x = 0; x < _totalBlockNumberX; x++)
-				for (int y = 0; y < _totalBlockNumberY; y++)
-					for (int z = 0; z < _totalBlockNumberZ; z++)
+			BlockTypes type = BlockTypes.Dirt;
+			for (int x = 0, y, z; x < _totalBlockNumberX; x++)
+				for (y = 0; y < _totalBlockNumberY; y++)
+					for (z = 0; z < _totalBlockNumberZ; z++)
 					{
-						var type = blocks[x, y, z].Type;
+						type = blocks[x, y, z].Type;
 
 						if (type == BlockTypes.Air)
 						{
@@ -322,20 +333,29 @@ namespace Assets.Scripts.World
 		/// </summary>
 		public void WorldBoundariesCheck(ref Block[,,] blocks)
 		{
-			// right world boundaries check
-			int x = _totalBlockNumberX - 1, y = 0, z = 0;
+			ref Block b = ref blocks[0, 0, 0];
 
+			// right world boundaries check
+			int x = _totalBlockNumberX - 1,
+				y = 0,
+				z = 0;
 			for (y = 0; y < _totalBlockNumberY; y++)
 				for (z = 0; z < _totalBlockNumberZ; z++)
-					if (blocks[x, y, z].Type != BlockTypes.Water && blocks[x, y, z].Type != BlockTypes.Air)
-						blocks[x, y, z].Faces |= Cubesides.Right;
+				{
+					b = ref blocks[x, y, z];
+					if (b.Type != BlockTypes.Water && b.Type != BlockTypes.Air)
+						b.Faces |= Cubesides.Right;
+				}
 
 			// left world boundaries check
 			x = 0;
 			for (y = 0; y < _totalBlockNumberY; y++)
 				for (z = 0; z < _totalBlockNumberZ; z++)
-					if (blocks[x, y, z].Type != BlockTypes.Water && blocks[x, y, z].Type != BlockTypes.Air)
-						blocks[x, y, z].Faces |= Cubesides.Left;
+				{
+					b = ref blocks[x, y, z];
+					if (b.Type != BlockTypes.Water && b.Type != BlockTypes.Air)
+						b.Faces |= Cubesides.Left;
+				}
 
 			// top world boundaries check
 			y = _totalBlockNumberY - 1;
@@ -353,44 +373,54 @@ namespace Assets.Scripts.World
 			z = _totalBlockNumberZ - 1;
 			for (x = 0; x < _totalBlockNumberX; x++)
 				for (y = 0; y < _totalBlockNumberY; y++)
-					if (blocks[x, y, z].Type != BlockTypes.Water && blocks[x, y, z].Type != BlockTypes.Air)
-						blocks[x, y, z].Faces |= Cubesides.Front;
+				{
+					b = ref blocks[x, y, z];
+					if (b.Type != BlockTypes.Water && b.Type != BlockTypes.Air)
+						b.Faces |= Cubesides.Front;
+				}
 
 			// back world boundaries check
 			z = 0;
 			for (x = 0; x < _totalBlockNumberX; x++)
 				for (y = 0; y < _totalBlockNumberY; y++)
-					if (blocks[x, y, z].Type != BlockTypes.Water && blocks[x, y, z].Type != BlockTypes.Air)
-						blocks[x, y, z].Faces |= Cubesides.Back;
+				{
+					b = ref blocks[x, y, z];
+					if (b.Type != BlockTypes.Water && b.Type != BlockTypes.Air)
+						b.Faces |= Cubesides.Back;
+				}
 		}
 
-		void CalculateMeshSize(ref Block[,,] blocks, ref Vector3Int chunkCoord, out int tSize, out int wSize)
+		void CalculateMeshSize(ref Block[,,] blocks, in Vector3Int chunkCoord, out int tSize, out int wSize)
 		{
 			tSize = 0;
 			wSize = 0;
 
+			ref Block b = ref blocks[0, 0, 0]; // assign anything
+
 			// offset needs to be calculated
-			for (int x = chunkCoord.x; x < chunkCoord.x + World.ChunkSize; x++)
-				for (int y = chunkCoord.y; y < chunkCoord.y + World.ChunkSize; y++)
-					for (int z = chunkCoord.z; z < chunkCoord.z + World.ChunkSize; z++)
+			for (int x = chunkCoord.x, y, z; x < chunkCoord.x + World.ChunkSize; x++)
+				for (y = chunkCoord.y; y < chunkCoord.y + World.ChunkSize; y++)
+					for (z = chunkCoord.z; z < chunkCoord.z + World.ChunkSize; z++)
 					{
-						if (blocks[x, y, z].Type == BlockTypes.Water)
+						b = ref blocks[x, y, z];
+
+						if (b.Type == BlockTypes.Water)
 						{
-							if ((blocks[x, y, z].Faces & Cubesides.Top) == Cubesides.Top) wSize += 4;
+							if ((b.Faces & Cubesides.Top) == Cubesides.Top) wSize += 4;
 						}
-						else if (blocks[x, y, z].Type != BlockTypes.Air)
+						else if (b.Type != BlockTypes.Air)
 						{
-							if ((blocks[x, y, z].Faces & Cubesides.Right) == Cubesides.Right) tSize += 4;
-							if ((blocks[x, y, z].Faces & Cubesides.Left) == Cubesides.Left) tSize += 4;
-							if ((blocks[x, y, z].Faces & Cubesides.Top) == Cubesides.Top) tSize += 4;
-							if ((blocks[x, y, z].Faces & Cubesides.Bottom) == Cubesides.Bottom) tSize += 4;
-							if ((blocks[x, y, z].Faces & Cubesides.Front) == Cubesides.Front) tSize += 4;
-							if ((blocks[x, y, z].Faces & Cubesides.Back) == Cubesides.Back) tSize += 4;
+							if ((b.Faces & Cubesides.Right) == Cubesides.Right) tSize += 4;
+							if ((b.Faces & Cubesides.Left) == Cubesides.Left) tSize += 4;
+							if ((b.Faces & Cubesides.Top) == Cubesides.Top) tSize += 4;
+							if ((b.Faces & Cubesides.Bottom) == Cubesides.Bottom) tSize += 4;
+							if ((b.Faces & Cubesides.Front) == Cubesides.Front) tSize += 4;
+							if ((b.Faces & Cubesides.Back) == Cubesides.Back) tSize += 4;
 						}
 					}
 		}
 
-		void CreateStandardQuads(ref Block block, ref int index, ref int triIndex, ref MeshData data, Vector3 localBlockCoord)
+		void CreateStandardQuads(ref Block block, ref int index, ref int triIndex, ref MeshData data, ref Vector3Int localBlockCoord)
 		{
 			int typeIndex = (int)block.Type;
 
@@ -449,7 +479,7 @@ namespace Assets.Scripts.World
 			}
 		}
 
-		void CreateGrassQuads(ref Block block, ref int index, ref int triIndex, ref MeshData data, Vector3 localBlockCoord)
+		void CreateGrassQuads(ref Block block, ref int index, ref int triIndex, ref MeshData data, ref Vector3Int localBlockCoord)
 		{
 			int typeIndex = (int)block.Type;
 
@@ -516,7 +546,7 @@ namespace Assets.Scripts.World
 			}
 		}
 
-		void CreateWaterQuads(ref Block block, ref int index, ref int triIndex, ref MeshData data, Vector3 localBlockCoord)
+		void CreateWaterQuads(ref Block block, ref int index, ref int triIndex, ref MeshData data, ref Vector3Int localBlockCoord)
 		{
 			// all possible UVs
 			// left-top, right-top, left-bottom, right-bottom
@@ -531,9 +561,7 @@ namespace Assets.Scripts.World
 					_p7 + localBlockCoord, _p6 + localBlockCoord, _p5 + localBlockCoord, _p4 + localBlockCoord);
 		}
 
-		void AddQuadComponents(ref int index, ref int triIndex,
-			ref MeshData data,
-			Vector3 normal,
+		void AddQuadComponents(ref int index, ref int triIndex,	ref MeshData data, Vector3 normal,
 			Vector2 uv11, Vector2 uv01, Vector2 uv00, Vector2 uv10,
 			Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3)
 		{
@@ -598,5 +626,4 @@ namespace Assets.Scripts.World
 			return crackUVs;
 		}
 	}
-
 }
