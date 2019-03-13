@@ -125,9 +125,7 @@ namespace Assets.Scripts.World
 			for (int i = 0; i < oct; i++)
 			{
 				total += Mathf.PerlinNoise((x + SeedValue) * frequency, (z + SeedValue) * frequency) * amplitude;
-
 				maxValue += amplitude;
-
 				amplitude *= pers;
 				frequency *= 2;
 			}
@@ -207,19 +205,16 @@ namespace Assets.Scripts.World
 
 		public void AddWater(ref Block[,,] blocks)
 		{
-			// first run - changes Air blocks of the WaterLevel and one level below into Water blocks
-			for (int x = 0; x < _totalBlockNumberX; x++)
-			{
-				for (int z = 0; z < _totalBlockNumberZ; z++)
-				{
+			// first run - turn all Air blocks at the WaterLevel and one level below into Water blocks
+			for (int x = 0, z; x < _totalBlockNumberX; x++)
+				for (z = 0; z < _totalBlockNumberZ; z++)
 					if (blocks[x, WaterLevel, z].Type == BlockTypes.Air)
 					{
 						blocks[x, WaterLevel, z].Type = BlockTypes.Water;
 						if (blocks[x, WaterLevel - 1, z].Type == BlockTypes.Air) // level down scan
 							blocks[x, WaterLevel - 1, z].Type = BlockTypes.Water;
 					}
-				}
-			}
+
 			PropagateWaterHorizontally(ref blocks, WaterLevel - 1);
 
 			int currentY = WaterLevel - 1;
@@ -235,16 +230,23 @@ namespace Assets.Scripts.World
 			}
 		}
 
-		// this is very computationally heavy in relation to the relative simplicity of the task
+		// This is very computationally heavy in relation to the relative simplicity of the task.
+		// I think what could be done here to improve the performance is to narrow down the search
+		// area to minX, maxX, minY and maxY (all +1 in their respective directions) of what
+		// was found in the previous iteration.
+		// Although it requires some testing too see if it provides any performance boost.
 		void PropagateWaterHorizontally(ref Block[,,] blocks, int currentY)
 		{
 			bool reiterate = true;
 
+			// true if at least one water block was added in the previous iteration
 			while (reiterate)
 			{
 				reiterate = false;
-				for (int x = 0; x < _totalBlockNumberX; x++)
-					for (int z = 0; z < _totalBlockNumberZ; z++)
+
+				int x, z;
+				for (x = 0; x < _totalBlockNumberX; x++)
+					for (z = 0; z < _totalBlockNumberZ; z++)
 						if (blocks[x, currentY, z].Type == BlockTypes.Water)
 						{
 							if (x < _totalBlockNumberX - 1 && blocks[x + 1, currentY, z].Type == BlockTypes.Air) // right
@@ -336,9 +338,10 @@ namespace Assets.Scripts.World
 			CreateBlock(ref blocks[x, y + 1, z], BlockTypes.Wood);
 			CreateBlock(ref blocks[x, y + 2, z], BlockTypes.Wood);
 
-			for (int i = -1; i <= 1; i++)
-				for (int j = -1; j <= 1; j++)
-					for (int k = 3; k <= 4; k++)
+			int i, j, k;
+			for (i = -1; i <= 1; i++)
+				for (j = -1; j <= 1; j++)
+					for (k = 3; k <= 4; k++)
 						CreateBlock(ref blocks[x + i, y + k, z + j], BlockTypes.Leaves);
 
 			CreateBlock(ref blocks[x, y + 5, z], BlockTypes.Leaves);

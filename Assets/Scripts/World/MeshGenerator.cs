@@ -199,10 +199,11 @@ namespace Assets.Scripts.World
 		public void RecalculateFacesAfterBlockBuild(ref Block[,,] blocks, int blockX, int blockY, int blockZ)
 		{
 			ref Block b = ref blocks[blockX, blockY, blockZ];
+			BlockTypes type;
 
 			if (blockX > 0)
 			{
-				var type = blocks[blockX - 1, blockY, blockZ].Type;
+				type = blocks[blockX - 1, blockY, blockZ].Type;
 				if (type == BlockTypes.Air || type == BlockTypes.Water)
 					b.Faces |= Cubesides.Left;
 				else
@@ -212,7 +213,7 @@ namespace Assets.Scripts.World
 
 			if (blockX < _totalBlockNumberX - 1)
 			{
-				var type = blocks[blockX + 1, blockY, blockZ].Type;
+				type = blocks[blockX + 1, blockY, blockZ].Type;
 				if (type == BlockTypes.Air || type == BlockTypes.Water)
 					b.Faces |= Cubesides.Right;
 				else
@@ -222,7 +223,7 @@ namespace Assets.Scripts.World
 
 			if (blockY > 0)
 			{
-				var type = blocks[blockX, blockY - 1, blockZ].Type;
+				type = blocks[blockX, blockY - 1, blockZ].Type;
 				if (type == BlockTypes.Air || type == BlockTypes.Water)
 					b.Faces |= Cubesides.Bottom;
 				else
@@ -232,7 +233,7 @@ namespace Assets.Scripts.World
 
 			if (blockY < _totalBlockNumberY - 1)
 			{
-				var type = blocks[blockX, blockY + 1, blockZ].Type;
+				type = blocks[blockX, blockY + 1, blockZ].Type;
 				if (type == BlockTypes.Air || type == BlockTypes.Water)
 					b.Faces |= Cubesides.Top;
 				else
@@ -242,7 +243,7 @@ namespace Assets.Scripts.World
 
 			if (blockZ > 0)
 			{
-				var type = blocks[blockX, blockY, blockZ - 1].Type;
+				type = blocks[blockX, blockY, blockZ - 1].Type;
 				if (type == BlockTypes.Air || type == BlockTypes.Water)
 					b.Faces |= Cubesides.Back;
 				else
@@ -252,7 +253,7 @@ namespace Assets.Scripts.World
 
 			if (blockZ < _totalBlockNumberZ - 1)
 			{
-				var type = blocks[blockX, blockY, blockZ + 1].Type;
+				type = blocks[blockX, blockY, blockZ + 1].Type;
 				if (type == BlockTypes.Air || type == BlockTypes.Water)
 					b.Faces |= Cubesides.Front;
 				else
@@ -266,8 +267,10 @@ namespace Assets.Scripts.World
 		/// </summary>
 		public void CalculateFaces(ref Block[,,] blocks)
 		{
-			BlockTypes type = BlockTypes.Dirt;
-			for (int x = 0, y, z; x < _totalBlockNumberX; x++)
+			BlockTypes type;
+
+			int x, y, z;
+			for (x = 0; x < _totalBlockNumberX; x++)
 				for (y = 0; y < _totalBlockNumberY; y++)
 					for (z = 0; z < _totalBlockNumberZ; z++)
 					{
@@ -333,7 +336,7 @@ namespace Assets.Scripts.World
 		/// </summary>
 		public void WorldBoundariesCheck(ref Block[,,] blocks)
 		{
-			ref Block b = ref blocks[0, 0, 0];
+			ref Block b = ref blocks[0, 0, 0]; // compilator requires initialization
 
 			// right world boundaries check
 			int x = _totalBlockNumberX - 1,
@@ -398,7 +401,8 @@ namespace Assets.Scripts.World
 			ref Block b = ref blocks[0, 0, 0]; // assign anything
 
 			// offset needs to be calculated
-			for (int x = chunkCoord.x, y, z; x < chunkCoord.x + World.ChunkSize; x++)
+			int x, y, z;
+			for (x = chunkCoord.x; x < chunkCoord.x + World.ChunkSize; x++)
 				for (y = chunkCoord.y; y < chunkCoord.y + World.ChunkSize; y++)
 					for (z = chunkCoord.z; z < chunkCoord.z + World.ChunkSize; z++)
 					{
