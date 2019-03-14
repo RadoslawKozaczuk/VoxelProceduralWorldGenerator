@@ -415,16 +415,25 @@ namespace Assets.Scripts.World
 
 						if (b.Type == BlockTypes.Water)
 						{
-							if ((b.Faces & Cubesides.Top) == Cubesides.Top) wSize += 4;
+							if ((b.Faces & Cubesides.Top) == Cubesides.Top)
+								wSize += 4;
 						}
 						else if (b.Type != BlockTypes.Air)
 						{
-							if ((b.Faces & Cubesides.Right) == Cubesides.Right) tSize += 4;
-							if ((b.Faces & Cubesides.Left) == Cubesides.Left) tSize += 4;
-							if ((b.Faces & Cubesides.Top) == Cubesides.Top) tSize += 4;
-							if ((b.Faces & Cubesides.Bottom) == Cubesides.Bottom) tSize += 4;
-							if ((b.Faces & Cubesides.Front) == Cubesides.Front) tSize += 4;
-							if ((b.Faces & Cubesides.Back) == Cubesides.Back) tSize += 4;
+							// Around two times faster (which is still insignificant at all in this context - 10ms on a 7*4*7 map...).
+							// Although, I still decided to leave it here for learning purpose.
+							// Unfortunately, I cannot make it a method and not lose all the little gain it gives as the compiler
+							// does not care about my inlining suggestions at all...
+
+							// count all the 1s (bit-wise) in the given number
+							int bitCount = 0;
+							int n = (int)b.Faces;
+							while (n != 0)
+							{
+								bitCount++;
+								n &= n - 1;
+							}
+							tSize += bitCount * 4;
 						}
 					}
 		}
@@ -493,8 +502,6 @@ namespace Assets.Scripts.World
 		void CreateGrassQuads(ref Block block, ref int index, ref int triIndex, ref MeshData data, ref Vector3Int localBlockCoord)
 		{
 			int typeIndex = (int)block.Type;
-
-			var restIndex = typeIndex - 10;
 			Vector2 uv00side = _blockUVs[typeIndex + 1, 0],
 					uv10side = _blockUVs[typeIndex + 1, 1],
 					uv01side = _blockUVs[typeIndex + 1, 2],
@@ -515,6 +522,7 @@ namespace Assets.Scripts.World
 
 			if (block.Faces.HasFlag(Cubesides.Bottom))
 			{
+				int restIndex = typeIndex - 10;
 				Vector2 uv00bot = _blockUVs[restIndex, 0],
 						uv10bot = _blockUVs[restIndex, 1],
 						uv01bot = _blockUVs[restIndex, 2],
