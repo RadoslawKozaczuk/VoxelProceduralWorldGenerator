@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 
 namespace Assets.Scripts.World
@@ -75,10 +76,10 @@ namespace Assets.Scripts.World
 		/// This method creates mesh data necessary to create a mesh.
 		/// Data for both terrain and water meshes is created.
 		/// </summary>
-		public void ExtractMeshData(ref Block[,,] blocks, in Vector3Int chunkPos, out MeshData terrain, out MeshData water)
+		public void ExtractMeshData(ref Block[,,] blocks, ref Vector3Int chunkPos, out MeshData terrain, out MeshData water)
 		{
 			_stopwatch.Restart();
-			CalculateMeshSize(ref blocks, in chunkPos, out int tSize, out int wSize);
+			CalculateMeshSize(ref blocks, ref chunkPos, out int tSize, out int wSize);
 
 			var terrainData = new MeshData
 			{
@@ -118,7 +119,10 @@ namespace Assets.Scripts.World
 							continue;
 
 						if (b.Type == BlockTypes.Water)
-							CreateWaterQuads(ref b, ref waterIndex, ref waterTriIndex, ref waterData, ref localBlockCoodinates);
+						{
+							if (b.Faces.HasFlag(Cubesides.Top))
+								CreateWaterQuad(ref b, ref waterIndex, ref waterTriIndex, ref waterData, ref localBlockCoodinates);
+						}
 						else if (b.Type == BlockTypes.Grass)
 							CreateGrassQuads(ref b, ref index, ref triIndex, ref terrainData, ref localBlockCoodinates);
 						else
@@ -393,7 +397,8 @@ namespace Assets.Scripts.World
 				}
 		}
 
-		void CalculateMeshSize(ref Block[,,] blocks, in Vector3Int chunkCoord, out int tSize, out int wSize)
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		void CalculateMeshSize(ref Block[,,] blocks, ref Vector3Int chunkPos, out int tSize, out int wSize)
 		{
 			tSize = 0;
 			wSize = 0;
@@ -402,9 +407,9 @@ namespace Assets.Scripts.World
 
 			// offset needs to be calculated
 			int x, y, z;
-			for (x = chunkCoord.x; x < chunkCoord.x + World.ChunkSize; x++)
-				for (y = chunkCoord.y; y < chunkCoord.y + World.ChunkSize; y++)
-					for (z = chunkCoord.z; z < chunkCoord.z + World.ChunkSize; z++)
+			for (x = chunkPos.x; x < chunkPos.x + World.ChunkSize; x++)
+				for (y = chunkPos.y; y < chunkPos.y + World.ChunkSize; y++)
+					for (z = chunkPos.z; z < chunkPos.z + World.ChunkSize; z++)
 					{
 						b = ref blocks[x, y, z];
 
@@ -424,6 +429,7 @@ namespace Assets.Scripts.World
 					}
 		}
 
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		void CreateStandardQuads(ref Block block, ref int index, ref int triIndex, ref MeshData data, ref Vector3Int localBlockCoord)
 		{
 			int typeIndex = (int)block.Type;
@@ -437,7 +443,7 @@ namespace Assets.Scripts.World
 			if (block.Faces.HasFlag(Cubesides.Top))
 			{
 				AddQuadComponents(ref index, ref triIndex, ref data, Vector3.up,
-					uv11, uv01, uv00, uv10,
+					ref uv11, ref uv01, ref uv00, ref uv10,
 					_p7 + localBlockCoord, _p6 + localBlockCoord, _p5 + localBlockCoord, _p4 + localBlockCoord);
 				AddSuvs(ref block, ref data);
 			}
@@ -445,7 +451,7 @@ namespace Assets.Scripts.World
 			if (block.Faces.HasFlag(Cubesides.Bottom))
 			{
 				AddQuadComponents(ref index, ref triIndex, ref data, Vector3.down,
-					uv11, uv01, uv00, uv10,
+					ref uv11, ref uv01, ref uv00, ref uv10,
 					_p0 + localBlockCoord, _p1 + localBlockCoord, _p2 + localBlockCoord, _p3 + localBlockCoord);
 				AddSuvs(ref block, ref data);
 			}
@@ -453,7 +459,7 @@ namespace Assets.Scripts.World
 			if (block.Faces.HasFlag(Cubesides.Left))
 			{
 				AddQuadComponents(ref index, ref triIndex, ref data, Vector3.left,
-					uv11, uv01, uv00, uv10,
+					ref uv11, ref uv01, ref uv00, ref uv10,
 					_p7 + localBlockCoord, _p4 + localBlockCoord, _p0 + localBlockCoord, _p3 + localBlockCoord);
 				AddSuvs(ref block, ref data);
 			}
@@ -461,7 +467,7 @@ namespace Assets.Scripts.World
 			if (block.Faces.HasFlag(Cubesides.Right))
 			{
 				AddQuadComponents(ref index, ref triIndex, ref data, Vector3.right,
-					uv11, uv01, uv00, uv10,
+					ref uv11, ref uv01, ref uv00, ref uv10,
 					_p5 + localBlockCoord, _p6 + localBlockCoord, _p2 + localBlockCoord, _p1 + localBlockCoord);
 				AddSuvs(ref block, ref data);
 			}
@@ -469,7 +475,7 @@ namespace Assets.Scripts.World
 			if (block.Faces.HasFlag(Cubesides.Front))
 			{
 				AddQuadComponents(ref index, ref triIndex, ref data, Vector3.forward,
-					uv11, uv01, uv00, uv10,
+					ref uv11, ref uv01, ref uv00, ref uv10,
 					_p4 + localBlockCoord, _p5 + localBlockCoord, _p1 + localBlockCoord, _p0 + localBlockCoord);
 				AddSuvs(ref block, ref data);
 			}
@@ -477,42 +483,45 @@ namespace Assets.Scripts.World
 			if (block.Faces.HasFlag(Cubesides.Back))
 			{
 				AddQuadComponents(ref index, ref triIndex, ref data, Vector3.back,
-					uv11, uv01, uv00, uv10,
+					ref uv11, ref uv01, ref uv00, ref uv10,
 					_p6 + localBlockCoord, _p7 + localBlockCoord, _p3 + localBlockCoord, _p2 + localBlockCoord);
 				AddSuvs(ref block, ref data);
 			}
 		}
 
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		void CreateGrassQuads(ref Block block, ref int index, ref int triIndex, ref MeshData data, ref Vector3Int localBlockCoord)
 		{
 			int typeIndex = (int)block.Type;
 
 			var restIndex = typeIndex - 10;
-			Vector2 uv00top = _blockUVs[typeIndex, 0],
-					uv10top = _blockUVs[typeIndex, 1],
-					uv01top = _blockUVs[typeIndex, 2],
-					uv11top = _blockUVs[typeIndex, 3],
-					uv00bot = _blockUVs[restIndex, 0],
-					uv10bot = _blockUVs[restIndex, 1],
-					uv01bot = _blockUVs[restIndex, 2],
-					uv11bot = _blockUVs[restIndex, 3],
-					uv00side = _blockUVs[typeIndex + 1, 0],
+			Vector2 uv00side = _blockUVs[typeIndex + 1, 0],
 					uv10side = _blockUVs[typeIndex + 1, 1],
 					uv01side = _blockUVs[typeIndex + 1, 2],
 					uv11side = _blockUVs[typeIndex + 1, 3];
 
 			if (block.Faces.HasFlag(Cubesides.Top))
 			{
+				Vector2 uv00top = _blockUVs[typeIndex, 0],
+						uv10top = _blockUVs[typeIndex, 1],
+						uv01top = _blockUVs[typeIndex, 2],
+						uv11top = _blockUVs[typeIndex, 3];
+
 				AddQuadComponents(ref index, ref triIndex, ref data, Vector3.up,
-					uv11top, uv01top, uv00top, uv10top,
+					ref uv11top, ref uv01top, ref uv00top, ref uv10top,
 					_p7 + localBlockCoord, _p6 + localBlockCoord, _p5 + localBlockCoord, _p4 + localBlockCoord);
 				AddSuvs(ref block, ref data);
 			}
 
 			if (block.Faces.HasFlag(Cubesides.Bottom))
 			{
+				Vector2 uv00bot = _blockUVs[restIndex, 0],
+						uv10bot = _blockUVs[restIndex, 1],
+						uv01bot = _blockUVs[restIndex, 2],
+						uv11bot = _blockUVs[restIndex, 3];
+
 				AddQuadComponents(ref index, ref triIndex, ref data, Vector3.down,
-					uv11bot, uv01bot, uv00bot, uv10bot,
+					ref uv11bot, ref uv01bot, ref uv00bot, ref uv10bot,
 					_p0 + localBlockCoord, _p1 + localBlockCoord, _p2 + localBlockCoord, _p3 + localBlockCoord);
 				AddSuvs(ref block, ref data);
 			}
@@ -520,7 +529,7 @@ namespace Assets.Scripts.World
 			if (block.Faces.HasFlag(Cubesides.Left))
 			{
 				AddQuadComponents(ref index, ref triIndex, ref data, Vector3.left,
-					uv00side, uv10side, uv11side, uv01side,
+					ref uv00side, ref uv10side, ref uv11side, ref uv01side,
 					_p7 + localBlockCoord, _p4 + localBlockCoord, _p0 + localBlockCoord, _p3 + localBlockCoord);
 				AddSuvs(ref block, ref data);
 			}
@@ -528,7 +537,7 @@ namespace Assets.Scripts.World
 			if (block.Faces.HasFlag(Cubesides.Right))
 			{
 				AddQuadComponents(ref index, ref triIndex, ref data, Vector3.right,
-					uv00side, uv10side, uv11side, uv01side,
+					ref uv00side, ref uv10side, ref uv11side, ref uv01side,
 					_p5 + localBlockCoord, _p6 + localBlockCoord, _p2 + localBlockCoord, _p1 + localBlockCoord);
 				AddSuvs(ref block, ref data);
 			}
@@ -536,7 +545,7 @@ namespace Assets.Scripts.World
 			if (block.Faces.HasFlag(Cubesides.Front))
 			{
 				AddQuadComponents(ref index, ref triIndex, ref data, Vector3.forward,
-					uv00side, uv10side, uv11side, uv01side,
+					ref uv00side, ref uv10side, ref uv11side, ref uv01side,
 					_p4 + localBlockCoord, _p5 + localBlockCoord, _p1 + localBlockCoord, _p0 + localBlockCoord);
 				AddSuvs(ref block, ref data);
 			}
@@ -544,13 +553,14 @@ namespace Assets.Scripts.World
 			if (block.Faces.HasFlag(Cubesides.Back))
 			{
 				AddQuadComponents(ref index, ref triIndex, ref data, Vector3.back,
-					uv00side, uv10side, uv11side, uv01side,
+					ref uv00side, ref uv10side, ref uv11side, ref uv01side,
 					_p6 + localBlockCoord, _p7 + localBlockCoord, _p3 + localBlockCoord, _p2 + localBlockCoord);
 				AddSuvs(ref block, ref data);
 			}
 		}
 
-		void CreateWaterQuads(ref Block block, ref int index, ref int triIndex, ref MeshData data, ref Vector3Int localBlockCoord)
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		void CreateWaterQuad(ref Block block, ref int index, ref int triIndex, ref MeshData data, ref Vector3Int localBlockCoord)
 		{
 			// all possible UVs
 			// left-top, right-top, left-bottom, right-bottom
@@ -559,14 +569,13 @@ namespace Assets.Scripts.World
 					uv01 = new Vector2(waterUvConst * localBlockCoord.x, 1 - waterUvConst * (localBlockCoord.z + 1)),
 					uv11 = new Vector2(waterUvConst * (localBlockCoord.x + 1), 1 - waterUvConst * (localBlockCoord.z + 1));
 
-			if (block.Faces.HasFlag(Cubesides.Top))
-				AddQuadComponents(ref index, ref triIndex, ref data, Vector3.up,
-					uv11, uv01, uv00, uv10,
-					_p7 + localBlockCoord, _p6 + localBlockCoord, _p5 + localBlockCoord, _p4 + localBlockCoord);
+			AddQuadComponents(ref index, ref triIndex, ref data, Vector3.up,
+				ref uv11, ref uv01, ref uv00, ref uv10,
+				_p7 + localBlockCoord, _p6 + localBlockCoord, _p5 + localBlockCoord, _p4 + localBlockCoord);
 		}
 
 		void AddQuadComponents(ref int index, ref int triIndex,	ref MeshData data, Vector3 normal,
-			Vector2 uv11, Vector2 uv01, Vector2 uv00, Vector2 uv10,
+			ref Vector2 uv11, ref Vector2 uv01, ref Vector2 uv00, ref Vector2 uv10,
 			Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3)
 		{
 			// add normals

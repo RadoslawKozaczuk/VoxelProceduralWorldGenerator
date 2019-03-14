@@ -1,6 +1,4 @@
-﻿using UnityEngine;
-
-public class LookupTables : MonoBehaviour
+﻿public readonly struct LookupTables
 {
 	// this corresponds to the BlockType enum
 	public static readonly byte[] BlockHealthMax = {

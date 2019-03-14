@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -233,12 +234,13 @@ namespace Assets.Scripts.World
 
 			AlreadyGenerated += 4;
 
+			Chunk c;
 			for (int x = 0, y, z; x < Settings.WorldSizeX; x++)
 				for (z = 0; z < Settings.WorldSizeZ; z++)
 					for (y = 0; y < WorldSizeY; y++)
 					{
-						var loaded = save.Chunks[x, y, z];
-						var c = new Chunk(loaded.Coord, loaded.Position, ChunkStatus.NeedToBeRedrawn);
+						c = save.Chunks[x, y, z];
+						c.Status = ChunkStatus.NeedToBeRedrawn;
 
 						if (firstRun)
 						{
@@ -267,18 +269,19 @@ namespace Assets.Scripts.World
 			_stopwatch.Restart();
 			Status = WorldGeneratorStatus.GeneratingMeshes;
 
+			Chunk c;
 			for (int x = 0, y, z; x < Settings.WorldSizeX; x++)
 				for (z = 0; z < Settings.WorldSizeZ; z++)
 					for (y = 0; y < WorldSizeY; y++)
 					{
-						Chunk c = Chunks[x, y, z];
+						c = Chunks[x, y, z];
 
 						// out: This method sets the value of the argument used as this parameter.
 						// ref: This method may set the value of the argument used as this parameter.
 						// in: This method doesn't modify the value of the argument used as this parameter,
-						//		it should only be applied to readonly structs, otherwise it harms the performance
-						//		because the compilator has to make defensive copies just to be safe.
-						_meshGenerator.ExtractMeshData(ref Blocks, in c.Position, out MeshData terrainData, out MeshData waterData);
+						//		it should only be applied to immutable structs (readonly struct and all fields readonly),
+						//		otherwise it harms the performance because the compilator has to make defensive copies.
+						_meshGenerator.ExtractMeshData(ref Blocks, ref c.Position, out MeshData terrainData, out MeshData waterData);
 						CreateRenderingComponents(c, terrainData, waterData);
 						c.Status = ChunkStatus.Created;
 
@@ -362,7 +365,7 @@ namespace Assets.Scripts.World
 		void RecreateMeshAndCollider(Chunk c)
 		{
 			DestroyImmediate(c.Terrain.GetComponent<Collider>());
-			_meshGenerator.ExtractMeshData(ref Blocks, in c.Position, out MeshData t, out MeshData w);
+			_meshGenerator.ExtractMeshData(ref Blocks, ref c.Position, out MeshData t, out MeshData w);
 			var tm = _meshGenerator.CreateMesh(t);
 			var wm = _meshGenerator.CreateMesh(w);
 
@@ -383,7 +386,7 @@ namespace Assets.Scripts.World
 		/// </summary>
 		void RecreateTerrainMesh(Chunk c)
 		{
-			_meshGenerator.ExtractMeshData(ref Blocks, in c.Position, out MeshData t, out MeshData w);
+			_meshGenerator.ExtractMeshData(ref Blocks, ref c.Position, out MeshData t, out MeshData w);
 			var tm = _meshGenerator.CreateMesh(t);
 
 			var meshFilter = c.Terrain.GetComponent<MeshFilter>();
@@ -392,6 +395,7 @@ namespace Assets.Scripts.World
 			c.Status = ChunkStatus.Created;
 		}
 
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		void CreateGameObjects(Chunk c)
 		{
 			string name = c.Coord.x.ToString() + c.Coord.y + c.Coord.z;

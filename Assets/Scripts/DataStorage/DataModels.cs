@@ -28,7 +28,7 @@ public struct Block
 public class Chunk
 {
 	public readonly Vector3Int Coord; // coordinates are only used for GameObject naming as of now
-	public readonly Vector3Int Position;
+	public Vector3Int Position;
 	public GameObject Terrain;
 	public GameObject Water;
 	public ChunkStatus Status;
