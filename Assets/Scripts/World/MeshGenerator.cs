@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using UnityEngine;
 
@@ -8,9 +7,6 @@ namespace Assets.Scripts.World
 	public class MeshGenerator
 	{
 		const float waterUvConst = 1.0f / World.ChunkSize;
-
-		Stopwatch _stopwatch = new Stopwatch();
-		long _accumulatedExtractMeshDataTime, _accumulatedCreateMeshTime;
 
 		#region Readonly lookup tables
 		readonly Vector2[,] _blockUVs = {
@@ -43,7 +39,7 @@ namespace Assets.Scripts.World
 							new Vector2(0.1875f, 1.0f), new Vector2(0.25f, 1.0f)},
 
 		// BUG: Tile sheet provided is broken and some tiles overlaps each other
-	};
+		};
 
 		// order goes as follows
 		// NoCrack, Crack1, Crack2, Crack3, Crack4, Crack5, Crack6, Crack7, Crack8, Crack9, Crack10
@@ -78,7 +74,6 @@ namespace Assets.Scripts.World
 		/// </summary>
 		public void ExtractMeshData(ref Block[,,] blocks, ref Vector3Int chunkPos, out MeshData terrain, out MeshData water)
 		{
-			_stopwatch.Restart();
 			CalculateMeshSize(ref blocks, ref chunkPos, out int tSize, out int wSize);
 
 			var terrainData = new MeshData
@@ -101,7 +96,7 @@ namespace Assets.Scripts.World
 
 			int index = 0, triIndex = 0, waterIndex = 0, waterTriIndex = 0;
 
-			Vector3Int localBlockCoodinates = new Vector3Int();
+			var localBlockCoodinates = new Vector3Int();
 			for (int x = 0, y, z; x < World.ChunkSize; x++)
 			{
 				localBlockCoodinates.x = x;
@@ -133,15 +128,10 @@ namespace Assets.Scripts.World
 
 			terrain = terrainData;
 			water = waterData;
-
-			_stopwatch.Stop();
-			_accumulatedExtractMeshDataTime += _stopwatch.ElapsedMilliseconds;
 		}
 
 		public Mesh CreateMesh(MeshData meshData)
 		{
-			_stopwatch.Restart();
-
 			var mesh = new Mesh
 			{
 				vertices = meshData.Verticies,
@@ -152,16 +142,7 @@ namespace Assets.Scripts.World
 			mesh.SetUVs(1, meshData.Suvs); // secondary uvs
 			mesh.RecalculateBounds();
 
-			_stopwatch.Stop();
-			_accumulatedCreateMeshTime += _stopwatch.ElapsedMilliseconds;
-
 			return mesh;
-		}
-
-		public void LogTimeSpent()
-		{
-			UnityEngine.Debug.Log($"It took {_accumulatedExtractMeshDataTime} ms to extract all mesh data.");
-			UnityEngine.Debug.Log($"It took {_accumulatedCreateMeshTime} ms to generate all meshes.");
 		}
 
 		public void RecalculateFacesAfterBlockDestroy(ref Block[,,] blocks, int blockX, int blockY, int blockZ)
