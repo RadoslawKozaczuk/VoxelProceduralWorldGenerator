@@ -1,4 +1,5 @@
-﻿using Unity.Collections;
+﻿using System.Runtime.CompilerServices;
+using Unity.Collections;
 using Unity.Jobs;
 using UnityEngine;
 
@@ -230,6 +231,30 @@ namespace Assets.Scripts.World
 			}
 		}
 
+		public void AddTrees(ref Block[,,] blocks)
+		{
+			// no trees
+			if (TreeProbability == TreeProbability.None)
+				return;
+
+			float woodbaseProbability = TreeProbability == TreeProbability.Some
+				? WoodbaseSomeProbability
+				: WoodbaseHighProbability;
+
+			for (int x = 1, y, z; x < _totalBlockNumberX - 1; x++)
+				// this 20 is hard coded as for now but generally it would be nice if
+				// this loop could know in advance where is the lowest grass
+				for (y = 20; y < _totalBlockNumberY - TreeHeight - 1; y++)
+					for (z = 1; z < _totalBlockNumberZ - 1; z++)
+					{
+						if (blocks[x, y, z].Type != BlockTypes.Grass) continue;
+
+						if (IsThereEnoughSpaceForTree(in blocks, x, y, z))
+							if (FractalFunc(x, y, z, WoodbaseSmooth, WoodbaseOctaves) < woodbaseProbability)
+								BuildTree(ref blocks, x, y, z);
+					}
+		}
+
 		// This is very computationally heavy in relation to the relative simplicity of the task.
 		// I think what could be done here to improve the performance is to narrow down the search
 		// area to minX, maxX, minY and maxY (all +1 in their respective directions) of what
@@ -276,6 +301,7 @@ namespace Assets.Scripts.World
 		/// <summary>
 		/// Returns true if at least on block was changed
 		/// </summary>
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		bool AddWaterBelow(ref Block[,,] blocks, int currentY)
 		{
 			bool waterAdded = false;
@@ -290,30 +316,7 @@ namespace Assets.Scripts.World
 			return waterAdded;
 		}
 
-		public void AddTrees(ref Block[,,] blocks)
-		{
-			// no trees
-			if (TreeProbability == TreeProbability.None)
-				return;
-
-			float woodbaseProbability = TreeProbability == TreeProbability.Some
-				? WoodbaseSomeProbability
-				: WoodbaseHighProbability;
-
-			for (var x = 1; x < _totalBlockNumberX - 1; x++)
-				// this 20 is hard coded as for now but generally it would be nice if
-				// this loop could know in advance where is the lowest grass
-				for (var y = 20; y < _totalBlockNumberY - TreeHeight - 1; y++)
-					for (var z = 1; z < _totalBlockNumberZ - 1; z++)
-					{
-						if (blocks[x, y, z].Type != BlockTypes.Grass) continue;
-
-						if (IsThereEnoughSpaceForTree(in blocks, x, y, z))
-							if (FractalFunc(x, y, z, WoodbaseSmooth, WoodbaseOctaves) < woodbaseProbability)
-								BuildTree(ref blocks, x, y, z);
-					}
-		}
-
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		bool IsThereEnoughSpaceForTree(in Block[,,] blocks, int x, int y, int z)
 		{
 			for (int i = 2; i < TreeHeight; i++)
@@ -332,6 +335,7 @@ namespace Assets.Scripts.World
 			return true;
 		}
 
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		void BuildTree(ref Block[,,] blocks, int x, int y, int z)
 		{
 			CreateBlock(ref blocks[x, y, z], BlockTypes.Woodbase);
@@ -347,6 +351,7 @@ namespace Assets.Scripts.World
 			CreateBlock(ref blocks[x, y + 5, z], BlockTypes.Leaves);
 		}
 
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		void CreateBlock(ref Block block, BlockTypes type)
 		{
 			block.Type = type;

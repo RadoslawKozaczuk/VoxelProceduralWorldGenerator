@@ -33,7 +33,7 @@ namespace Assets.Scripts.World
 
 		Stopwatch _stopwatch = new Stopwatch();
 		Scene _worldScene;
-		long _accumulatedTerrainGenerationTime, _accumulatedMeshCreationTime;
+		long _accumulatedTerrainGenerationTime, _accumulatedMeshGenerationTime;
 		int _progressStep = 1;
 
 		World()
@@ -191,7 +191,7 @@ namespace Assets.Scripts.World
 
 			Status = WorldGeneratorStatus.AllReady;
 			_stopwatch.Stop();
-			_accumulatedMeshCreationTime += _stopwatch.ElapsedMilliseconds;
+			_accumulatedMeshGenerationTime += _stopwatch.ElapsedMilliseconds;
 			UnityEngine.Debug.Log($"It took {_accumulatedTerrainGenerationTime} ms to redraw all meshes.");
 		}
 
@@ -265,7 +265,7 @@ namespace Assets.Scripts.World
 		{
 			ProgressDescription = "Generating meshes";
 
-			_accumulatedMeshCreationTime = 0;
+			_accumulatedMeshGenerationTime = 0;
 			_stopwatch.Restart();
 			Status = WorldGeneratorStatus.GeneratingMeshes;
 
@@ -292,17 +292,17 @@ namespace Assets.Scripts.World
 
 			Status = WorldGeneratorStatus.AllReady;
 			_stopwatch.Stop();
-			_accumulatedMeshCreationTime += _stopwatch.ElapsedMilliseconds;
+			_accumulatedMeshGenerationTime += _stopwatch.ElapsedMilliseconds;
 			ProgressDescription = "Ready";
 
-			UnityEngine.Debug.Log($"It took { _accumulatedMeshCreationTime } ms to create all meshes.");
+			UnityEngine.Debug.Log($"It took { _accumulatedMeshGenerationTime } ms to create all meshes.");
 		}
 
 		void ResetProgressBarVariables()
 		{
 			// Unity editor remembers the state of the asset classes so these values have to reinitialized
 			_accumulatedTerrainGenerationTime = 0;
-			_accumulatedMeshCreationTime = 0;
+			_accumulatedMeshGenerationTime = 0;
 			_progressStep = 1;
 			AlreadyGenerated = 0;
 

@@ -5,7 +5,7 @@ using UnityEngine;
 
 public class PersistentStorage
 {
-	[SerializeField] string _saveFileName = "VoxelsSaveGame.sav";
+	readonly string _saveFileName = "VoxelsSaveGame.sav";
 	readonly string _savePath;
 	readonly int _chunkSize;
 
