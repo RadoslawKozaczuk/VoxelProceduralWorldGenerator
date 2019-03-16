@@ -50,7 +50,6 @@ namespace Assets.Scripts.World
 
 		public static int WaterLevel; // inclusive
 		public static float SeedValue;
-		public TreeProbability TreeProbability;
 
 		readonly int _worldSizeX, _worldSizeZ, _totalBlockNumberX, _totalBlockNumberY, _totalBlockNumberZ;
 
@@ -64,7 +63,6 @@ namespace Assets.Scripts.World
 			_totalBlockNumberY = World.WorldSizeY * World.ChunkSize;
 			_totalBlockNumberZ = _worldSizeZ * World.ChunkSize;
 
-			TreeProbability = options.TreeProbability;
 			WaterLevel = options.WaterLevel;
 			SeedValue = options.SeedValue;
 		}
@@ -224,20 +222,20 @@ namespace Assets.Scripts.World
 			{
 				waterAdded = AddWaterBelow(ref blocks, currentY);
 				if (waterAdded)
-				{
-					PropagateWaterHorizontally(ref blocks, currentY - 1);
-					currentY--;
-				}
+					PropagateWaterHorizontally(ref blocks, --currentY);
 			}
 		}
 
-		public void AddTrees(ref Block[,,] blocks)
+		/// <summary>
+		/// Adds trees to the world.
+		/// If treeProb parameter is set to TreeProbability. None = no trees will be added.
+		/// </summary>
+		public void AddTrees(ref Block[,,] blocks, TreeProbability treeProb)
 		{
-			// no trees
-			if (TreeProbability == TreeProbability.None)
+			if (treeProb == TreeProbability.None)
 				return;
 
-			float woodbaseProbability = TreeProbability == TreeProbability.Some
+			float woodbaseProbability = treeProb == TreeProbability.Some
 				? WoodbaseSomeProbability
 				: WoodbaseHighProbability;
 
@@ -255,43 +253,110 @@ namespace Assets.Scripts.World
 					}
 		}
 
-		// This is very computationally heavy in relation to the relative simplicity of the task.
-		// I think what could be done here to improve the performance is to narrow down the search
-		// area to minX, maxX, minY and maxY (all +1 in their respective directions) of what
-		// was found in the previous iteration.
-		// Although it requires some testing too see if it provides any performance boost.
+		/// <summary>
+		/// Spread the water horizontally.
+		/// All air blocks that have a horizontal access to any water blocks will be turned into water blocks.
 		void PropagateWaterHorizontally(ref Block[,,] blocks, int currentY)
 		{
+			/*
+				This algorithm works in two steps:
+				Step 1) scan the layer line by line and if there is an air block preceded by a water block then convert this block to water
+				Step 2) scan each block in the layer individually and if the block is air then check if any of its neighbours is water,
+					if so convert it to water if any block has been converted during the process repeat the whole step 2 again
+			*/
+
+			// === Step 1 ===
+			bool foundWater = false;
+			BlockTypes type;
+			int x, z; // iteration variables
+
+			// z asc
+			for (x = 0; x < _totalBlockNumberX; x++)
+				for (z = 0; z < _totalBlockNumberZ; z++)
+				{
+					type = blocks[x, currentY, z].Type;
+					if (ChangeToWater())
+						blocks[x, currentY, z].Type = BlockTypes.Water;
+				}
+
+			// x asc
+			for (z = 0; z < _totalBlockNumberZ; z++)
+				for (x = 0; x < _totalBlockNumberX; x++)
+				{
+					type = blocks[x, currentY, z].Type;
+					if (ChangeToWater())
+						blocks[x, currentY, z].Type = BlockTypes.Water;
+				}
+
+			// z desc
+			for (x = 0; x < _totalBlockNumberX; x++)
+				for (z = _totalBlockNumberZ - 1; z >= 0; z--)
+				{
+					type = blocks[x, currentY, z].Type;
+					if (ChangeToWater())
+						blocks[x, currentY, z].Type = BlockTypes.Water;
+				}
+
+			// x desc
+			for (z = 0; z < _totalBlockNumberZ; z++)
+				for (x = _totalBlockNumberX - 1; x >= 0; x--)
+				{
+					type = blocks[x, currentY, z].Type;
+					if (ChangeToWater())
+						blocks[x, currentY, z].Type = BlockTypes.Water;
+				}
+
+			// local functions introduced in C# 7.0 are quite usefull as they have access to all variables in the upper scope
+			// by definition, these functions are private, and they cannot have any attributes
+			// it's a bit sad they can't access to variables passed by a reference
+			bool ChangeToWater()
+			{
+				// previous block was water
+				if (foundWater)
+				{
+					// this block is air
+					if (type == BlockTypes.Air)
+						return true;
+
+					if (type != BlockTypes.Water)
+						foundWater = false;
+				}
+				else if (type == BlockTypes.Water)
+					foundWater = true;
+
+				return false;
+			}
+
 			bool reiterate = true;
 
-			// true if at least one water block was added in the previous iteration
+			// === Step 2 ===
+			// reiterate if at leaste one block was converted to water in the previous iteration
 			while (reiterate)
 			{
 				reiterate = false;
 
-				int x, z;
 				for (x = 0; x < _totalBlockNumberX; x++)
 					for (z = 0; z < _totalBlockNumberZ; z++)
-						if (blocks[x, currentY, z].Type == BlockTypes.Water)
+						if (blocks[x, currentY, z].Type == BlockTypes.Air)
 						{
-							if (x < _totalBlockNumberX - 1 && blocks[x + 1, currentY, z].Type == BlockTypes.Air) // right
+							if (x < _totalBlockNumberX - 1 && blocks[x + 1, currentY, z].Type == BlockTypes.Water) // right
 							{
-								blocks[x + 1, currentY, z].Type = BlockTypes.Water;
+								blocks[x, currentY, z].Type = BlockTypes.Water;
 								reiterate = true;
 							}
-							else if (x > 0 && blocks[x - 1, currentY, z].Type == BlockTypes.Air) // left
+							else if (x > 0 && blocks[x - 1, currentY, z].Type == BlockTypes.Water) // left
 							{
-								blocks[x - 1, currentY, z].Type = BlockTypes.Water;
+								blocks[x, currentY, z].Type = BlockTypes.Water;
 								reiterate = true;
 							}
-							else if (z < _totalBlockNumberZ - 1 && blocks[x, currentY, z + 1].Type == BlockTypes.Air) // front
+							else if (z < _totalBlockNumberZ - 1 && blocks[x, currentY, z + 1].Type == BlockTypes.Water) // front
 							{
-								blocks[x, currentY, z + 1].Type = BlockTypes.Water;
+								blocks[x, currentY, z].Type = BlockTypes.Water;
 								reiterate = true;
 							}
-							else if (z > 0 && blocks[x, currentY, z - 1].Type == BlockTypes.Air) // back
+							else if (z > 0 && blocks[x, currentY, z - 1].Type == BlockTypes.Water) // back
 							{
-								blocks[x, currentY, z - 1].Type = BlockTypes.Water;
+								blocks[x, currentY, z].Type = BlockTypes.Water;
 								reiterate = true;
 							}
 						}

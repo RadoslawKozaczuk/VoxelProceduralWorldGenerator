@@ -107,17 +107,14 @@ namespace Assets.Scripts.World
 					{
 						localBlockCoodinates.z = z;
 
-						// offset need to be included
+						// offset must be included
 						ref Block b = ref blocks[x + chunkPos.x, y + chunkPos.y, z + chunkPos.z];
 
 						if (b.Faces == 0 || b.Type == BlockTypes.Air)
 							continue;
 
 						if (b.Type == BlockTypes.Water)
-						{
-							if (b.Faces.HasFlag(Cubesides.Top))
-								CreateWaterQuad(ref b, ref waterIndex, ref waterTriIndex, ref waterData, ref localBlockCoodinates);
-						}
+							CreateWaterQuad(ref b, ref waterIndex, ref waterTriIndex, ref waterData, ref localBlockCoodinates);
 						else if (b.Type == BlockTypes.Grass)
 							CreateGrassQuads(ref b, ref index, ref triIndex, ref terrainData, ref localBlockCoodinates);
 						else
@@ -551,16 +548,19 @@ namespace Assets.Scripts.World
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		void CreateWaterQuad(ref Block block, ref int index, ref int triIndex, ref MeshData data, ref Vector3Int localBlockCoord)
 		{
-			// all possible UVs
-			// left-top, right-top, left-bottom, right-bottom
-			Vector2 uv00 = new Vector2(waterUvConst * localBlockCoord.x, 1 - waterUvConst * localBlockCoord.z),
+			if (block.Faces.HasFlag(Cubesides.Top))
+			{
+				// all possible UVs
+				// left-top, right-top, left-bottom, right-bottom
+				Vector2 uv00 = new Vector2(waterUvConst * localBlockCoord.x, 1 - waterUvConst * localBlockCoord.z),
 					uv10 = new Vector2(waterUvConst * (localBlockCoord.x + 1), 1 - waterUvConst * localBlockCoord.z),
 					uv01 = new Vector2(waterUvConst * localBlockCoord.x, 1 - waterUvConst * (localBlockCoord.z + 1)),
 					uv11 = new Vector2(waterUvConst * (localBlockCoord.x + 1), 1 - waterUvConst * (localBlockCoord.z + 1));
 
-			AddQuadComponents(ref index, ref triIndex, ref data, Vector3.up,
-				ref uv11, ref uv01, ref uv00, ref uv10,
-				_p7 + localBlockCoord, _p6 + localBlockCoord, _p5 + localBlockCoord, _p4 + localBlockCoord);
+				AddQuadComponents(ref index, ref triIndex, ref data, Vector3.up,
+					ref uv11, ref uv01, ref uv00, ref uv10,
+					_p7 + localBlockCoord, _p6 + localBlockCoord, _p5 + localBlockCoord, _p4 + localBlockCoord);
+			}
 		}
 
 		void AddQuadComponents(ref int index, ref int triIndex,	ref MeshData data, Vector3 normal,

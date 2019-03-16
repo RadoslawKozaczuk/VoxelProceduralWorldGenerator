@@ -91,7 +91,7 @@ namespace Assets.Scripts.World
 
 			yield return null;
 			ProgressDescription = "Generating trees...";
-			_terrainGenerator.AddTrees(ref Blocks);
+			_terrainGenerator.AddTrees(ref Blocks, Settings.TreeProbability);
 			AlreadyGenerated += _progressStep;
 
 			yield return null;
