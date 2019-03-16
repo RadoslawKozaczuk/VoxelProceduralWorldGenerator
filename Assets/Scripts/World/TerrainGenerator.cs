@@ -205,8 +205,8 @@ namespace Assets.Scripts.World
 		public void AddWater(ref Block[,,] blocks)
 		{
 			// first run - turn all Air blocks at the WaterLevel and one level below into Water blocks
-			for (int x = 0, z; x < _totalBlockNumberX; x++)
-				for (z = 0; z < _totalBlockNumberZ; z++)
+			for (int x = 0; x < _totalBlockNumberX; x++)
+				for (int z = 0; z < _totalBlockNumberZ; z++)
 					if (blocks[x, WaterLevel, z].Type == BlockTypes.Air)
 					{
 						blocks[x, WaterLevel, z].Type = BlockTypes.Water;
@@ -239,11 +239,11 @@ namespace Assets.Scripts.World
 				? WoodbaseSomeProbability
 				: WoodbaseHighProbability;
 
-			for (int x = 1, y, z; x < _totalBlockNumberX - 1; x++)
+			for (int x = 1; x < _totalBlockNumberX - 1; x++)
 				// this 20 is hard coded as for now but generally it would be nice if
 				// this loop could know in advance where is the lowest grass
-				for (y = 20; y < _totalBlockNumberY - TreeHeight - 1; y++)
-					for (z = 1; z < _totalBlockNumberZ - 1; z++)
+				for (int y = 20; y < _totalBlockNumberY - TreeHeight - 1; y++)
+					for (int z = 1; z < _totalBlockNumberZ - 1; z++)
 					{
 						if (blocks[x, y, z].Type != BlockTypes.Grass) continue;
 

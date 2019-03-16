@@ -125,7 +125,6 @@ namespace Assets.Scripts.World
 		public bool BlockHit(int blockX, int blockY, int blockZ, Chunk c)
 		{
 			bool destroyed = false;
-
 			ref Block b = ref Blocks[blockX, blockY, blockZ];
 
 			byte previousHpLevel = b.HealthLevel--;
@@ -174,9 +173,9 @@ namespace Assets.Scripts.World
 			_stopwatch.Restart();
 			Status = WorldGeneratorStatus.GeneratingMeshes;
 
-			for (int x = 0, y, z; x < Settings.WorldSizeX; x++)
-				for (z = 0; z < Settings.WorldSizeZ; z++)
-					for (y = 0; y < WorldSizeY; y++)
+			for (int x = 0; x < Settings.WorldSizeX; x++)
+				for (int z = 0; z < Settings.WorldSizeZ; z++)
+					for (int y = 0; y < WorldSizeY; y++)
 					{
 						Chunk c = Chunks[x, y, z];
 						if (c.Status == ChunkStatus.NeedToBeRecreated)
@@ -197,9 +196,9 @@ namespace Assets.Scripts.World
 
 		public void RedrawChunksIfNecessary()
 		{
-			for (int x = 0, y, z; x < Settings.WorldSizeX; x++)
-				for (z = 0; z < Settings.WorldSizeZ; z++)
-					for (y = 0; y < WorldSizeY; y++)
+			for (int x = 0; x < Settings.WorldSizeX; x++)
+				for (int z = 0; z < Settings.WorldSizeZ; z++)
+					for (int y = 0; y < WorldSizeY; y++)
 					{
 						Chunk c = Chunks[x, y, z];
 						if (c.Status == ChunkStatus.NeedToBeRecreated)
@@ -234,12 +233,11 @@ namespace Assets.Scripts.World
 
 			AlreadyGenerated += 4;
 
-			Chunk c;
-			for (int x = 0, y, z; x < Settings.WorldSizeX; x++)
-				for (z = 0; z < Settings.WorldSizeZ; z++)
-					for (y = 0; y < WorldSizeY; y++)
+			for (int x = 0; x < Settings.WorldSizeX; x++)
+				for (int z = 0; z < Settings.WorldSizeZ; z++)
+					for (int y = 0; y < WorldSizeY; y++)
 					{
-						c = save.Chunks[x, y, z];
+						Chunk c = save.Chunks[x, y, z];
 						c.Status = ChunkStatus.NeedToBeRedrawn;
 
 						if (firstRun)
@@ -269,12 +267,11 @@ namespace Assets.Scripts.World
 			_stopwatch.Restart();
 			Status = WorldGeneratorStatus.GeneratingMeshes;
 
-			Chunk c;
-			for (int x = 0, y, z; x < Settings.WorldSizeX; x++)
-				for (z = 0; z < Settings.WorldSizeZ; z++)
-					for (y = 0; y < WorldSizeY; y++)
+			for (int x = 0; x < Settings.WorldSizeX; x++)
+				for (int z = 0; z < Settings.WorldSizeZ; z++)
+					for (int y = 0; y < WorldSizeY; y++)
 					{
-						c = Chunks[x, y, z];
+						Chunk c = Chunks[x, y, z];
 
 						// out: This method sets the value of the argument used as this parameter.
 						// ref: This method may set the value of the argument used as this parameter.
@@ -328,14 +325,13 @@ namespace Assets.Scripts.World
 
 		void DeflattenizeOutput(ref BlockTypes[] types)
 		{
-			ref Block b = ref Blocks[0, 0, 0];
-			for (int x = 0, y, z; x < TotalBlockNumberX; x++)
-				for (y = 0; y < TotalBlockNumberY; y++)
-					for (z = 0; z < TotalBlockNumberZ; z++)
+			for (int x = 0; x < TotalBlockNumberX; x++)
+				for (int y = 0; y < TotalBlockNumberY; y++)
+					for (int z = 0; z < TotalBlockNumberZ; z++)
 					{
 						var type = types[Utils.IndexFlattenizer3D(x, y, z, TotalBlockNumberX, TotalBlockNumberY)];
 
-						b = ref Blocks[x, y, z];
+						ref Block b = ref Blocks[x, y, z];
 						b.Type = type;
 						b.Hp = LookupTables.BlockHealthMax[(int)type];
 					}
@@ -343,9 +339,9 @@ namespace Assets.Scripts.World
 
 		void CreateGameObjects(bool firstRun)
 		{
-			for (int x = 0, y, z; x < Settings.WorldSizeX; x++)
-				for (z = 0; z < Settings.WorldSizeZ; z++)
-					for (y = 0; y < WorldSizeY; y++)
+			for (int x = 0; x < Settings.WorldSizeX; x++)
+				for (int z = 0; z < Settings.WorldSizeZ; z++)
+					for (int y = 0; y < WorldSizeY; y++)
 					{
 						var c = new Chunk(new Vector3Int(x, y, z), new Vector3Int(x * ChunkSize, y * ChunkSize, z * ChunkSize));
 

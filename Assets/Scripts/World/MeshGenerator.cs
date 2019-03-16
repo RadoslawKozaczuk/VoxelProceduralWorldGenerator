@@ -97,13 +97,13 @@ namespace Assets.Scripts.World
 			int index = 0, triIndex = 0, waterIndex = 0, waterTriIndex = 0;
 
 			var localBlockCoodinates = new Vector3Int();
-			for (int x = 0, y, z; x < World.ChunkSize; x++)
+			for (int x = 0; x < World.ChunkSize; x++)
 			{
 				localBlockCoodinates.x = x;
-				for (y = 0; y < World.ChunkSize; y++)
+				for (int y = 0; y < World.ChunkSize; y++)
 				{
 					localBlockCoodinates.y = y;
-					for (z = 0; z < World.ChunkSize; z++)
+					for (int z = 0; z < World.ChunkSize; z++)
 					{
 						localBlockCoodinates.z = z;
 
@@ -249,14 +249,11 @@ namespace Assets.Scripts.World
 		/// </summary>
 		public void CalculateFaces(ref Block[,,] blocks)
 		{
-			BlockTypes type;
-
-			int x, y, z;
-			for (x = 0; x < _totalBlockNumberX; x++)
-				for (y = 0; y < _totalBlockNumberY; y++)
-					for (z = 0; z < _totalBlockNumberZ; z++)
+			for (int x = 0; x < _totalBlockNumberX; x++)
+				for (int y = 0; y < _totalBlockNumberY; y++)
+					for (int z = 0; z < _totalBlockNumberZ; z++)
 					{
-						type = blocks[x, y, z].Type;
+						BlockTypes type = blocks[x, y, z].Type;
 
 						if (type == BlockTypes.Air)
 						{
