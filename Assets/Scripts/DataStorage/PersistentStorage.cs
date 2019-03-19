@@ -73,14 +73,14 @@ public class PersistentStorage
 			totalSizeY = sizeY * loadGameData.ChunkSize,
 			totalSizeZ = sizeZ * loadGameData.ChunkSize;
 
-		var chunks = new Chunk[sizeX, sizeY, sizeZ];
+		var chunks = new ChunkData[sizeX, sizeY, sizeZ];
 		int x, y, z;
 		for (x = 0; x < sizeX; x++)
 			for (z = 0; z < sizeZ; z++)
 				for (y = 0; y < sizeY; y++)
 					chunks[x, y, z] = ReadChunk();
 
-		var blocks = new Block[totalSizeX, totalSizeY, totalSizeZ];
+		var blocks = new BlockData[totalSizeX, totalSizeY, totalSizeZ];
 		for (x = 0; x < totalSizeX; x++)
 			for (z = 0; z < totalSizeZ; z++)
 				for (y = 0; y < totalSizeY; y++)
@@ -96,14 +96,14 @@ public class PersistentStorage
 	}
 
 	#region Reading Methods
-	Chunk ReadChunk() => new Chunk(ReadVector3Int(), ReadVector3Int())
+	ChunkData ReadChunk() => new ChunkData(ReadVector3Int(), ReadVector3Int())
 	{
 		Status = ChunkStatus.NeedToBeRedrawn
 	};
 
-	Block[,,] ReadBlockDataArray()
+	BlockData[,,] ReadBlockDataArray()
 	{
-		var blocks = new Block[_chunkSize, _chunkSize, _chunkSize];
+		var blocks = new BlockData[_chunkSize, _chunkSize, _chunkSize];
 		for (int z = 0, y, x; z < _chunkSize; z++)
 			for (y = 0; y < _chunkSize; y++)
 				for (x = 0; x < _chunkSize; x++)
@@ -112,7 +112,7 @@ public class PersistentStorage
 		return blocks;
 	}
 
-	Block ReadBlock() => new Block
+	BlockData ReadBlock() => new BlockData
 	{
 		Faces = (Cubesides)_reader.ReadByte(),
 		Type = (BlockTypes)_reader.ReadByte(),
@@ -182,13 +182,13 @@ public class PersistentStorage
 	#endregion
 
 	#region Writing Methods
-	void Write(Chunk chunk)
+	void Write(ChunkData chunk)
 	{
 		Write(chunk.Coord);
 		Write(chunk.Position);
 	}
 
-	void Write(Block[,,] blocks)
+	void Write(BlockData[,,] blocks)
 	{
 		for (int z = 0, y, x; z < _chunkSize; z++)
 			for (y = 0; y < _chunkSize; y++)
@@ -196,7 +196,7 @@ public class PersistentStorage
 					Write(blocks[x, y, z]);
 	}
 
-	void Write(Block value)
+	void Write(BlockData value)
 	{
 		_writer.Write((byte)value.Faces);
 		_writer.Write((byte)value.Type);

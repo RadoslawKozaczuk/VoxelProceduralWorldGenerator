@@ -13,11 +13,11 @@ public class SaveGameData
 	public byte WorldSizeZ;
 
 	// chunks & blocks
-	public Chunk[,,] Chunks;
-	public Block[,,] Blocks;
+	public ChunkData[,,] Chunks;
+	public BlockData[,,] Blocks;
 }
 
-public struct Block
+public struct BlockData
 {
 	public Cubesides Faces;
 	public BlockTypes Type;
@@ -25,25 +25,35 @@ public struct Block
 	public byte HealthLevel; // corresponds to the visible crack appearence texture
 }
 
-public class Chunk
+/// <summary>
+/// Stores value type data.
+/// </summary>
+public struct ChunkData
 {
-	public readonly Vector3Int Coord; // coordinates are only used for GameObject naming as of now
+	public readonly Vector3Int Coord;
 	public Vector3Int Position;
-	public GameObject Terrain;
-	public GameObject Water;
 	public ChunkStatus Status;
 
-	public Chunk(Vector3Int coord, Vector3Int position, ChunkStatus status)
+	public ChunkData(Vector3Int coord, Vector3Int position, ChunkStatus status)
 	{
 		Coord = coord;
 		Position = position;
 		Status = status;
 	}
 
-	public Chunk(Vector3Int coord, Vector3Int position)
+	public ChunkData(Vector3Int coord, Vector3Int position)
 	{
 		Coord = coord;
 		Position = position;
 		Status = ChunkStatus.Created;
 	}
+}
+
+/// <summary>
+/// Stores game objects.
+/// </summary>
+public class ChunkObject
+{
+	public GameObject Terrain;
+	public GameObject Water;
 }

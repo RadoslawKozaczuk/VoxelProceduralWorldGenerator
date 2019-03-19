@@ -202,7 +202,7 @@ namespace Assets.Scripts.World
 			return types;
 		}
 
-		public void AddWater(ref Block[,,] blocks)
+		public void AddWater(ref BlockData[,,] blocks)
 		{
 			// first run - turn all Air blocks at the WaterLevel and one level below into Water blocks
 			for (int x = 0; x < _totalBlockNumberX; x++)
@@ -230,7 +230,7 @@ namespace Assets.Scripts.World
 		/// Adds trees to the world.
 		/// If treeProb parameter is set to TreeProbability. None = no trees will be added.
 		/// </summary>
-		public void AddTrees(ref Block[,,] blocks, TreeProbability treeProb)
+		public void AddTrees(ref BlockData[,,] blocks, TreeProbability treeProb)
 		{
 			if (treeProb == TreeProbability.None)
 				return;
@@ -256,7 +256,7 @@ namespace Assets.Scripts.World
 		/// <summary>
 		/// Spread the water horizontally.
 		/// All air blocks that have a horizontal access to any water blocks will be turned into water blocks.
-		void PropagateWaterHorizontally(ref Block[,,] blocks, int currentY)
+		void PropagateWaterHorizontally(ref BlockData[,,] blocks, int currentY)
 		{
 			/*
 				This algorithm works in two steps:
@@ -367,7 +367,7 @@ namespace Assets.Scripts.World
 		/// Returns true if at least on block was changed
 		/// </summary>
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		bool AddWaterBelow(ref Block[,,] blocks, int currentY)
+		bool AddWaterBelow(ref BlockData[,,] blocks, int currentY)
 		{
 			bool waterAdded = false;
 			for (int x = 0; x < _totalBlockNumberX; x++)
@@ -382,7 +382,7 @@ namespace Assets.Scripts.World
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		bool IsThereEnoughSpaceForTree(in Block[,,] blocks, int x, int y, int z)
+		bool IsThereEnoughSpaceForTree(in BlockData[,,] blocks, int x, int y, int z)
 		{
 			for (int i = 2; i < TreeHeight; i++)
 			{
@@ -401,7 +401,7 @@ namespace Assets.Scripts.World
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		void BuildTree(ref Block[,,] blocks, int x, int y, int z)
+		void BuildTree(ref BlockData[,,] blocks, int x, int y, int z)
 		{
 			CreateBlock(ref blocks[x, y, z], BlockTypes.Woodbase);
 			CreateBlock(ref blocks[x, y + 1, z], BlockTypes.Wood);
@@ -417,7 +417,7 @@ namespace Assets.Scripts.World
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		void CreateBlock(ref Block block, BlockTypes type)
+		void CreateBlock(ref BlockData block, BlockTypes type)
 		{
 			block.Type = type;
 			block.Hp = LookupTables.BlockHealthMax[(int)type];

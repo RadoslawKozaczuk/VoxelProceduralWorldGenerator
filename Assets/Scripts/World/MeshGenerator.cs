@@ -72,7 +72,7 @@ namespace Assets.Scripts.World
 		/// This method creates mesh data necessary to create a mesh.
 		/// Data for both terrain and water meshes is created.
 		/// </summary>
-		public void ExtractMeshData(ref Block[,,] blocks, ref Vector3Int chunkPos, out MeshData terrain, out MeshData water)
+		public void ExtractMeshData(ref BlockData[,,] blocks, ref Vector3Int chunkPos, out MeshData terrain, out MeshData water)
 		{
 			CalculateMeshSize(ref blocks, ref chunkPos, out int tSize, out int wSize);
 
@@ -108,7 +108,7 @@ namespace Assets.Scripts.World
 						localBlockCoodinates.z = z;
 
 						// offset must be included
-						ref Block b = ref blocks[x + chunkPos.x, y + chunkPos.y, z + chunkPos.z];
+						ref BlockData b = ref blocks[x + chunkPos.x, y + chunkPos.y, z + chunkPos.z];
 
 						if (b.Faces == 0 || b.Type == BlockTypes.Air)
 							continue;
@@ -142,7 +142,7 @@ namespace Assets.Scripts.World
 			return mesh;
 		}
 
-		public void RecalculateFacesAfterBlockDestroy(ref Block[,,] blocks, int blockX, int blockY, int blockZ)
+		public void RecalculateFacesAfterBlockDestroy(ref BlockData[,,] blocks, int blockX, int blockY, int blockZ)
 		{
 			/* // bitwise operators reminder
 			var test = Cubesides.Back; // initialize with one flag
@@ -178,9 +178,9 @@ namespace Assets.Scripts.World
 					blocks[blockX, blockY, blockZ + 1].Faces |= Cubesides.Back;
 		}
 
-		public void RecalculateFacesAfterBlockBuild(ref Block[,,] blocks, int blockX, int blockY, int blockZ)
+		public void RecalculateFacesAfterBlockBuild(ref BlockData[,,] blocks, int blockX, int blockY, int blockZ)
 		{
-			ref Block b = ref blocks[blockX, blockY, blockZ];
+			ref BlockData b = ref blocks[blockX, blockY, blockZ];
 			BlockTypes type;
 
 			if (blockX > 0)
@@ -247,7 +247,7 @@ namespace Assets.Scripts.World
 		/// <summary>
 		/// Calculates inter block faces visibility.
 		/// </summary>
-		public void CalculateFaces(ref Block[,,] blocks)
+		public void CalculateFaces(ref BlockData[,,] blocks)
 		{
 			for (int x = 0; x < _totalBlockNumberX; x++)
 				for (int y = 0; y < _totalBlockNumberY; y++)
@@ -313,9 +313,9 @@ namespace Assets.Scripts.World
 		/// <summary>
 		/// Calculates faces visibility on the world's edges.
 		/// </summary>
-		public void WorldBoundariesCheck(ref Block[,,] blocks)
+		public void WorldBoundariesCheck(ref BlockData[,,] blocks)
 		{
-			ref Block b = ref blocks[0, 0, 0]; // compilator requires initialization
+			ref BlockData b = ref blocks[0, 0, 0]; // compilator requires initialization
 
 			// right world boundaries check
 			int x = _totalBlockNumberX - 1,
@@ -373,12 +373,12 @@ namespace Assets.Scripts.World
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		void CalculateMeshSize(ref Block[,,] blocks, ref Vector3Int chunkPos, out int tSize, out int wSize)
+		void CalculateMeshSize(ref BlockData[,,] blocks, ref Vector3Int chunkPos, out int tSize, out int wSize)
 		{
 			tSize = 0;
 			wSize = 0;
 
-			ref Block b = ref blocks[0, 0, 0]; // assign anything
+			ref BlockData b = ref blocks[0, 0, 0]; // assign anything
 
 			// offset needs to be calculated
 			int x, y, z;
@@ -414,7 +414,7 @@ namespace Assets.Scripts.World
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		void CreateStandardQuads(ref Block block, ref int index, ref int triIndex, ref MeshData data, ref Vector3Int localBlockCoord)
+		void CreateStandardQuads(ref BlockData block, ref int index, ref int triIndex, ref MeshData data, ref Vector3Int localBlockCoord)
 		{
 			int typeIndex = (int)block.Type;
 
@@ -474,7 +474,7 @@ namespace Assets.Scripts.World
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		void CreateGrassQuads(ref Block block, ref int index, ref int triIndex, ref MeshData data, ref Vector3Int localBlockCoord)
+		void CreateGrassQuads(ref BlockData block, ref int index, ref int triIndex, ref MeshData data, ref Vector3Int localBlockCoord)
 		{
 			int typeIndex = (int)block.Type;
 			Vector2 uv00side = _blockUVs[typeIndex + 1, 0],
@@ -543,7 +543,7 @@ namespace Assets.Scripts.World
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		void CreateWaterQuad(ref Block block, ref int index, ref int triIndex, ref MeshData data, ref Vector3Int localBlockCoord)
+		void CreateWaterQuad(ref BlockData block, ref int index, ref int triIndex, ref MeshData data, ref Vector3Int localBlockCoord)
 		{
 			if (block.Faces.HasFlag(Cubesides.Top))
 			{
@@ -593,7 +593,7 @@ namespace Assets.Scripts.World
 			index += 4;
 		}
 
-		void AddSuvs(ref Block block, ref MeshData data)
+		void AddSuvs(ref BlockData block, ref MeshData data)
 		{
 			data.Suvs.Add(_crackUVs[block.HealthLevel, 3]); // top right corner
 			data.Suvs.Add(_crackUVs[block.HealthLevel, 2]); // top left corner

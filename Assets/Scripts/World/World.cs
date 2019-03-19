@@ -17,8 +17,9 @@ namespace Assets.Scripts.World
 
 		public readonly int TotalBlockNumberX, TotalBlockNumberY, TotalBlockNumberZ;
 
-		public Chunk[,,] Chunks;
-		public Block[,,] Blocks;
+		public ChunkData[,,] Chunks;
+		public ChunkObject[,,] ChunkObjects;
+		public BlockData[,,] Blocks;
 		public Vector3 PlayerLoadedRotation, PlayerLoadedPosition;
 		public WorldGeneratorStatus Status { get; private set; }
 		public float TerrainProgressSteps { get; private set; }
@@ -63,7 +64,7 @@ namespace Assets.Scripts.World
 
 			yield return null;
 			ProgressDescription = "Initialization...";
-			Blocks = new Block[Settings.WorldSizeX * ChunkSize, WorldSizeY * ChunkSize, Settings.WorldSizeZ * ChunkSize];
+			Blocks = new BlockData[Settings.WorldSizeX * ChunkSize, WorldSizeY * ChunkSize, Settings.WorldSizeZ * ChunkSize];
 			AlreadyGenerated += _progressStep;
 
 			yield return null;
@@ -99,7 +100,8 @@ namespace Assets.Scripts.World
 			if (firstRun)
 				_worldScene = SceneManager.CreateScene(name);
 
-			Chunks = new Chunk[Settings.WorldSizeX, WorldSizeY, Settings.WorldSizeZ];
+			Chunks = new ChunkData[Settings.WorldSizeX, WorldSizeY, Settings.WorldSizeZ];
+			ChunkObjects = new ChunkObject[Settings.WorldSizeX, WorldSizeY, Settings.WorldSizeZ];
 			CreateGameObjects(firstRun);
 			AlreadyGenerated += _progressStep;
 
@@ -122,10 +124,10 @@ namespace Assets.Scripts.World
 		/// <summary>
 		/// Returns true if the block has been destroyed.
 		/// </summary>
-		public bool BlockHit(int blockX, int blockY, int blockZ, Chunk c)
+		public bool BlockHit(int blockX, int blockY, int blockZ, ChunkData c)
 		{
 			bool destroyed = false;
-			ref Block b = ref Blocks[blockX, blockY, blockZ];
+			ref BlockData b = ref Blocks[blockX, blockY, blockZ];
 
 			byte previousHpLevel = b.HealthLevel--;
 			byte currentHpLevel = CalculateHealthLevel(b.Hp, LookupTables.BlockHealthMax[(int)b.Type]);
@@ -151,9 +153,9 @@ namespace Assets.Scripts.World
 		/// <summary>
 		/// Returns true if a new block has been built.
 		/// </summary>
-		public bool BuildBlock(int blockX, int blockY, int blockZ, BlockTypes type, Chunk c)
+		public bool BuildBlock(int blockX, int blockY, int blockZ, BlockTypes type, ChunkData c)
 		{
-			ref Block b = ref Blocks[blockX, blockY, blockZ];
+			ref BlockData b = ref Blocks[blockX, blockY, blockZ];
 
 			if (b.Type != BlockTypes.Air) return false;
 
@@ -177,11 +179,13 @@ namespace Assets.Scripts.World
 				for (int z = 0; z < Settings.WorldSizeZ; z++)
 					for (int y = 0; y < WorldSizeY; y++)
 					{
-						Chunk c = Chunks[x, y, z];
-						if (c.Status == ChunkStatus.NeedToBeRecreated)
-							RecreateMeshAndCollider(c);
-						else if (c.Status == ChunkStatus.NeedToBeRedrawn) // used only for cracks
-							RecreateTerrainMesh(c);
+						ChunkData chunkData = Chunks[x, y, z];
+						ChunkObject chunkObject = ChunkObjects[x, y, z];
+
+						if (chunkData.Status == ChunkStatus.NeedToBeRecreated)
+							RecreateMeshAndCollider(ref chunkData, chunkObject);
+						else if (chunkData.Status == ChunkStatus.NeedToBeRedrawn) // used only for cracks
+							RecreateTerrainMesh(ref chunkData, chunkObject);
 
 						AlreadyGenerated++;
 
@@ -200,11 +204,12 @@ namespace Assets.Scripts.World
 				for (int z = 0; z < Settings.WorldSizeZ; z++)
 					for (int y = 0; y < WorldSizeY; y++)
 					{
-						Chunk c = Chunks[x, y, z];
-						if (c.Status == ChunkStatus.NeedToBeRecreated)
-							RecreateMeshAndCollider(c);
-						else if (c.Status == ChunkStatus.NeedToBeRedrawn) // used only for cracks
-							RecreateTerrainMesh(c);
+						ref ChunkData chunkData = ref Chunks[x, y, z];
+						ChunkObject chunkObject = ChunkObjects[x, y, z];
+						if (chunkData.Status == ChunkStatus.NeedToBeRecreated)
+							RecreateMeshAndCollider(ref chunkData, chunkObject);
+						else if (chunkData.Status == ChunkStatus.NeedToBeRedrawn) // used only for cracks
+							RecreateTerrainMesh(ref chunkData, chunkObject);
 					}
 		}
 
@@ -237,15 +242,17 @@ namespace Assets.Scripts.World
 				for (int z = 0; z < Settings.WorldSizeZ; z++)
 					for (int y = 0; y < WorldSizeY; y++)
 					{
-						Chunk c = save.Chunks[x, y, z];
-						c.Status = ChunkStatus.NeedToBeRedrawn;
+						ChunkData chunkData = save.Chunks[x, y, z];
+						chunkData.Status = ChunkStatus.NeedToBeRedrawn;
+
+						ChunkObject chunkObject = ChunkObjects[x, y, z];
 
 						if (firstRun)
 						{
-							CreateGameObjects(c);
+							CreateGameObjects(ref chunkData, chunkObject);
 
-							SceneManager.MoveGameObjectToScene(c.Terrain.gameObject, _worldScene);
-							SceneManager.MoveGameObjectToScene(c.Water.gameObject, _worldScene);
+							SceneManager.MoveGameObjectToScene(chunkObject.Terrain.gameObject, _worldScene);
+							SceneManager.MoveGameObjectToScene(chunkObject.Water.gameObject, _worldScene);
 						}
 
 						AlreadyGenerated++;
@@ -256,7 +263,7 @@ namespace Assets.Scripts.World
 			Status = WorldGeneratorStatus.TerrainReady;
 			_stopwatch.Stop();
 			_accumulatedTerrainGenerationTime += _stopwatch.ElapsedMilliseconds;
-			UnityEngine.Debug.Log($"It took { _accumulatedTerrainGenerationTime } ms to load all terrain.");
+			UnityEngine.Debug.Log($"It took {_accumulatedTerrainGenerationTime} ms to load all terrain.");
 		}
 
 		public IEnumerator GenerateMeshes()
@@ -271,16 +278,16 @@ namespace Assets.Scripts.World
 				for (int z = 0; z < Settings.WorldSizeZ; z++)
 					for (int y = 0; y < WorldSizeY; y++)
 					{
-						Chunk c = Chunks[x, y, z];
-
+						ChunkData chunkData = Chunks[x, y, z];
+						ChunkObject chunkObject = ChunkObjects[x, y, z];
 						// out: This method sets the value of the argument used as this parameter.
 						// ref: This method may set the value of the argument used as this parameter.
 						// in: This method doesn't modify the value of the argument used as this parameter,
 						//		it should only be applied to immutable structs (readonly struct and all fields readonly),
 						//		otherwise it harms the performance because the compilator has to make defensive copies.
-						_meshGenerator.ExtractMeshData(ref Blocks, ref c.Position, out MeshData terrainData, out MeshData waterData);
-						CreateRenderingComponents(c, terrainData, waterData);
-						c.Status = ChunkStatus.Created;
+						_meshGenerator.ExtractMeshData(ref Blocks, ref chunkData.Position, out MeshData terrainData, out MeshData waterData);
+						CreateRenderingComponents(chunkObject, terrainData, waterData);
+						chunkData.Status = ChunkStatus.Created;
 
 						AlreadyGenerated++;
 
@@ -292,7 +299,7 @@ namespace Assets.Scripts.World
 			_accumulatedMeshGenerationTime += _stopwatch.ElapsedMilliseconds;
 			ProgressDescription = "Ready";
 
-			UnityEngine.Debug.Log($"It took { _accumulatedMeshGenerationTime } ms to create all meshes.");
+			UnityEngine.Debug.Log($"It took {_accumulatedMeshGenerationTime} ms to create all meshes.");
 		}
 
 		void ResetProgressBarVariables()
@@ -331,7 +338,7 @@ namespace Assets.Scripts.World
 					{
 						var type = types[Utils.IndexFlattenizer3D(x, y, z, TotalBlockNumberX, TotalBlockNumberY)];
 
-						ref Block b = ref Blocks[x, y, z];
+						ref BlockData b = ref Blocks[x, y, z];
 						b.Type = type;
 						b.Hp = LookupTables.BlockHealthMax[(int)type];
 					}
@@ -343,34 +350,36 @@ namespace Assets.Scripts.World
 				for (int z = 0; z < Settings.WorldSizeZ; z++)
 					for (int y = 0; y < WorldSizeY; y++)
 					{
-						var c = new Chunk(new Vector3Int(x, y, z), new Vector3Int(x * ChunkSize, y * ChunkSize, z * ChunkSize));
+						var chunkData = new ChunkData(new Vector3Int(x, y, z), new Vector3Int(x * ChunkSize, y * ChunkSize, z * ChunkSize));
+						var chunkObject = new ChunkObject();
 
 						if (firstRun)
 						{
-							CreateGameObjects(c);
-							c.Status = ChunkStatus.NeedToBeRedrawn;
+							CreateGameObjects(ref chunkData, chunkObject);
+							chunkData.Status = ChunkStatus.NeedToBeRedrawn;
 
-							SceneManager.MoveGameObjectToScene(c.Terrain.gameObject, _worldScene);
-							SceneManager.MoveGameObjectToScene(c.Water.gameObject, _worldScene);
+							SceneManager.MoveGameObjectToScene(chunkObject.Terrain.gameObject, _worldScene);
+							SceneManager.MoveGameObjectToScene(chunkObject.Water.gameObject, _worldScene);
 						}
 
-						Chunks[x, y, z] = c;
+						Chunks[x, y, z] = chunkData;
+						ChunkObjects[x, y, z] = chunkObject;
 					}
 		}
 
-		void RecreateMeshAndCollider(Chunk c)
+		void RecreateMeshAndCollider(ref ChunkData c, ChunkObject cObj)
 		{
-			DestroyImmediate(c.Terrain.GetComponent<Collider>());
+			DestroyImmediate(cObj.Terrain.GetComponent<Collider>());
 			_meshGenerator.ExtractMeshData(ref Blocks, ref c.Position, out MeshData t, out MeshData w);
 			var tm = _meshGenerator.CreateMesh(t);
 			var wm = _meshGenerator.CreateMesh(w);
 
-			var terrainFilter = c.Terrain.GetComponent<MeshFilter>();
+			var terrainFilter = cObj.Terrain.GetComponent<MeshFilter>();
 			terrainFilter.mesh = tm;
-			var collider = c.Terrain.gameObject.AddComponent(typeof(MeshCollider)) as MeshCollider;
+			var collider = cObj.Terrain.gameObject.AddComponent(typeof(MeshCollider)) as MeshCollider;
 			collider.sharedMesh = tm;
 
-			var waterFilter = c.Water.GetComponent<MeshFilter>();
+			var waterFilter = cObj.Water.GetComponent<MeshFilter>();
 			waterFilter.mesh = wm;
 
 			c.Status = ChunkStatus.Created;
@@ -380,44 +389,44 @@ namespace Assets.Scripts.World
 		/// Destroys terrain mesh and recreates it.
 		/// Used for cracks as they do not change the terrain geometry.
 		/// </summary>
-		void RecreateTerrainMesh(Chunk c)
+		void RecreateTerrainMesh(ref ChunkData chunkData, ChunkObject chunkObject)
 		{
-			_meshGenerator.ExtractMeshData(ref Blocks, ref c.Position, out MeshData t, out MeshData w);
+			_meshGenerator.ExtractMeshData(ref Blocks, ref chunkData.Position, out MeshData t, out MeshData w);
 			var tm = _meshGenerator.CreateMesh(t);
 
-			var meshFilter = c.Terrain.GetComponent<MeshFilter>();
+			var meshFilter = chunkObject.Terrain.GetComponent<MeshFilter>();
 			meshFilter.mesh = tm;
 
-			c.Status = ChunkStatus.Created;
+			chunkData.Status = ChunkStatus.Created;
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		void CreateGameObjects(Chunk c)
+		void CreateGameObjects(ref ChunkData chunkData, ChunkObject chunkObject)
 		{
-			string name = c.Coord.x.ToString() + c.Coord.y + c.Coord.z;
-			c.Terrain = new GameObject(name + "_terrain");
-			c.Terrain.transform.position = c.Position;
-			c.Water = new GameObject(name + "_water");
-			c.Water.transform.position = c.Position;
+			string name = chunkData.Coord.x.ToString() + chunkData.Coord.y + chunkData.Coord.z;
+			chunkObject.Terrain = new GameObject(name + "_terrain");
+			chunkObject.Terrain.transform.position = chunkData.Position;
+			chunkObject.Water = new GameObject(name + "_water");
+			chunkObject.Water.transform.position = chunkData.Position;
 		}
 
-		void CreateRenderingComponents(Chunk chunk, MeshData terrainData, MeshData waterData)
+		void CreateRenderingComponents(ChunkObject cObj, MeshData terrainData, MeshData waterData)
 		{
 			var meshT = _meshGenerator.CreateMesh(terrainData);
-			var rt = chunk.Terrain.gameObject.AddComponent(typeof(MeshRenderer)) as MeshRenderer;
+			var rt = cObj.Terrain.gameObject.AddComponent(typeof(MeshRenderer)) as MeshRenderer;
 			rt.material = _terrainTexture;
 
-			var mft = (MeshFilter)chunk.Terrain.AddComponent(typeof(MeshFilter));
+			var mft = (MeshFilter)cObj.Terrain.AddComponent(typeof(MeshFilter));
 			mft.mesh = meshT;
 
-			var ct = chunk.Terrain.gameObject.AddComponent(typeof(MeshCollider)) as MeshCollider;
+			var ct = cObj.Terrain.gameObject.AddComponent(typeof(MeshCollider)) as MeshCollider;
 			ct.sharedMesh = meshT;
 
 			var meshW = _meshGenerator.CreateMesh(waterData);
-			var rw = chunk.Water.gameObject.AddComponent(typeof(MeshRenderer)) as MeshRenderer;
+			var rw = cObj.Water.gameObject.AddComponent(typeof(MeshRenderer)) as MeshRenderer;
 			rw.material = _waterTexture;
 
-			var mfw = (MeshFilter)chunk.Water.AddComponent(typeof(MeshFilter));
+			var mfw = (MeshFilter)cObj.Water.AddComponent(typeof(MeshFilter));
 			mfw.mesh = meshW;
 		}
 	}
