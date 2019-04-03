@@ -38,7 +38,7 @@ namespace Assets.Scripts.World
         /*GRASS SIDE*/	{new Vector2(0.1875f, 0.9375f), new Vector2(0.25f, 0.9375f),
 							new Vector2(0.1875f, 1.0f), new Vector2(0.25f, 1.0f)},
 
-		// BUG: Tile sheet provided is broken and some tiles overlaps each other
+		// BUG: Tile sheet provided is broken and some tiles overlap each other
 		};
 
 		// order goes as follows

@@ -30,8 +30,7 @@ public class FirstPersonController : MonoBehaviour
 
 	Camera _camera;
 	bool _jump;
-	float _yRotation;
-	Vector2 _input;
+    Vector2 _input;
 	Vector3 _moveDir = Vector3.zero;
 	CharacterController _characterController;
 	CollisionFlags _collisionFlags;
@@ -219,7 +218,7 @@ public class FirstPersonController : MonoBehaviour
 	{
 		Rigidbody body = hit.collider.attachedRigidbody;
 
-		//dont move the rigidbody if the character is on top of it
+		// don't move the rigidbody if the character is on top of it
 		if (_collisionFlags == CollisionFlags.Below)
 			return;
 

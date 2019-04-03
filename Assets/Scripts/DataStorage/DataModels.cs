@@ -22,7 +22,7 @@ public struct BlockData
 	public Cubesides Faces;
 	public BlockTypes Type;
 	public byte Hp;
-	public byte HealthLevel; // corresponds to the visible crack appearence texture
+	public byte HealthLevel; // corresponds to the visible crack appearance texture
 }
 
 /// <summary>

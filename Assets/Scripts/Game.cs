@@ -100,7 +100,6 @@ public class Game : MonoBehaviour
 		if (Input.GetKeyDown(_saveKey))
 		{
 			var storage = new PersistentStorage(World.ChunkSize);
-
 			var t = _player.transform;
 
 			var playerRotation = new Vector3(

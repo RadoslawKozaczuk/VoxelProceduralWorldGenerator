@@ -11,7 +11,7 @@ public class FPSCounter : MonoBehaviour
 		public int MinimumFPS;
 	}
 
-	// strings are pre-prepered to avoid coountless string concatenation and memory pollution
+	// strings are pre-prepered to avoid countless string concatenation and memory pollution
 	static readonly string[] stringsFrom00To99 = {
 		"00", "01", "02", "03", "04", "05", "06", "07", "08", "09",
 		"10", "11", "12", "13", "14", "15", "16", "17", "18", "19",
@@ -35,7 +35,7 @@ public class FPSCounter : MonoBehaviour
 
 	[SerializeField] FPSColor[] _coloring;
 	int[] _fpsBuffer; // we store all values from the last second
-	int _fpsBufferIndex; // index of the curretly stored value
+	int _fpsBufferIndex; // index of the currently stored value
 
 	void Awake() => Array.Sort(_coloring, (a, b) => a.MinimumFPS > b.MinimumFPS ? -1 : 1);
 
@@ -54,7 +54,7 @@ public class FPSCounter : MonoBehaviour
 
 	void Display(Text label, int fps)
 	{
-		// find appriopraite color
+		// find appropriate color
 		for (int i = 0; i < _coloring.Length; i++)
 		{
 			if (fps >= _coloring[i].MinimumFPS)

@@ -261,7 +261,7 @@ namespace Assets.Scripts.World
 			/*
 				This algorithm works in two steps:
 				Step 1) scan the layer line by line and if there is an air block preceded by a water block then convert this block to water
-				Step 2) scan each block in the layer individually and if the block is air then check if any of its neighbours is water,
+				Step 2) scan each block in the layer individually and if the block is air then check if any of its neighbors is water,
 					if so convert it to water if any block has been converted during the process repeat the whole step 2 again
 			*/
 
@@ -306,9 +306,9 @@ namespace Assets.Scripts.World
 						blocks[x, currentY, z].Type = BlockTypes.Water;
 				}
 
-			// local functions introduced in C# 7.0 are quite usefull as they have access to all variables in the upper scope
+			// local functions introduced in C# 7.0 are quite useful as they have access to all variables in the upper scope
 			// by definition, these functions are private, and they cannot have any attributes
-			// it's a bit sad they can't access to variables passed by a reference
+			// it's a bit sad they can't access the variables passed by a reference
 			bool ChangeToWater()
 			{
 				// previous block was water
