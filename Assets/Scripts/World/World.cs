@@ -222,7 +222,7 @@ namespace Assets.Scripts.World
 			yield return null; // give back control
 
 			var storage = new PersistentStorage(ChunkSize);
-			var save = storage.LoadGame();
+			SaveGameData save = storage.LoadGame();
 
 			Settings.WorldSizeX = save.WorldSizeX;
 			Settings.WorldSizeZ = save.WorldSizeZ;
@@ -391,7 +391,7 @@ namespace Assets.Scripts.World
 		/// </summary>
 		void RecreateTerrainMesh(ref ChunkData chunkData, ChunkObject chunkObject)
 		{
-			_meshGenerator.ExtractMeshData(ref Blocks, ref chunkData.Position, out MeshData t, out MeshData w);
+            _meshGenerator.ExtractMeshData(ref Blocks, ref chunkData.Position, out MeshData t, out _);
 			var tm = _meshGenerator.CreateMesh(t);
 
 			var meshFilter = chunkObject.Terrain.GetComponent<MeshFilter>();
