@@ -104,9 +104,9 @@ public class PersistentStorage
 	BlockData[,,] ReadBlockDataArray()
 	{
 		var blocks = new BlockData[_chunkSize, _chunkSize, _chunkSize];
-		for (int z = 0, y, x; z < _chunkSize; z++)
-			for (y = 0; y < _chunkSize; y++)
-				for (x = 0; x < _chunkSize; x++)
+		for (int z = 0; z < _chunkSize; z++)
+			for (int y = 0; y < _chunkSize; y++)
+				for (int x = 0; x < _chunkSize; x++)
 					blocks[x, y, z] = ReadBlock();
 
 		return blocks;
@@ -190,9 +190,9 @@ public class PersistentStorage
 
 	void Write(BlockData[,,] blocks)
 	{
-		for (int z = 0, y, x; z < _chunkSize; z++)
-			for (y = 0; y < _chunkSize; y++)
-				for (x = 0; x < _chunkSize; x++)
+		for (int z = 0; z < _chunkSize; z++)
+			for (int y = 0; y < _chunkSize; y++)
+				for (int x = 0; x < _chunkSize; x++)
 					Write(blocks[x, y, z]);
 	}
 

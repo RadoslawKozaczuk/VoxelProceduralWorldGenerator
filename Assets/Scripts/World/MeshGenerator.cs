@@ -318,9 +318,9 @@ namespace Assets.Scripts.World
 			ref BlockData b = ref blocks[0, 0, 0]; // compilator requires initialization
 
 			// right world boundaries check
-			int x = _totalBlockNumberX - 1,
-				y = 0,
-				z = 0;
+			int x = _totalBlockNumberX - 1, 
+                y, 
+                z;
 			for (y = 0; y < _totalBlockNumberY; y++)
 				for (z = 0; z < _totalBlockNumberZ; z++)
 				{

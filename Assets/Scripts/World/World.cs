@@ -124,7 +124,7 @@ namespace Assets.Scripts.World
 		/// <summary>
 		/// Returns true if the block has been destroyed.
 		/// </summary>
-		public bool BlockHit(int blockX, int blockY, int blockZ, ChunkData c)
+		public bool BlockHit(int blockX, int blockY, int blockZ, ChunkData chunkData)
 		{
 			bool destroyed = false;
 			ref BlockData b = ref Blocks[blockX, blockY, blockZ];
@@ -140,11 +140,11 @@ namespace Assets.Scripts.World
 				{
 					b.Type = BlockTypes.Air;
 					_meshGenerator.RecalculateFacesAfterBlockDestroy(ref Blocks, blockX, blockY, blockZ);
-					c.Status = ChunkStatus.NeedToBeRecreated;
+					chunkData.Status = ChunkStatus.NeedToBeRecreated;
 					destroyed = true;
 				}
 				else
-					c.Status = ChunkStatus.NeedToBeRedrawn;
+					chunkData.Status = ChunkStatus.NeedToBeRedrawn;
 			}
 
 			return destroyed;
@@ -153,7 +153,7 @@ namespace Assets.Scripts.World
 		/// <summary>
 		/// Returns true if a new block has been built.
 		/// </summary>
-		public bool BuildBlock(int blockX, int blockY, int blockZ, BlockTypes type, ChunkData c)
+		public bool BuildBlock(int blockX, int blockY, int blockZ, BlockTypes type, ChunkData chunkData)
 		{
 			ref BlockData b = ref Blocks[blockX, blockY, blockZ];
 
@@ -165,7 +165,7 @@ namespace Assets.Scripts.World
 			b.Hp = LookupTables.BlockHealthMax[(int)type];
 			b.HealthLevel = 0;
 
-			c.Status = ChunkStatus.NeedToBeRecreated;
+			chunkData.Status = ChunkStatus.NeedToBeRecreated;
 
 			return true;
 		}
@@ -367,22 +367,22 @@ namespace Assets.Scripts.World
 					}
 		}
 
-		void RecreateMeshAndCollider(ref ChunkData c, ChunkObject cObj)
+		void RecreateMeshAndCollider(ref ChunkData chunkData, ChunkObject chunkObject)
 		{
-			DestroyImmediate(cObj.Terrain.GetComponent<Collider>());
-			_meshGenerator.ExtractMeshData(ref Blocks, ref c.Position, out MeshData t, out MeshData w);
+			DestroyImmediate(chunkObject.Terrain.GetComponent<Collider>());
+			_meshGenerator.ExtractMeshData(ref Blocks, ref chunkData.Position, out MeshData t, out MeshData w);
 			var tm = _meshGenerator.CreateMesh(t);
 			var wm = _meshGenerator.CreateMesh(w);
 
-			var terrainFilter = cObj.Terrain.GetComponent<MeshFilter>();
+			var terrainFilter = chunkObject.Terrain.GetComponent<MeshFilter>();
 			terrainFilter.mesh = tm;
-			var collider = cObj.Terrain.gameObject.AddComponent(typeof(MeshCollider)) as MeshCollider;
+			var collider = chunkObject.Terrain.gameObject.AddComponent(typeof(MeshCollider)) as MeshCollider;
 			collider.sharedMesh = tm;
 
-			var waterFilter = cObj.Water.GetComponent<MeshFilter>();
+			var waterFilter = chunkObject.Water.GetComponent<MeshFilter>();
 			waterFilter.mesh = wm;
 
-			c.Status = ChunkStatus.Created;
+			chunkData.Status = ChunkStatus.Created;
 		}
 
 		/// <summary>
@@ -410,23 +410,23 @@ namespace Assets.Scripts.World
 			chunkObject.Water.transform.position = chunkData.Position;
 		}
 
-		void CreateRenderingComponents(ChunkObject cObj, MeshData terrainData, MeshData waterData)
+		void CreateRenderingComponents(ChunkObject chunkObject, MeshData terrainData, MeshData waterData)
 		{
 			var meshT = _meshGenerator.CreateMesh(terrainData);
-			var rt = cObj.Terrain.gameObject.AddComponent(typeof(MeshRenderer)) as MeshRenderer;
+			var rt = chunkObject.Terrain.gameObject.AddComponent(typeof(MeshRenderer)) as MeshRenderer;
 			rt.material = _terrainTexture;
 
-			var mft = (MeshFilter)cObj.Terrain.AddComponent(typeof(MeshFilter));
+			var mft = (MeshFilter)chunkObject.Terrain.AddComponent(typeof(MeshFilter));
 			mft.mesh = meshT;
 
-			var ct = cObj.Terrain.gameObject.AddComponent(typeof(MeshCollider)) as MeshCollider;
+			var ct = chunkObject.Terrain.gameObject.AddComponent(typeof(MeshCollider)) as MeshCollider;
 			ct.sharedMesh = meshT;
 
 			var meshW = _meshGenerator.CreateMesh(waterData);
-			var rw = cObj.Water.gameObject.AddComponent(typeof(MeshRenderer)) as MeshRenderer;
+			var rw = chunkObject.Water.gameObject.AddComponent(typeof(MeshRenderer)) as MeshRenderer;
 			rw.material = _waterTexture;
 
-			var mfw = (MeshFilter)cObj.Water.AddComponent(typeof(MeshFilter));
+			var mfw = (MeshFilter)chunkObject.Water.AddComponent(typeof(MeshFilter));
 			mfw.mesh = meshW;
 		}
 	}
