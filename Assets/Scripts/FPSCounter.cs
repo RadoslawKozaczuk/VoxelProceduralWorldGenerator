@@ -11,7 +11,7 @@ public class FPSCounter : MonoBehaviour
 		public int MinimumFPS;
 	}
 
-	// strings are pre-prepered to avoid countless string concatenation and memory pollution
+	// strings are pre-prepared to avoid countless string concatenation and memory pollution
 	static readonly string[] stringsFrom00To99 = {
 		"00", "01", "02", "03", "04", "05", "06", "07", "08", "09",
 		"10", "11", "12", "13", "14", "15", "16", "17", "18", "19",

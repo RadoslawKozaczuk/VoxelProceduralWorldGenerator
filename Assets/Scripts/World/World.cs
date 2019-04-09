@@ -284,7 +284,7 @@ namespace Assets.Scripts.World
 						// ref: This method may set the value of the argument used as this parameter.
 						// in: This method doesn't modify the value of the argument used as this parameter,
 						//		it should only be applied to immutable structs (readonly struct and all fields readonly),
-						//		otherwise it harms the performance because the compilator has to make defensive copies.
+						//		otherwise it harms the performance because the compiler has to make defensive copies.
 						_meshGenerator.ExtractMeshData(ref Blocks, ref chunkData.Position, out MeshData terrainData, out MeshData waterData);
 						CreateRenderingComponents(chunkObject, terrainData, waterData);
 						chunkData.Status = ChunkStatus.Created;
@@ -322,7 +322,7 @@ namespace Assets.Scripts.World
 		{
 			float proportion = (float)hp / maxHp; // 0.625f
 
-			// TODO: this require information from MeshGenerator which breaks the encapsulation rule
+			// TODO: this requires information from MeshGenerator which breaks the encapsulation rule
 			float step = (float)1 / 11; // _crackUVs.Length; // 0.09f
 			float value = proportion / step; // 6.94f
 			int level = Mathf.RoundToInt(value); // 7
@@ -371,16 +371,16 @@ namespace Assets.Scripts.World
 		{
 			DestroyImmediate(chunkObject.Terrain.GetComponent<Collider>());
 			_meshGenerator.ExtractMeshData(ref Blocks, ref chunkData.Position, out MeshData t, out MeshData w);
-			var tm = _meshGenerator.CreateMesh(t);
-			var wm = _meshGenerator.CreateMesh(w);
+			var meshT = _meshGenerator.CreateMesh(t);
+			var meshW = _meshGenerator.CreateMesh(w);
 
 			var terrainFilter = chunkObject.Terrain.GetComponent<MeshFilter>();
-			terrainFilter.mesh = tm;
+			terrainFilter.mesh = meshT;
 			var collider = chunkObject.Terrain.gameObject.AddComponent(typeof(MeshCollider)) as MeshCollider;
-			collider.sharedMesh = tm;
+			collider.sharedMesh = meshT;
 
 			var waterFilter = chunkObject.Water.GetComponent<MeshFilter>();
-			waterFilter.mesh = wm;
+			waterFilter.mesh = meshW;
 
 			chunkData.Status = ChunkStatus.Created;
 		}
@@ -392,10 +392,10 @@ namespace Assets.Scripts.World
 		void RecreateTerrainMesh(ref ChunkData chunkData, ChunkObject chunkObject)
 		{
             _meshGenerator.ExtractMeshData(ref Blocks, ref chunkData.Position, out MeshData t, out _);
-			var tm = _meshGenerator.CreateMesh(t);
+			var meshT = _meshGenerator.CreateMesh(t);
 
 			var meshFilter = chunkObject.Terrain.GetComponent<MeshFilter>();
-			meshFilter.mesh = tm;
+			meshFilter.mesh = meshT;
 
 			chunkData.Status = ChunkStatus.Created;
 		}
@@ -416,8 +416,8 @@ namespace Assets.Scripts.World
 			var rt = chunkObject.Terrain.gameObject.AddComponent(typeof(MeshRenderer)) as MeshRenderer;
 			rt.material = _terrainTexture;
 
-			var mft = (MeshFilter)chunkObject.Terrain.AddComponent(typeof(MeshFilter));
-			mft.mesh = meshT;
+			var ft = (MeshFilter)chunkObject.Terrain.AddComponent(typeof(MeshFilter));
+			ft.mesh = meshT;
 
 			var ct = chunkObject.Terrain.gameObject.AddComponent(typeof(MeshCollider)) as MeshCollider;
 			ct.sharedMesh = meshT;
@@ -426,8 +426,8 @@ namespace Assets.Scripts.World
 			var rw = chunkObject.Water.gameObject.AddComponent(typeof(MeshRenderer)) as MeshRenderer;
 			rw.material = _waterTexture;
 
-			var mfw = (MeshFilter)chunkObject.Water.AddComponent(typeof(MeshFilter));
-			mfw.mesh = meshW;
+			var fw = (MeshFilter)chunkObject.Water.AddComponent(typeof(MeshFilter));
+			fw.mesh = meshW;
 		}
 	}
 }

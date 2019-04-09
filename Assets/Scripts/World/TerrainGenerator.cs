@@ -260,9 +260,9 @@ namespace Assets.Scripts.World
 		{
 			/*
 				This algorithm works in two steps:
-				Step 1) scan the layer line by line and if there is an air block preceded by a water block then convert this block to water
-				Step 2) scan each block in the layer individually and if the block is air then check if any of its neighbors is water,
-					if so convert it to water if any block has been converted during the process repeat the whole step 2 again
+				Step 1 - scan the layer line by line and if there is an air block preceded by a water block then convert this block to water.
+				Step 2 - scan each block in the layer individually and if the block is air then check if any of its neighbors is water,
+				    if so convert it to water. If any block has been converted during the process repeat the whole step 2 again.
 			*/
 
 			// === Step 1 ===
@@ -327,44 +327,41 @@ namespace Assets.Scripts.World
 				return false;
 			}
 
-			bool reiterate = true;
-
-			// === Step 2 ===
-			// reiterate if at leaste one block was converted to water in the previous iteration
-			while (reiterate)
-			{
-				reiterate = false;
-
-				for (x = 0; x < _totalBlockNumberX; x++)
-					for (z = 0; z < _totalBlockNumberZ; z++)
-						if (blocks[x, currentY, z].Type == BlockTypes.Air)
-						{
-							if (x < _totalBlockNumberX - 1 && blocks[x + 1, currentY, z].Type == BlockTypes.Water) // right
-							{
-								blocks[x, currentY, z].Type = BlockTypes.Water;
-								reiterate = true;
-							}
-							else if (x > 0 && blocks[x - 1, currentY, z].Type == BlockTypes.Water) // left
-							{
-								blocks[x, currentY, z].Type = BlockTypes.Water;
-								reiterate = true;
-							}
-							else if (z < _totalBlockNumberZ - 1 && blocks[x, currentY, z + 1].Type == BlockTypes.Water) // front
-							{
-								blocks[x, currentY, z].Type = BlockTypes.Water;
-								reiterate = true;
-							}
-							else if (z > 0 && blocks[x, currentY, z - 1].Type == BlockTypes.Water) // back
-							{
-								blocks[x, currentY, z].Type = BlockTypes.Water;
-								reiterate = true;
-							}
-						}
-			}
-		}
+            // === Step 2 ===
+            // reiterate if at least one block was converted to water in the previous iteration
+            bool reiterate = false;
+            do
+            {
+                for (x = 0; x < _totalBlockNumberX; x++)
+                    for (z = 0; z < _totalBlockNumberZ; z++)
+                        if (blocks[x, currentY, z].Type == BlockTypes.Air)
+                        {
+                            if (x < _totalBlockNumberX - 1 && blocks[x + 1, currentY, z].Type == BlockTypes.Water) // right
+                            {
+                                blocks[x, currentY, z].Type = BlockTypes.Water;
+                                reiterate = true;
+                            }
+                            else if (x > 0 && blocks[x - 1, currentY, z].Type == BlockTypes.Water) // left
+                            {
+                                blocks[x, currentY, z].Type = BlockTypes.Water;
+                                reiterate = true;
+                            }
+                            else if (z < _totalBlockNumberZ - 1 && blocks[x, currentY, z + 1].Type == BlockTypes.Water) // front
+                            {
+                                blocks[x, currentY, z].Type = BlockTypes.Water;
+                                reiterate = true;
+                            }
+                            else if (z > 0 && blocks[x, currentY, z - 1].Type == BlockTypes.Water) // back
+                            {
+                                blocks[x, currentY, z].Type = BlockTypes.Water;
+                                reiterate = true;
+                            }
+                        }
+            } while (reiterate);
+        }
 
 		/// <summary>
-		/// Returns true if at least on block was changed
+		/// Returns true if at least on block was changed.
 		/// </summary>
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		bool AddWaterBelow(ref BlockData[,,] blocks, int currentY)

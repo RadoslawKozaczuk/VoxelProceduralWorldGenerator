@@ -315,7 +315,7 @@ namespace Assets.Scripts.World
 		/// </summary>
 		public void WorldBoundariesCheck(ref BlockData[,,] blocks)
 		{
-			ref BlockData b = ref blocks[0, 0, 0]; // compilator requires initialization
+			ref BlockData b = ref blocks[0, 0, 0]; // compiler requires initialization
 
 			// right world boundaries check
 			int x = _totalBlockNumberX - 1, 
