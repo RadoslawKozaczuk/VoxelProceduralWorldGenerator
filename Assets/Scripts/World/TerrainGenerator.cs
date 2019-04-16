@@ -96,12 +96,12 @@ namespace Assets.Scripts.World
 			// stone
 			if (worldY <= height.Stone)
 			{
-				if (FractalFunc(worldX, worldY, worldZ, DiamondSmooth, DiamondOctaves) < DiamondProbability
-					&& worldY < DiamondMaxHeight)
+				if (worldY < DiamondMaxHeight
+                    && FractalFunc(worldX, worldY, worldZ, DiamondSmooth, DiamondOctaves) < DiamondProbability)
 					return BlockTypes.Diamond;
 
-				if (FractalFunc(worldX, worldY, worldZ, RedstoneSmooth, RedstoneOctaves) < RedstoneProbability
-					&& worldY < RedstoneMaxHeight)
+				if (worldY < RedstoneMaxHeight
+                    && FractalFunc(worldX, worldY, worldZ, RedstoneSmooth, RedstoneOctaves) < RedstoneProbability)
 					return BlockTypes.Redstone;
 
 				return BlockTypes.Stone;
