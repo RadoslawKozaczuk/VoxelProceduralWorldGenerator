@@ -329,9 +329,11 @@ namespace Assets.Scripts.World
 
             // === Step 2 ===
             // reiterate if at least one block was converted to water in the previous iteration
-            bool reiterate = false;
+            bool reiterate;
             do
             {
+                reiterate = false;
+
                 for (x = 0; x < _totalBlockNumberX; x++)
                     for (z = 0; z < _totalBlockNumberZ; z++)
                         if (blocks[x, currentY, z].Type == BlockTypes.Air)
