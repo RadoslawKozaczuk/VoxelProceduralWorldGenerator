@@ -228,7 +228,7 @@ namespace Assets.Scripts.World
 
 		/// <summary>
 		/// Adds trees to the world.
-		/// If treeProb parameter is set to TreeProbability. None = no trees will be added.
+		/// If treeProb parameter is set to TreeProbability.None then no trees will be added.
 		/// </summary>
 		public void AddTrees(ref BlockData[,,] blocks, TreeProbability treeProb)
 		{
