@@ -4,8 +4,7 @@ public class BlockInteraction : MonoBehaviour
 {
 	const float AttackRange = 3.0f;
 
-	public Game Game;
-
+    [SerializeField] Game _game;
 	[SerializeField] AudioClip _stonehitSound;
 	[SerializeField] Camera _weaponCamera;
 
@@ -18,13 +17,11 @@ public class BlockInteraction : MonoBehaviour
 	{
 		if (Input.GetMouseButtonDown(0))
 		{
-			Debug.Log("Hit block");
 			HitBlock();
 		}
 
 		if (Input.GetMouseButtonDown(1))
 		{
-			Debug.Log("Build block");
 			BuildBlock();
 		}
 	}
@@ -39,14 +36,22 @@ public class BlockInteraction : MonoBehaviour
 		layerMask = ~layerMask;
 
 		// Does the ray intersect any objects excluding the player layer
-		if (!Physics.Raycast(_weaponCamera.ViewportToWorldPoint(new Vector3(0.5f, 0.5f, 0)),
-			_weaponCamera.transform.forward, out RaycastHit hit, AttackRange, layerMask))
+		if (!Physics.Raycast(
+            _weaponCamera.ViewportToWorldPoint(new Vector3(0.5f, 0.5f, 0)),
+			_weaponCamera.transform.forward, 
+            out RaycastHit hit, 
+            AttackRange, 
+            layerMask))
 			return;
 
 		Vector3 hitBlock = hit.point - hit.normal / 2.0f; // central point
 
+        // x and z for some reason lose 0.5 each so we have to add it manually
+        hitBlock.x += 0.5f;
+        hitBlock.z += 0.5f;
+
 		_audioSource.PlayOneShot(_stonehitSound);
-		Game.ProcessBlockHit(hitBlock);
+		_game.ProcessBlockHit(hitBlock);
 	}
 
 	void BuildBlock()
@@ -66,7 +71,7 @@ public class BlockInteraction : MonoBehaviour
 		Vector3 hitBlock = hit.point + hit.normal / 2.0f; // next to the one that we are pointing at
 
 		_audioSource.PlayOneShot(_stonehitSound);
-		Game.ProcessBuildBlock(hitBlock, _buildBlockType);
+		_game.ProcessBuildBlock(hitBlock, _buildBlockType);
 	}
 
 	void CheckForBuildBlockType()

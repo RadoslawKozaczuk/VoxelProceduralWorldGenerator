@@ -38,6 +38,8 @@ public class Game : MonoBehaviour
 
 	void Update()
 	{
+        // this should be done only when it is necessary not on every frame
+        // and its should be moved to a separate folder
 		var progress = Mathf.Clamp01(_world.AlreadyGenerated / (_world.MeshProgressSteps + _world.TerrainProgressSteps));
 		_progressBar.value = progress;
 		_progressText.text = Mathf.RoundToInt(progress * 100) + "%";
@@ -53,7 +55,14 @@ public class Game : MonoBehaviour
 		if (_world.Status == WorldGeneratorStatus.TerrainReady && _gameState == GameState.ReStarting)
 		{
 			CreatePlayer(_world.PlayerLoadedPosition, _world.PlayerLoadedRotation);
-			StartCoroutine(_world.RedrawChunksIfNecessaryAsync());
+			StartCoroutine(_world.RedrawChunksIfNecessaryAsync(() => 
+            {
+                _gameState = GameState.Started;
+
+                // set progress bar to 100%
+                _world.AlreadyGenerated = _world.MeshProgressSteps + _world.TerrainProgressSteps;
+                _world.ProgressDescription = "Ready";
+            }));
 		}
 
 		if (_world.Status == WorldGeneratorStatus.AllReady)
@@ -76,10 +85,10 @@ public class Game : MonoBehaviour
 		FindChunkAndBlock(hitBlock, out int chunkX, out int chunkY, out int chunkZ, out int blockX, out int blockY, out int blockZ);
 
 		// inform chunk
-		var c = _world.Chunks[chunkX, chunkY, chunkZ];
+		ref ChunkData c = ref _world.Chunks[chunkX, chunkY, chunkZ];
 
 		// was block destroyed
-		if (_world.BlockHit(blockX, blockY, blockZ, c))
+		if (_world.BlockHit(blockX, blockY, blockZ, ref c))
 			CheckNeighboringChunks(blockX, blockY, blockZ, chunkX, chunkY, chunkZ);
 	}
 

@@ -24,7 +24,7 @@ namespace Assets.Scripts.World
 		public WorldGeneratorStatus Status { get; private set; }
 		public float TerrainProgressSteps { get; private set; }
 		public float MeshProgressSteps { get; private set; }
-		public float AlreadyGenerated { get; private set; }
+        public float AlreadyGenerated;
 		public string ProgressDescription;
 
 		[SerializeField] TerrainGenerator _terrainGenerator;
@@ -124,30 +124,31 @@ namespace Assets.Scripts.World
 		/// <summary>
 		/// Returns true if the block has been destroyed.
 		/// </summary>
-		public bool BlockHit(int blockX, int blockY, int blockZ, ChunkData chunkData)
+		public bool BlockHit(int blockX, int blockY, int blockZ, ref ChunkData chunkData)
 		{
-			bool destroyed = false;
 			ref BlockData b = ref Blocks[blockX, blockY, blockZ];
 
-			byte previousHpLevel = b.HealthLevel--;
-			byte currentHpLevel = CalculateHealthLevel(b.Hp, LookupTables.BlockHealthMax[(int)b.Type]);
+            if(b.Type == BlockTypes.Air)
+            {
+                UnityEngine.Debug.LogError("Block of type Air was hit which should have never happened. Probably wrong block coordinates calculation.");
+                return false;
+            }
 
-			if (currentHpLevel != previousHpLevel)
-			{
-				b.HealthLevel = currentHpLevel;
+            if (--b.Hp == 0)
+            {
+                b.Type = BlockTypes.Air;
+                _meshGenerator.RecalculateFacesAfterBlockDestroy(ref Blocks, blockX, blockY, blockZ);
+                chunkData.Status = ChunkStatus.NeedToBeRecreated;
+                return true;
+            }
 
-				if (b.Hp == 0)
-				{
-					b.Type = BlockTypes.Air;
-					_meshGenerator.RecalculateFacesAfterBlockDestroy(ref Blocks, blockX, blockY, blockZ);
-					chunkData.Status = ChunkStatus.NeedToBeRecreated;
-					destroyed = true;
-				}
-				else
-					chunkData.Status = ChunkStatus.NeedToBeRedrawn;
-			}
+            byte previousHpLevel = b.HealthLevel;
+            b.HealthLevel = CalculateHealthLevel(b.Hp, LookupTables.BlockHealthMax[(int)b.Type]);
 
-			return destroyed;
+			if (b.HealthLevel != previousHpLevel)
+                chunkData.Status = ChunkStatus.NeedToBeRedrawn;
+
+            return false;
 		}
 
 		/// <summary>
@@ -170,7 +171,7 @@ namespace Assets.Scripts.World
 			return true;
 		}
 
-		public IEnumerator RedrawChunksIfNecessaryAsync()
+		public IEnumerator RedrawChunksIfNecessaryAsync(Action callback = null)
 		{
 			_stopwatch.Restart();
 			Status = WorldGeneratorStatus.GeneratingMeshes;
@@ -183,9 +184,9 @@ namespace Assets.Scripts.World
 						ChunkObject chunkObject = ChunkObjects[x, y, z];
 
 						if (chunkData.Status == ChunkStatus.NeedToBeRecreated)
-							RecreateMeshAndCollider(ref chunkData, chunkObject);
+							RecreateMeshAndCollider(ref Chunks[x, y, z], chunkObject);
 						else if (chunkData.Status == ChunkStatus.NeedToBeRedrawn) // used only for cracks
-							RecreateTerrainMesh(ref chunkData, chunkObject);
+							RecreateTerrainMesh(ref Chunks[x, y, z], chunkObject);
 
 						AlreadyGenerated++;
 
@@ -196,7 +197,9 @@ namespace Assets.Scripts.World
 			_stopwatch.Stop();
 			_accumulatedMeshGenerationTime += _stopwatch.ElapsedMilliseconds;
 			UnityEngine.Debug.Log($"It took {_accumulatedTerrainGenerationTime} ms to redraw all meshes.");
-		}
+
+            callback?.Invoke();
+        }
 
 		public void RedrawChunksIfNecessary()
 		{
@@ -369,15 +372,13 @@ namespace Assets.Scripts.World
 
 		void RecreateMeshAndCollider(ref ChunkData chunkData, ChunkObject chunkObject)
 		{
-			DestroyImmediate(chunkObject.Terrain.GetComponent<Collider>());
 			_meshGenerator.ExtractMeshData(ref Blocks, ref chunkData.Position, out MeshData t, out MeshData w);
 			var meshT = _meshGenerator.CreateMesh(t);
 			var meshW = _meshGenerator.CreateMesh(w);
 
 			var terrainFilter = chunkObject.Terrain.GetComponent<MeshFilter>();
 			terrainFilter.mesh = meshT;
-			var collider = chunkObject.Terrain.gameObject.AddComponent(typeof(MeshCollider)) as MeshCollider;
-			collider.sharedMesh = meshT;
+            chunkObject.Terrain.GetComponent<MeshCollider>().sharedMesh = meshT;
 
 			var waterFilter = chunkObject.Water.GetComponent<MeshFilter>();
 			waterFilter.mesh = meshW;
