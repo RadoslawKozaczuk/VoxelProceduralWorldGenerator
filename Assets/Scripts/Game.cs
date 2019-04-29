@@ -5,6 +5,9 @@ using Assets.Scripts.World;
 
 public class Game : MonoBehaviour
 {
+    // start variables
+    public static bool StartFromLoadGame; // true - game started from load game, false - game started from new game
+
 	[SerializeField] Text _controlsLabel;
 	[SerializeField] Slider _progressBar;
 	[SerializeField] Text _progressText;
@@ -31,10 +34,27 @@ public class Game : MonoBehaviour
 		Debug.Log("Waiting instructions...");
 
 		_player.SetActive(false);
-
 		_gameState = GameState.Starting;
-		StartCoroutine(_world.GenerateWorld(true));
-	}
+
+        if(StartFromLoadGame)
+        {
+            StartCoroutine(_world.LoadWorld(true, () =>
+            {
+                CreatePlayer(_world.PlayerLoadedPosition, _world.PlayerLoadedRotation);
+                _player.SetActive(true);
+                _crosshair.enabled = true;
+            }));
+        }
+        else
+        {
+            StartCoroutine(_world.CreateWorld(true, () =>
+            {
+                CreatePlayer();
+                _player.SetActive(true);
+                _crosshair.enabled = true;
+            }));
+        }
+    }
 
 	void Update()
 	{
@@ -47,38 +67,12 @@ public class Game : MonoBehaviour
 		_internalStatus.text = "Game Status: " + Enum.GetName(_gameState.GetType(), _gameState) + Environment.NewLine
 			+ "Generator Status: " + Enum.GetName(_world.Status.GetType(), _world.Status);
 
-		HandleInput();
-
-		if (_world.Status == WorldGeneratorStatus.TerrainReady && _gameState == GameState.Starting)
-			StartCoroutine(_world.GenerateMeshes());
-
-		if (_world.Status == WorldGeneratorStatus.TerrainReady && _gameState == GameState.ReStarting)
-		{
-			CreatePlayer(_world.PlayerLoadedPosition, _world.PlayerLoadedRotation);
-			StartCoroutine(_world.RedrawChunksIfNecessaryAsync(() => 
-            {
-                _gameState = GameState.Started;
-
-                // set progress bar to 100%
-                _world.AlreadyGenerated = _world.MeshProgressSteps + _world.TerrainProgressSteps;
-                _world.ProgressDescription = "Ready";
-            }));
-		}
-
-		if (_world.Status == WorldGeneratorStatus.AllReady)
-		{
-			_crosshair.enabled = true;
-
-			if (_gameState == GameState.Starting)
-			{
-				_gameState = GameState.Started;
-				CreatePlayer();
-			}
-
-			_player.SetActive(true);
-			_world.RedrawChunksIfNecessary();
-		}
-	}
+        if (_world.Status == WorldGeneratorStatus.FacesReady || _world.Status == WorldGeneratorStatus.AllReady)
+        {
+            _world.RedrawChunksIfNecessary();
+            HandleInput();
+        }
+    }
 
 	public void ProcessBlockHit(Vector3 hitBlock)
 	{
@@ -121,9 +115,15 @@ public class Game : MonoBehaviour
 		}
 		else if (Input.GetKeyDown(_loadKey))
 		{
-			_gameState = GameState.ReStarting;
 			_player.SetActive(false);
-			StartCoroutine(_world.LoadWorld(false));
+            _crosshair.enabled = false;
+            
+            StartCoroutine(_world.LoadWorld(false, () =>
+            {
+                CreatePlayer(_world.PlayerLoadedPosition, _world.PlayerLoadedRotation);
+                _player.SetActive(true);
+                _crosshair.enabled = true;
+            }));
 		}
 	}
 

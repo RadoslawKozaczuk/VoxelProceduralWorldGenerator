@@ -70,11 +70,12 @@ namespace Assets.Scripts.World
 
 		/// <summary>
 		/// This method creates mesh data necessary to create a mesh.
-		/// Data for both terrain and water meshes is created.
+		/// Calculating two meshes at once is faster than creating them one by one.
+        /// Although, do not use this method if you do not need one of the meshes.
 		/// </summary>
-		public void ExtractMeshData(ref BlockData[,,] blocks, ref Vector3Int chunkPos, out MeshData terrain, out MeshData water)
+		public void CalculateMeshes(ref BlockData[,,] blocks, Vector3Int chunkPos, out Mesh terrain, out Mesh water)
 		{
-			CalculateMeshSize(ref blocks, ref chunkPos, out int tSize, out int wSize);
+			CalculateMeshesSize(ref blocks, chunkPos, out int tSize, out int wSize);
 
 			var terrainData = new MeshData
 			{
@@ -123,24 +124,11 @@ namespace Assets.Scripts.World
 				}
 			}
 
-			terrain = terrainData;
-			water = waterData;
+			terrain = CreateMesh(terrainData);
+			water = CreateMesh(waterData);
 		}
 
-		public Mesh CreateMesh(MeshData meshData)
-		{
-			var mesh = new Mesh
-			{
-				vertices = meshData.Verticies,
-				normals = meshData.Normals,
-				uv = meshData.Uvs, // Uvs maps the texture over the surface
-				triangles = meshData.Triangles
-			};
-			mesh.SetUVs(1, meshData.Suvs); // secondary uvs
-			mesh.RecalculateBounds();
-
-			return mesh;
-		}
+		
 
 		public void RecalculateFacesAfterBlockDestroy(ref BlockData[,,] blocks, int blockX, int blockY, int blockZ)
 		{
@@ -372,8 +360,23 @@ namespace Assets.Scripts.World
 				}
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		void CalculateMeshSize(ref BlockData[,,] blocks, ref Vector3Int chunkPos, out int tSize, out int wSize)
+        Mesh CreateMesh(MeshData meshData)
+        {
+            var mesh = new Mesh
+            {
+                vertices = meshData.Verticies,
+                normals = meshData.Normals,
+                uv = meshData.Uvs, // Uvs maps the texture over the surface
+                triangles = meshData.Triangles
+            };
+            mesh.SetUVs(1, meshData.Suvs); // secondary uvs
+            mesh.RecalculateBounds();
+
+            return mesh;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+		void CalculateMeshesSize(ref BlockData[,,] blocks, Vector3Int chunkPos, out int tSize, out int wSize)
 		{
 			tSize = 0;
 			wSize = 0;

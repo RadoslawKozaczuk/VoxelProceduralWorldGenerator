@@ -45,7 +45,7 @@ public struct ChunkData
 	{
 		Coord = coord;
 		Position = position;
-		Status = ChunkStatus.Created;
+		Status = ChunkStatus.NotReady;
 	}
 }
 

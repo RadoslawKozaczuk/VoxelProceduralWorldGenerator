@@ -27,24 +27,24 @@ public class PersistentStorage
 		Write(playerRotation);
 
 		// world parameters
-		_writer.Write(World.ChunkSize);
-		_writer.Write(World.Settings.WorldSizeX);
-		_writer.Write(World.WorldSizeY);
-		_writer.Write(World.Settings.WorldSizeZ);
+		_writer.Write((byte)World.ChunkSize);
+		_writer.Write((byte)World.Settings.WorldSizeX);
+		_writer.Write((byte)World.WorldSizeY);
+		_writer.Write((byte)World.Settings.WorldSizeZ);
 
-		// chunk data
-		int x, y, z;
-		for (x = 0; x < World.Settings.WorldSizeX; x++)
-			for (z = 0; z < World.Settings.WorldSizeZ; z++)
-				for (y = 0; y < World.WorldSizeY; y++)
-					Write(world.Chunks[x, y, z]);
+        // chunk data
+        int x, y, z;
+        for (x = 0; x < World.Settings.WorldSizeX; x++)
+            for (z = 0; z < World.Settings.WorldSizeZ; z++)
+                for (y = 0; y < World.WorldSizeY; y++)
+                    Write(world.Chunks[x, y, z]);
 
-		for (x = 0; x < world.TotalBlockNumberX; x++)
-			for (z = 0; z < world.TotalBlockNumberZ; z++)
-				for (y = 0; y < world.TotalBlockNumberY; y++)
-					Write(world.Blocks[x, y, z]);
+        for (x = 0; x < world.TotalBlockNumberX; x++)
+            for (z = 0; z < world.TotalBlockNumberZ; z++)
+                for (y = 0; y < world.TotalBlockNumberY; y++)
+                    Write(world.Blocks[x, y, z]);
 
-		_writer.Close();
+        _writer.Close();
 		_writer.Dispose();
 	}
 
@@ -55,16 +55,16 @@ public class PersistentStorage
 
 		var loadGameData = new SaveGameData()
 		{
-			// player data
-			PlayerPosition = ReadVector3(),
-			PlayerRotation = ReadVector3(),
+            // player data
+            PlayerPosition = ReadVector3(),
+            PlayerRotation = ReadVector3(),
 
-			// world data
-			ChunkSize = _reader.ReadByte(),
-			WorldSizeX = _reader.ReadByte(),
-			WorldSizeY = _reader.ReadByte(),
-			WorldSizeZ = _reader.ReadByte()
-		};
+            // world data
+            ChunkSize = _reader.ReadByte(),
+            WorldSizeX = _reader.ReadByte(),
+            WorldSizeY = _reader.ReadByte(),
+            WorldSizeZ = _reader.ReadByte()
+        };
 
 		int sizeX = loadGameData.WorldSizeX,
 			sizeY = loadGameData.WorldSizeY,
@@ -73,23 +73,20 @@ public class PersistentStorage
 			totalSizeY = sizeY * loadGameData.ChunkSize,
 			totalSizeZ = sizeZ * loadGameData.ChunkSize;
 
-		var chunks = new ChunkData[sizeX, sizeY, sizeZ];
-		int x, y, z;
-		for (x = 0; x < sizeX; x++)
-			for (z = 0; z < sizeZ; z++)
-				for (y = 0; y < sizeY; y++)
-					chunks[x, y, z] = ReadChunk();
+        loadGameData.Chunks = new ChunkData[sizeX, sizeY, sizeZ];
+        int x, y, z;
+        for (x = 0; x < sizeX; x++)
+            for (z = 0; z < sizeZ; z++)
+                for (y = 0; y < sizeY; y++)
+                    loadGameData.Chunks[x, y, z] = ReadChunk();
 
-		var blocks = new BlockData[totalSizeX, totalSizeY, totalSizeZ];
-		for (x = 0; x < totalSizeX; x++)
-			for (z = 0; z < totalSizeZ; z++)
-				for (y = 0; y < totalSizeY; y++)
-					blocks[x, y, z] = ReadBlock();
+        loadGameData.Blocks = new BlockData[totalSizeX, totalSizeY, totalSizeZ];
+        for (x = 0; x < totalSizeX; x++)
+            for (z = 0; z < totalSizeZ; z++)
+                for (y = 0; y < totalSizeY; y++)
+                    loadGameData.Blocks[x, y, z] = ReadBlock();
 
-		loadGameData.Chunks = chunks;
-		loadGameData.Blocks = blocks;
-
-		_reader.Close();
+        _reader.Close();
 		_reader.Dispose();
 
 		return loadGameData;
@@ -100,17 +97,6 @@ public class PersistentStorage
 	{
 		Status = ChunkStatus.NeedToBeRedrawn
 	};
-
-	BlockData[,,] ReadBlockDataArray()
-	{
-		var blocks = new BlockData[_chunkSize, _chunkSize, _chunkSize];
-		for (int z = 0; z < _chunkSize; z++)
-			for (int y = 0; y < _chunkSize; y++)
-				for (int x = 0; x < _chunkSize; x++)
-					blocks[x, y, z] = ReadBlock();
-
-		return blocks;
-	}
 
 	BlockData ReadBlock() => new BlockData
 	{

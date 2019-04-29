@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections;
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -21,9 +20,9 @@ namespace Assets.Scripts.World
 		public ChunkObject[,,] ChunkObjects;
 		public BlockData[,,] Blocks;
 		public Vector3 PlayerLoadedRotation, PlayerLoadedPosition;
-		public WorldGeneratorStatus Status { get; private set; }
-		public float TerrainProgressSteps { get; private set; }
-		public float MeshProgressSteps { get; private set; }
+        public WorldGeneratorStatus Status;
+        public float TerrainProgressSteps;
+        public float MeshProgressSteps;
         public float AlreadyGenerated;
 		public string ProgressDescription;
 
@@ -34,7 +33,6 @@ namespace Assets.Scripts.World
 
 		Stopwatch _stopwatch = new Stopwatch();
 		Scene _worldScene;
-		long _accumulatedTerrainGenerationTime, _accumulatedMeshGenerationTime;
 		int _progressStep = 1;
 
 		World()
@@ -50,81 +48,212 @@ namespace Assets.Scripts.World
 			_meshGenerator = new MeshGenerator(Settings);
 		}
 
-		/// <summary>
+        /// <summary>
 		/// Generates block types with hp and hp level.
 		/// Chunks and their objects (if first run = true).
 		/// And calculates faces.
 		/// </summary>
-		public IEnumerator GenerateWorld(bool firstRun)
-		{
-			_stopwatch.Restart();
-			ResetProgressBarVariables();
+		public IEnumerator CreateWorld(bool firstRun, Action callback)
+        {
+            _stopwatch.Restart();
+            ResetProgressBarVariables();
 
-			Status = WorldGeneratorStatus.GeneratingTerrain;
+            ProgressDescription = "Initialization...";
+            Status = WorldGeneratorStatus.NotReady;
+            Blocks = new BlockData[Settings.WorldSizeX * ChunkSize, WorldSizeY * ChunkSize, Settings.WorldSizeZ * ChunkSize];
+            AlreadyGenerated += _progressStep;
+            yield return null;
 
-			yield return null;
-			ProgressDescription = "Initialization...";
-			Blocks = new BlockData[Settings.WorldSizeX * ChunkSize, WorldSizeY * ChunkSize, Settings.WorldSizeZ * ChunkSize];
-			AlreadyGenerated += _progressStep;
+            ProgressDescription = "Calculating heights...";
+            var heights = _terrainGenerator.CalculateHeights();
+            AlreadyGenerated += _progressStep;
+            yield return null;
 
-			yield return null;
-			ProgressDescription = "Calculating heights...";
-			var heights = _terrainGenerator.CalculateHeights();
-			AlreadyGenerated += _progressStep;
+            ProgressDescription = "Calculating block types...";
+            var types = _terrainGenerator.CalculateBlockTypes(heights);
+            AlreadyGenerated += _progressStep;
+            yield return null;
 
-			yield return null;
-			ProgressDescription = "Generating terrain...";
-			var types = _terrainGenerator.CalculateBlockTypes(heights);
-			AlreadyGenerated += _progressStep;
+            ProgressDescription = "Job output deflattenization...";
+            DeflattenizeOutput(ref types);
+            AlreadyGenerated += _progressStep;
+            yield return null;
 
-			yield return null;
-			ProgressDescription = "Output deflattenization...";
-			DeflattenizeOutput(ref types);
-			AlreadyGenerated += _progressStep;
+            if (Settings.IsWater)
+            {
+                ProgressDescription = "Generating water...";
+                _terrainGenerator.AddWater(ref Blocks);
+            }
+            AlreadyGenerated += _progressStep;
+            yield return null;
 
-			yield return null;
-			if (Settings.IsWater)
-			{
-				ProgressDescription = "Generating water...";
-				_terrainGenerator.AddWater(ref Blocks);
-			}
-			AlreadyGenerated += _progressStep;
+            ProgressDescription = "Generating trees...";
+            _terrainGenerator.AddTrees(ref Blocks, Settings.TreeProbability);
+            AlreadyGenerated += _progressStep;
+            yield return null;
 
-			yield return null;
-			ProgressDescription = "Generating trees...";
-			_terrainGenerator.AddTrees(ref Blocks, Settings.TreeProbability);
-			AlreadyGenerated += _progressStep;
+            ProgressDescription = "Chunk data initialization...";
+            if (firstRun)
+                _worldScene = SceneManager.CreateScene(name);
 
-			yield return null;
-			ProgressDescription = "Creating game objects...";
-			if (firstRun)
-				_worldScene = SceneManager.CreateScene(name);
+            // chunkData need to be initialized earlier in order to allow main loop iterate over chunks before their meshes are ready
+            // thanks to this we can display chunk as soon as they become ready 
+            Chunks = new ChunkData[Settings.WorldSizeX, WorldSizeY, Settings.WorldSizeZ];
+            for (int x = 0; x < Settings.WorldSizeX; x++)
+                for (int z = 0; z < Settings.WorldSizeZ; z++)
+                    for (int y = 0; y < WorldSizeY; y++)
+                        Chunks[x, y, z] = new ChunkData(new Vector3Int(x, y, z), new Vector3Int(x * ChunkSize, y * ChunkSize, z * ChunkSize));
 
-			Chunks = new ChunkData[Settings.WorldSizeX, WorldSizeY, Settings.WorldSizeZ];
-			ChunkObjects = new ChunkObject[Settings.WorldSizeX, WorldSizeY, Settings.WorldSizeZ];
-			CreateGameObjects(firstRun);
-			AlreadyGenerated += _progressStep;
+            ChunkObjects = new ChunkObject[Settings.WorldSizeX, WorldSizeY, Settings.WorldSizeZ];
+            yield return null;
 
-			yield return null;
-			ProgressDescription = "Calculating faces...";
-			_meshGenerator.CalculateFaces(ref Blocks);
-			AlreadyGenerated += _progressStep;
+            ProgressDescription = "Calculating faces...";
+            _meshGenerator.CalculateFaces(ref Blocks);
+            AlreadyGenerated += _progressStep;
+            yield return null;
 
-			yield return null;
-			ProgressDescription = "World boundaries check...";
-			_meshGenerator.WorldBoundariesCheck(ref Blocks);
-			AlreadyGenerated += _progressStep;
+            ProgressDescription = "World boundaries check...";
+            _meshGenerator.WorldBoundariesCheck(ref Blocks);
+            AlreadyGenerated += _progressStep;
+            yield return null;
 
-			Status = WorldGeneratorStatus.TerrainReady;
+            ProgressDescription = "Creating chunks...";
+            // create chunk objects one by one 
+            for (int x = 0; x < Settings.WorldSizeX; x++)
+                for (int z = 0; z < Settings.WorldSizeZ; z++)
+                    for (int y = 0; y < WorldSizeY; y++)
+                    {
+                        ChunkData chunkData = Chunks[x, y, z];
+                        _meshGenerator.CalculateMeshes(ref Blocks, chunkData.Position, out Mesh terrainMesh, out Mesh waterMesh);
 
-			_stopwatch.Stop();
-			UnityEngine.Debug.Log($"It took {_stopwatch.ElapsedTicks / TimeSpan.TicksPerMillisecond} ms to generate all terrain.");
-		}
+                        if (firstRun)
+                        {
+                            var chunkObject = new ChunkObject();
+                            CreateChunkGameObjects(ref chunkData, ref chunkObject, terrainMesh, waterMesh);
+                            SceneManager.MoveGameObjectToScene(chunkObject.Terrain.gameObject, _worldScene);
+                            SceneManager.MoveGameObjectToScene(chunkObject.Water.gameObject, _worldScene);
+                            ChunkObjects[x, y, z] = chunkObject;
+                        }
+                        else
+                        {
+                            SetMeshesAndCollider(ref chunkData, ref ChunkObjects[x, y, z], terrainMesh, waterMesh);
+                        }
 
-		/// <summary>
-		/// Returns true if the block has been destroyed.
+                        Chunks[x, y, z].Status = ChunkStatus.NeedToBeRedrawn;
+                        AlreadyGenerated++;
+
+                        yield return null; // give back control
+                    }
+
+            Status = WorldGeneratorStatus.TerrainReady;
+
+            _stopwatch.Stop();
+            UnityEngine.Debug.Log($"It took {_stopwatch.ElapsedTicks / TimeSpan.TicksPerMillisecond} ms to generate all terrain.");
+
+            ProgressDescription = "Generation Completed";
+            callback?.Invoke();
+        }
+
+        /// <summary>
+		/// Generates block types with hp and hp level.
+		/// Chunks and their objects (if first run = true).
+		/// And calculates faces.
 		/// </summary>
-		public bool BlockHit(int blockX, int blockY, int blockZ, ref ChunkData chunkData)
+		public IEnumerator LoadWorld(bool firstRun, Action callback = null)
+        {
+            ResetProgressBarVariables();
+            _stopwatch.Restart();
+
+            ProgressDescription = "Loading data...";
+            Status = WorldGeneratorStatus.NotReady;
+            var storage = new PersistentStorage(ChunkSize);
+            SaveGameData save = storage.LoadGame();
+            Settings.WorldSizeX = save.WorldSizeX;
+            Settings.WorldSizeZ = save.WorldSizeZ;
+            PlayerLoadedPosition = save.PlayerPosition;
+            PlayerLoadedRotation = save.PlayerRotation;
+            AlreadyGenerated += _progressStep;
+            yield return null; // give back control
+
+            ProgressDescription = "Creating game objects...";
+            if (firstRun)
+                _worldScene = SceneManager.CreateScene(name);
+
+            Blocks = save.Blocks;
+            Status = WorldGeneratorStatus.TerrainReady;
+            AlreadyGenerated += _progressStep;
+            yield return null; // give back control
+
+            if(firstRun)
+            {
+                ProgressDescription = "Chunk data initialization...";
+                // chunkData need to be initialized earlier in order to allow main loop iterate over chunks before their meshes are ready
+                // thanks to this we can display chunk as soon as they become ready 
+                Chunks = new ChunkData[Settings.WorldSizeX, WorldSizeY, Settings.WorldSizeZ];
+                for (int x = 0; x < Settings.WorldSizeX; x++)
+                    for (int z = 0; z < Settings.WorldSizeZ; z++)
+                        for (int y = 0; y < WorldSizeY; y++)
+                            Chunks[x, y, z] = new ChunkData(
+                                new Vector3Int(x, y, z), 
+                                new Vector3Int(x * ChunkSize, y * ChunkSize, z * ChunkSize));
+
+                ChunkObjects = new ChunkObject[Settings.WorldSizeX, WorldSizeY, Settings.WorldSizeZ];
+                AlreadyGenerated += _progressStep;
+                yield return null; // give back control
+            }
+
+            ProgressDescription = "Calculating faces...";
+            _meshGenerator.CalculateFaces(ref Blocks);
+            AlreadyGenerated += _progressStep;
+            yield return null; // give back control
+
+            ProgressDescription = "World boundaries check...";
+            _meshGenerator.WorldBoundariesCheck(ref Blocks);
+            Status = WorldGeneratorStatus.FacesReady;
+            AlreadyGenerated += _progressStep;
+            yield return null; // give back control
+
+            ProgressDescription = "Creating chunks...";
+            // create chunk objects one by one 
+            for (int x = 0; x < Settings.WorldSizeX; x++)
+                for (int z = 0; z < Settings.WorldSizeZ; z++)
+                    for (int y = 0; y < WorldSizeY; y++)
+                    {
+                        ChunkData chunkData = Chunks[x, y, z];
+                        _meshGenerator.CalculateMeshes(ref Blocks, chunkData.Position, out Mesh terrainMesh, out Mesh waterMesh);
+
+                        if (firstRun)
+                        {
+                            var chunkObject = new ChunkObject();
+                            CreateChunkGameObjects(ref chunkData, ref chunkObject, terrainMesh, waterMesh);
+                            SceneManager.MoveGameObjectToScene(chunkObject.Terrain.gameObject, _worldScene);
+                            SceneManager.MoveGameObjectToScene(chunkObject.Water.gameObject, _worldScene);
+                            ChunkObjects[x, y, z] = chunkObject;
+                        }
+                        else
+                        {
+                            SetMeshesAndCollider(ref chunkData, ref ChunkObjects[x, y, z], terrainMesh, waterMesh);
+                        }
+
+                        Chunks[x, y, z].Status = ChunkStatus.NeedToBeRedrawn;
+                        AlreadyGenerated++;
+
+                        yield return null; // give back control
+                    }
+
+            Status = WorldGeneratorStatus.AllReady;
+
+            _stopwatch.Stop();
+            UnityEngine.Debug.Log($"It took {_stopwatch.ElapsedTicks / TimeSpan.TicksPerMillisecond} ms to generate all terrain.");
+
+            ProgressDescription = "Generation Completed";
+            callback.Invoke();
+        }
+
+        /// <summary>
+        /// Returns true if the block has been destroyed.
+        /// </summary>
+        public bool BlockHit(int blockX, int blockY, int blockZ, ref ChunkData chunkData)
 		{
 			ref BlockData b = ref Blocks[blockX, blockY, blockZ];
 
@@ -171,36 +300,6 @@ namespace Assets.Scripts.World
 			return true;
 		}
 
-		public IEnumerator RedrawChunksIfNecessaryAsync(Action callback = null)
-		{
-			_stopwatch.Restart();
-			Status = WorldGeneratorStatus.GeneratingMeshes;
-
-			for (int x = 0; x < Settings.WorldSizeX; x++)
-				for (int z = 0; z < Settings.WorldSizeZ; z++)
-					for (int y = 0; y < WorldSizeY; y++)
-					{
-						ChunkData chunkData = Chunks[x, y, z];
-						ChunkObject chunkObject = ChunkObjects[x, y, z];
-
-						if (chunkData.Status == ChunkStatus.NeedToBeRecreated)
-							RecreateMeshAndCollider(ref Chunks[x, y, z], chunkObject);
-						else if (chunkData.Status == ChunkStatus.NeedToBeRedrawn) // used only for cracks
-							RecreateTerrainMesh(ref Chunks[x, y, z], chunkObject);
-
-						AlreadyGenerated++;
-
-						yield return null; // give back control
-					}
-
-			Status = WorldGeneratorStatus.AllReady;
-			_stopwatch.Stop();
-			_accumulatedMeshGenerationTime += _stopwatch.ElapsedMilliseconds;
-			UnityEngine.Debug.Log($"It took {_accumulatedTerrainGenerationTime} ms to redraw all meshes.");
-
-            callback?.Invoke();
-        }
-
 		public void RedrawChunksIfNecessary()
 		{
 			for (int x = 0; x < Settings.WorldSizeX; x++)
@@ -208,108 +307,25 @@ namespace Assets.Scripts.World
 					for (int y = 0; y < WorldSizeY; y++)
 					{
 						ref ChunkData chunkData = ref Chunks[x, y, z];
-						ChunkObject chunkObject = ChunkObjects[x, y, z];
-						if (chunkData.Status == ChunkStatus.NeedToBeRecreated)
-							RecreateMeshAndCollider(ref chunkData, chunkObject);
-						else if (chunkData.Status == ChunkStatus.NeedToBeRedrawn) // used only for cracks
-							RecreateTerrainMesh(ref chunkData, chunkObject);
+
+                        if (chunkData.Status == ChunkStatus.NotReady)
+                            continue;
+                        else if (chunkData.Status == ChunkStatus.NeedToBeRecreated)
+                        {
+                            _meshGenerator.CalculateMeshes(ref Blocks, chunkData.Position, out Mesh terrainMesh, out Mesh waterMesh);
+                            SetMeshesAndCollider(ref chunkData, ref ChunkObjects[x, y, z], terrainMesh, waterMesh);
+                        }
+                        else if (chunkData.Status == ChunkStatus.NeedToBeRedrawn) // used only for cracks
+                        {
+                            _meshGenerator.CalculateMeshes(ref Blocks, chunkData.Position, out Mesh terrainMesh, out _);
+                            SetTerrainMesh(ref chunkData, ref ChunkObjects[x, y, z], terrainMesh);
+                        }
 					}
-		}
-
-		public IEnumerator LoadWorld(bool firstRun)
-		{
-			ResetProgressBarVariables();
-			_stopwatch.Restart();
-			Status = WorldGeneratorStatus.GeneratingTerrain;
-			ProgressDescription = "Loading data...";
-			yield return null; // give back control
-
-			var storage = new PersistentStorage(ChunkSize);
-			SaveGameData save = storage.LoadGame();
-
-			Settings.WorldSizeX = save.WorldSizeX;
-			Settings.WorldSizeZ = save.WorldSizeZ;
-			PlayerLoadedPosition = save.PlayerPosition;
-			PlayerLoadedRotation = save.PlayerRotation;
-
-			AlreadyGenerated += 4;
-			ProgressDescription = "Creating game objects...";
-			yield return null; // give back control
-
-			if (firstRun)
-				_worldScene = SceneManager.CreateScene(name);
-
-			AlreadyGenerated += 4;
-
-			for (int x = 0; x < Settings.WorldSizeX; x++)
-				for (int z = 0; z < Settings.WorldSizeZ; z++)
-					for (int y = 0; y < WorldSizeY; y++)
-					{
-						ChunkData chunkData = save.Chunks[x, y, z];
-						chunkData.Status = ChunkStatus.NeedToBeRedrawn;
-
-						ChunkObject chunkObject = ChunkObjects[x, y, z];
-
-						if (firstRun)
-						{
-							CreateGameObjects(ref chunkData, chunkObject);
-
-							SceneManager.MoveGameObjectToScene(chunkObject.Terrain.gameObject, _worldScene);
-							SceneManager.MoveGameObjectToScene(chunkObject.Water.gameObject, _worldScene);
-						}
-
-						AlreadyGenerated++;
-
-						yield return null; // give back control
-					}
-
-			Status = WorldGeneratorStatus.TerrainReady;
-			_stopwatch.Stop();
-			_accumulatedTerrainGenerationTime += _stopwatch.ElapsedMilliseconds;
-			UnityEngine.Debug.Log($"It took {_accumulatedTerrainGenerationTime} ms to load all terrain.");
-		}
-
-		public IEnumerator GenerateMeshes()
-		{
-			ProgressDescription = "Generating meshes";
-
-			_accumulatedMeshGenerationTime = 0;
-			_stopwatch.Restart();
-			Status = WorldGeneratorStatus.GeneratingMeshes;
-
-			for (int x = 0; x < Settings.WorldSizeX; x++)
-				for (int z = 0; z < Settings.WorldSizeZ; z++)
-					for (int y = 0; y < WorldSizeY; y++)
-					{
-						ChunkData chunkData = Chunks[x, y, z];
-						ChunkObject chunkObject = ChunkObjects[x, y, z];
-						// out: This method sets the value of the argument used as this parameter.
-						// ref: This method may set the value of the argument used as this parameter.
-						// in: This method doesn't modify the value of the argument used as this parameter,
-						//		it should only be applied to immutable structs (readonly struct and all fields readonly),
-						//		otherwise it harms the performance because the compiler has to make defensive copies.
-						_meshGenerator.ExtractMeshData(ref Blocks, ref chunkData.Position, out MeshData terrainData, out MeshData waterData);
-						CreateRenderingComponents(chunkObject, terrainData, waterData);
-						chunkData.Status = ChunkStatus.Created;
-
-						AlreadyGenerated++;
-
-						yield return null; // give back control
-					}
-
-			Status = WorldGeneratorStatus.AllReady;
-			_stopwatch.Stop();
-			_accumulatedMeshGenerationTime += _stopwatch.ElapsedMilliseconds;
-			ProgressDescription = "Ready";
-
-			UnityEngine.Debug.Log($"It took {_accumulatedMeshGenerationTime} ms to create all meshes.");
 		}
 
 		void ResetProgressBarVariables()
 		{
 			// Unity editor remembers the state of the asset classes so these values have to reinitialized
-			_accumulatedTerrainGenerationTime = 0;
-			_accumulatedMeshGenerationTime = 0;
 			_progressStep = 1;
 			AlreadyGenerated = 0;
 
@@ -347,88 +363,58 @@ namespace Assets.Scripts.World
 					}
 		}
 
-		void CreateGameObjects(bool firstRun)
+        /// <summary>
+        /// Sets both meshes and mesh mesh collider.
+        /// </summary>
+        void SetMeshesAndCollider(ref ChunkData chunkData, ref ChunkObject chunkObject, Mesh terrainMesh, Mesh waterMesh)
+        {
+            var terrainFilter = chunkObject.Terrain.GetComponent<MeshFilter>();
+            terrainFilter.mesh = terrainMesh;
+            chunkObject.Terrain.GetComponent<MeshCollider>().sharedMesh = terrainMesh;
+
+            var waterFilter = chunkObject.Water.GetComponent<MeshFilter>();
+            waterFilter.mesh = waterMesh;
+
+            chunkData.Status = ChunkStatus.Ready;
+        }
+
+        /// <summary>
+        /// Apply terrain mesh to the given chunk.
+        /// </summary>
+        void SetTerrainMesh(ref ChunkData chunkData, ref ChunkObject chunkObject, Mesh terrainMesh)
 		{
-			for (int x = 0; x < Settings.WorldSizeX; x++)
-				for (int z = 0; z < Settings.WorldSizeZ; z++)
-					for (int y = 0; y < WorldSizeY; y++)
-					{
-						var chunkData = new ChunkData(new Vector3Int(x, y, z), new Vector3Int(x * ChunkSize, y * ChunkSize, z * ChunkSize));
-						var chunkObject = new ChunkObject();
+            var meshFilter = chunkObject.Terrain.GetComponent<MeshFilter>();
+			meshFilter.mesh = terrainMesh;
 
-						if (firstRun)
-						{
-							CreateGameObjects(ref chunkData, chunkObject);
-							chunkData.Status = ChunkStatus.NeedToBeRedrawn;
-
-							SceneManager.MoveGameObjectToScene(chunkObject.Terrain.gameObject, _worldScene);
-							SceneManager.MoveGameObjectToScene(chunkObject.Water.gameObject, _worldScene);
-						}
-
-						Chunks[x, y, z] = chunkData;
-						ChunkObjects[x, y, z] = chunkObject;
-					}
+			chunkData.Status = ChunkStatus.Ready;
 		}
 
-		void RecreateMeshAndCollider(ref ChunkData chunkData, ChunkObject chunkObject)
-		{
-			_meshGenerator.ExtractMeshData(ref Blocks, ref chunkData.Position, out MeshData t, out MeshData w);
-			var meshT = _meshGenerator.CreateMesh(t);
-			var meshW = _meshGenerator.CreateMesh(w);
-
-			var terrainFilter = chunkObject.Terrain.GetComponent<MeshFilter>();
-			terrainFilter.mesh = meshT;
-            chunkObject.Terrain.GetComponent<MeshCollider>().sharedMesh = meshT;
-
-			var waterFilter = chunkObject.Water.GetComponent<MeshFilter>();
-			waterFilter.mesh = meshW;
-
-			chunkData.Status = ChunkStatus.Created;
-		}
-
-		/// <summary>
-		/// Destroys terrain mesh and recreates it.
-		/// Used for cracks as they do not change the terrain geometry.
-		/// </summary>
-		void RecreateTerrainMesh(ref ChunkData chunkData, ChunkObject chunkObject)
-		{
-            _meshGenerator.ExtractMeshData(ref Blocks, ref chunkData.Position, out MeshData t, out _);
-			var meshT = _meshGenerator.CreateMesh(t);
-
-			var meshFilter = chunkObject.Terrain.GetComponent<MeshFilter>();
-			meshFilter.mesh = meshT;
-
-			chunkData.Status = ChunkStatus.Created;
-		}
-
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		void CreateGameObjects(ref ChunkData chunkData, ChunkObject chunkObject)
+        /// <summary>
+        /// Creates chunk objects together with all necessary components.
+        /// After that's done apply mesh and mesh collider.
+        /// </summary>
+		void CreateChunkGameObjects(ref ChunkData chunkData, ref ChunkObject chunkObject, Mesh terrainMesh, Mesh waterMesh)
 		{
 			string name = chunkData.Coord.x.ToString() + chunkData.Coord.y + chunkData.Coord.z;
 			chunkObject.Terrain = new GameObject(name + "_terrain");
 			chunkObject.Terrain.transform.position = chunkData.Position;
 			chunkObject.Water = new GameObject(name + "_water");
 			chunkObject.Water.transform.position = chunkData.Position;
-		}
 
-		void CreateRenderingComponents(ChunkObject chunkObject, MeshData terrainData, MeshData waterData)
-		{
-			var meshT = _meshGenerator.CreateMesh(terrainData);
-			var rt = chunkObject.Terrain.gameObject.AddComponent(typeof(MeshRenderer)) as MeshRenderer;
-			rt.material = _terrainTexture;
+            MeshRenderer mrT = chunkObject.Terrain.gameObject.AddComponent(typeof(MeshRenderer)) as MeshRenderer;
+            mrT.material = _terrainTexture;
 
-			var ft = (MeshFilter)chunkObject.Terrain.AddComponent(typeof(MeshFilter));
-			ft.mesh = meshT;
+            var mfT = (MeshFilter)chunkObject.Terrain.AddComponent(typeof(MeshFilter));
+            mfT.mesh = terrainMesh;
 
-			var ct = chunkObject.Terrain.gameObject.AddComponent(typeof(MeshCollider)) as MeshCollider;
-			ct.sharedMesh = meshT;
+            var mc = chunkObject.Terrain.gameObject.AddComponent(typeof(MeshCollider)) as MeshCollider;
+            mc.sharedMesh = terrainMesh;
 
-			var meshW = _meshGenerator.CreateMesh(waterData);
-			var rw = chunkObject.Water.gameObject.AddComponent(typeof(MeshRenderer)) as MeshRenderer;
-			rw.material = _waterTexture;
+            var mrW = chunkObject.Water.gameObject.AddComponent(typeof(MeshRenderer)) as MeshRenderer;
+            mrW.material = _waterTexture;
 
-			var fw = (MeshFilter)chunkObject.Water.AddComponent(typeof(MeshFilter));
-			fw.mesh = meshW;
-		}
+            var mfW = (MeshFilter)chunkObject.Water.AddComponent(typeof(MeshFilter));
+            mfW.mesh = waterMesh;
+        }
 	}
 }

@@ -29,15 +29,17 @@ public class LevelLoader : MonoBehaviour
 
 	int _waterLevel = 30;
 
-	public void LoadLevel(int sceneIndex)
+	public void NewGame()
 	{
-		World.Settings = _settings;
+        Game.StartFromLoadGame = false;
+        StartCoroutine(LoadLevelAsync(1));
+    }
 
-		_progressBar.SetActive(true);
-		_description.text = "Level loading...";
-
-		StartCoroutine(LoadLevelAsync(1));
-	}
+    public void LoadGame()
+    {
+        Game.StartFromLoadGame = true;
+        StartCoroutine(LoadLevelAsync(1));
+    }
 
 	public void QuitGame() => Application.Quit();
 
@@ -76,7 +78,11 @@ public class LevelLoader : MonoBehaviour
 
 	IEnumerator LoadLevelAsync(int sceneIndex)
 	{
-		AsyncOperation operation = SceneManager.LoadSceneAsync(sceneIndex);
+        World.Settings = _settings;
+        _progressBar.SetActive(true);
+        _description.text = "Level loading...";
+
+        AsyncOperation operation = SceneManager.LoadSceneAsync(sceneIndex);
 
 		while (!operation.isDone)
 		{
