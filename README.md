@@ -7,4 +7,6 @@ Important parts:
 - basic shader for water
 - object and scene managment
 
+![Farmers Market Finder Demo](demo/demo.gif)
+
 ![Generated World](https://i.imgur.com/R1HfNmB.jpg)
