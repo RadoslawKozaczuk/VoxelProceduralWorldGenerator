@@ -15,6 +15,7 @@ public class LevelLoader : MonoBehaviour
 	[SerializeField] InputField _seedInputField;
 	[SerializeField] Text _waterLevelText;
 	[SerializeField] Slider _waterSlider;
+    [SerializeField] RectTransform _footer;
 
 	GameSettings _settings = new GameSettings()
 	{
@@ -29,7 +30,7 @@ public class LevelLoader : MonoBehaviour
 
 	int _waterLevel = 30;
 
-	public void NewGame()
+    public void NewGame()
 	{
         Game.StartFromLoadGame = false;
         StartCoroutine(LoadLevelAsync(1));
@@ -79,6 +80,7 @@ public class LevelLoader : MonoBehaviour
 	IEnumerator LoadLevelAsync(int sceneIndex)
 	{
         World.Settings = _settings;
+        _footer.gameObject.SetActive(true);
         _progressBar.SetActive(true);
         _description.text = "Level loading...";
 

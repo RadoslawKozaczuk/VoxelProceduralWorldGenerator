@@ -900,7 +900,7 @@ PrefabInstance:
     - target: {fileID: 4813526455228715723, guid: 250c85b89e0f7be4f97a5ce37f82f56a,
         type: 3}
       propertyPath: m_AnchorMax.y
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 250c85b89e0f7be4f97a5ce37f82f56a, type: 3}
@@ -4233,6 +4233,7 @@ MonoBehaviour:
   _seedInputField: {fileID: 448544707}
   _waterLevelText: {fileID: 464164334}
   _waterSlider: {fileID: 1139005295}
+  _footer: {fileID: 1644502207}
 --- !u!4 &1350892294
 Transform:
   m_ObjectHideFlags: 0
@@ -4652,7 +4653,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &1644502207
 RectTransform:
   m_ObjectHideFlags: 0

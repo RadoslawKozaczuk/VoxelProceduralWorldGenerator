@@ -17,7 +17,6 @@ public class Game : MonoBehaviour
 	[SerializeField] World _world;
 	[SerializeField] GameObject _player;
 	[SerializeField] Camera _mainCamera;
-	[SerializeField] GameState _gameState = GameState.NotInitialized;
 	[SerializeField] KeyCode _saveKey = KeyCode.K;
 	[SerializeField] KeyCode _loadKey = KeyCode.L;
 	[SerializeField] Vector3 _playerStartPosition;
@@ -34,7 +33,6 @@ public class Game : MonoBehaviour
 		Debug.Log("Waiting instructions...");
 
 		_player.SetActive(false);
-		_gameState = GameState.Starting;
 
         if(StartFromLoadGame)
         {
@@ -64,8 +62,7 @@ public class Game : MonoBehaviour
 		_progressBar.value = progress;
 		_progressText.text = Mathf.RoundToInt(progress * 100) + "%";
 		_description.text = _world.ProgressDescription;
-		_internalStatus.text = "Game Status: " + Enum.GetName(_gameState.GetType(), _gameState) + Environment.NewLine
-			+ "Generator Status: " + Enum.GetName(_world.Status.GetType(), _world.Status);
+		_internalStatus.text = "Generator Status: " + Enum.GetName(_world.Status.GetType(), _world.Status);
 
         if (_world.Status == WorldGeneratorStatus.FacesReady || _world.Status == WorldGeneratorStatus.AllReady)
         {

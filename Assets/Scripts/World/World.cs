@@ -145,7 +145,9 @@ namespace Assets.Scripts.World
                         yield return null; // give back control
                     }
 
-            Status = WorldGeneratorStatus.TerrainReady;
+            Status = WorldGeneratorStatus.AllReady;
+
+            AlreadyGenerated += _progressStep;
 
             _stopwatch.Stop();
             UnityEngine.Debug.Log($"It took {_stopwatch.ElapsedTicks / TimeSpan.TicksPerMillisecond} ms to generate all terrain.");

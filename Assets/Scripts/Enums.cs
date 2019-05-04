@@ -15,6 +15,4 @@ public enum WorldGeneratorStatus { NotReady, TerrainReady, FacesReady, AllReady 
 
 public enum ChunkStatus { NotReady, NeedToBeRedrawn, NeedToBeRecreated, Ready }
 
-public enum GameState { NotInitialized, Starting, Started }
-
 public enum TreeProbability { None, Some, Lots }
