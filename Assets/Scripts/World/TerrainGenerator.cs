@@ -2,10 +2,11 @@
 using Unity.Collections;
 using Unity.Jobs;
 using UnityEngine;
+using Unity.Mathematics;
 
 namespace Assets.Scripts.World
 {
-	public class TerrainGenerator
+	public class TerrainGenerator : MonoBehaviour
 	{
 		#region Constants
 		// caves should be more erratic so has to be a higher number
@@ -51,11 +52,11 @@ namespace Assets.Scripts.World
 		public static int WaterLevel; // inclusive
 		public static float SeedValue;
 
-		readonly int _worldSizeX, _worldSizeZ, _totalBlockNumberX, _totalBlockNumberY, _totalBlockNumberZ;
+		int _worldSizeX, _worldSizeZ, _totalBlockNumberX, _totalBlockNumberY, _totalBlockNumberZ;
 
-		// Perlin function value of x is equal to its value of -x. Same for y.
-		// To avoid it we need an offset, quite large one to be sure.
-		public TerrainGenerator(GameSettings options)
+        [SerializeField] ComputeShader heightsShader;
+
+        public void Initialize(GameSettings options)
 		{
 			_worldSizeX = options.WorldSizeX;
 			_worldSizeZ = options.WorldSizeZ;
@@ -82,7 +83,7 @@ namespace Assets.Scripts.World
 		public static float Map(float newmin, float newmax, float origmin, float origmax, float value) =>
 			Mathf.Lerp(newmin, newmax, Mathf.InverseLerp(origmin, origmax, value));
 
-		public static BlockTypes DetermineType(int worldX, int worldY, int worldZ, HeightData height)
+		public static BlockTypes DetermineType(int worldX, int worldY, int worldZ, int3 height)
 		{
 			if (worldY == 0) return BlockTypes.Bedrock;
 
@@ -91,10 +92,10 @@ namespace Assets.Scripts.World
 				return BlockTypes.Air;
 
 			// bedrock
-			if (worldY <= height.Bedrock) return BlockTypes.Bedrock;
+			if (worldY <= height.x) return BlockTypes.Bedrock;
 
 			// stone
-			if (worldY <= height.Stone)
+			if (worldY <= height.y)
 			{
 				if (worldY < DiamondMaxHeight
                     && FractalFunc(worldX, worldY, worldZ, DiamondSmooth, DiamondOctaves) < DiamondProbability)
@@ -108,8 +109,8 @@ namespace Assets.Scripts.World
 			}
 
 			// dirt
-			if (worldY == height.Dirt) return BlockTypes.Grass;
-			if (worldY < height.Dirt) return BlockTypes.Dirt;
+			if (worldY == height.z) return BlockTypes.Grass;
+			if (worldY < height.z) return BlockTypes.Dirt;
 
 			return BlockTypes.Air;
 		}
@@ -147,11 +148,16 @@ namespace Assets.Scripts.World
 			return (xy + yz + xz + yx + zy + zx) / 6.0f;
 		}
 
-		// calculate global Heights
-		public HeightData[] CalculateHeights()
+        /// <summary>
+        /// Calculates global heights. This method uses Unity Job System.
+        /// Each column described by its x and z values has three heights.
+        /// One for Bedrock, Stone and Dirt. Heights determines up to where certain types appear.
+        /// x is Bedrock, y is Stone and z is Dirt.
+        /// </summary>
+        public int3[] CalculateHeights()
 		{
 			// output data
-			var heights = new HeightData[_totalBlockNumberX * _totalBlockNumberZ];
+			var heights = new int3[_totalBlockNumberX * _totalBlockNumberZ];
 
 			var heightJob = new HeightJob()
 			{
@@ -159,7 +165,7 @@ namespace Assets.Scripts.World
 				TotalBlockNumberX = _totalBlockNumberX,
 
 				// output
-				Result = new NativeArray<HeightData>(heights, Allocator.TempJob)
+				Result = new NativeArray<int3>(heights, Allocator.TempJob)
 			};
 
 			var heightJobHandle = heightJob.Schedule(_totalBlockNumberX * _totalBlockNumberZ, 8);
@@ -172,7 +178,50 @@ namespace Assets.Scripts.World
 			return heights;
 		}
 
-		public BlockTypes[] CalculateBlockTypes(HeightData[] heights)
+        /// <summary>
+        /// Calculates global heights. This method uses compute shaders.
+        /// Unfortunately, this method is slower than the classic approach.
+        /// Mostly due to the necessity of data preparation.
+        /// Each column described by its x and z values has three heights.
+        /// One for Bedrock, Stone and Dirt. Heights determines up to where certain types appear.
+        /// x is Bedrock, y is Stone and z is Dirt.
+        /// </summary>
+        public int3[] CalculateHeightsGPU()
+        {
+            var inputData = new int3[_totalBlockNumberX * _totalBlockNumberZ];
+
+            // unfortunately shaders can receive only one dim data
+            // there is no 2-dimensional buffers in HLSL
+            // would be nice if we could pass 2d data seet
+
+            // preparing - this takes the most time at the moment
+            for (int x = 0; x < _totalBlockNumberX; x++)
+                for (int z = 0; z < _totalBlockNumberZ; z++)
+                    inputData[Utils.IndexFlattenizer2D(x, z, _totalBlockNumberX)] = new int3(x, 0, z);
+
+            // size of a single element in the array
+            //int size = System.Runtime.InteropServices.Marshal.SizeOf(new int3()); // equals 12
+            var buffer = new ComputeBuffer(inputData.Length, 12); 
+
+            buffer.SetData(inputData);
+
+            // The FindKernel function takes a string name, which corresponds to one of the kernel names 
+            // we set up in the compute shader. 
+            int kernel = heightsShader.FindKernel("CSMain");
+
+            heightsShader.SetBuffer(kernel, "Result", buffer);
+            heightsShader.SetInt("Seed", 1300);
+
+            // the integers passed to the Dispatch call specify the number of thread groups we want to spawn
+            heightsShader.Dispatch(kernel, 16, 32, 16);
+
+            var output = new int3[_totalBlockNumberX * _totalBlockNumberZ];
+            buffer.GetData(output);
+
+            return output;
+        }
+
+        public BlockTypes[] CalculateBlockTypes(int3[] heights)
 		{
 			var inputSize = _totalBlockNumberX * _totalBlockNumberY * _totalBlockNumberZ;
 
@@ -185,7 +234,7 @@ namespace Assets.Scripts.World
 				TotalBlockNumberX = _totalBlockNumberX,
 				TotalBlockNumberY = _totalBlockNumberY,
 				TotalBlockNumberZ = _totalBlockNumberZ,
-				Heights = new NativeArray<HeightData>(heights, Allocator.TempJob),
+				Heights = new NativeArray<int3>(heights, Allocator.TempJob),
 
 				// output
 				Result = new NativeArray<BlockTypes>(types, Allocator.TempJob)

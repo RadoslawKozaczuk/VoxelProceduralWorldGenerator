@@ -1,5 +1,6 @@
 ﻿using Unity.Collections;
 using Unity.Jobs;
+using Unity.Mathematics;
 
 namespace Assets.Scripts.World
 {
@@ -12,7 +13,7 @@ namespace Assets.Scripts.World
 		[ReadOnly]
 		public int TotalBlockNumberZ;
 		[ReadOnly]
-		public NativeArray<HeightData> Heights;
+		public NativeArray<int3> Heights;
 
 		public NativeArray<BlockTypes> Result;
 

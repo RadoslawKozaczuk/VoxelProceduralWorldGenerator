@@ -1,0 +1,105 @@
+﻿// This specifies the entry point to the program (essentially the compute shader’s "main").
+// A single compute shader file can have a number of these functions defined, 
+// and you can call whichever one you need from script.
+#pragma kernel CSMain
+
+#include "SimplexNoise2D.cginc"
+
+// A structured buffer is just an array of data consisting of a single data type.
+// This declares a variable that contains data the shader program will work with.
+// Since we aren’t working with mesh data, we have to explicitly declare what data your compute shader will read and write to.
+// The "RW" in front of the data type specifies that the shader will both read and write to that variable.
+RWStructuredBuffer<int3> Result;
+
+// parameters - they do not compile at the moment
+// I need to put here all the smooths, octaves etc. (for now all values are hard-coded)
+//CBUFFER_START(Params)
+//	int Seed;
+//CBUFFER_END
+
+float map(float value, float fromMin, float fromMax, float toMin, float toMax)
+{
+	// convert the current value to a percentage
+	// 0% - fromMin, 100% - fromMax
+	float perc = (value - fromMin) / (fromMax - fromMin);
+
+	// do the same operation backwards with toMin and toMax
+	return perc * (toMax - toMin) + toMin;
+}
+
+// just like in C functions need to be declared before (above) they are used
+float FractalBrownianMotion(float x, float z, int oct, float pers)
+{
+	float total = 0, frequency = 1, amplitude = 1, maxValue = 0;
+
+	for (int i = 0; i < oct; i++)
+	{
+		float2 params;
+		params.x = (x + 32000) * frequency;
+		params.y = (z + 32000) * frequency;
+
+		total += snoise(params) * amplitude;
+
+		maxValue += amplitude;
+		amplitude *= pers;
+		frequency *= 2;
+	}
+
+	return total / maxValue;
+}
+
+// This line specifies the dimensions of the thread groups being spawned by our compute shader. 
+// GPUs take advantage of the massive parallel processing powers of the GPU by creating threads that run simultaneously.
+// At the moment I have no idea how to set these numbers properly except for simple trial and error approach.
+[numthreads(16, 1, 16)]
+void CSMain (uint3 id : SV_DispatchThreadID)
+{
+	// if I had length I could perform deflatteniazation here
+	//y = index / lengthX;
+	//x = index - y * lengthX;
+	//int x;
+	//int y;
+
+	// TODO: at the moment this shader not only returns wrong results (must be a stupid error somewhere)
+	// but also is slower than the Unity parallelization via Job System
+	// which is super sad because it took me some time to glue this all together.
+
+	int bedrockHeight = (int)map(
+		FractalBrownianMotion(
+			id.x * 0.1f, // SmoothBedrock
+			id.z * 0.1f, // SmoothBedrock
+			1, // OctavesBedrock
+			0.5f), // PersistenceBedrock
+		0, // map from min
+		1, // map from max
+		0, // map to min
+		15 // map to max
+	);
+
+	int stoneHeight = (int)map(
+		FractalBrownianMotion(
+			id.x * 0.05f, // SmoothStone
+			id.z * 0.05f, // SmoothStone
+			2, // OctavesStone
+			0.25f), // PersistenceStone
+		0,
+		1,
+		0,
+		80
+	);
+
+	int dirtHeight = (int)map(
+		FractalBrownianMotion(
+			id.x * 0.01f, // SmoothDirt
+			id.z * 0.01f, // SmoothDirt
+			3, // OctavesDirt
+			0.5f), // PersistenceDirt
+		0,
+		1,
+		0,
+		90
+	);
+
+	// height bedrock, stone, dirt
+	Result[id.x] = int3(bedrockHeight, stoneHeight, dirtHeight);
+}

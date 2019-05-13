@@ -4,17 +4,24 @@
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInternal: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 1eb6898d0177b8249bdf93bba445c010, type: 3}
   m_Name: World
   m_EditorClassIdentifier: 
-  ChunkSize: 32
-  WorldSizeX: 7
-  WorldSizeY: 4
-  WorldSizeZ: 7
-  ProgressDescription: Ready
+  PlayerLoadedRotation: {x: 0, y: 0, z: 0}
+  PlayerLoadedPosition: {x: 0, y: 0, z: 0}
+  Status: 0
+  TerrainProgressSteps: 9
+  MeshProgressSteps: 0
+  AlreadyGenerated: 1
+  ProgressDescription: Calculating heights...
+  _terrainGenerator: {fileID: 8580100497005569396, guid: 2179f553d67c25340ac0e841a319429e,
+    type: 3}
+  _meshGenerator: {fileID: 7866537875865777819, guid: e06ddf439a768bb4ba5ce75b97b69a43,
+    type: 3}
   _terrainTexture: {fileID: 2100000, guid: 0beff685461bd4744bc433ab1599a347, type: 2}
   _waterTexture: {fileID: 2100000, guid: c40c0017d3704914db1e95d92cdb03a4, type: 2}

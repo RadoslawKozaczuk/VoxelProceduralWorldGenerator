@@ -42,12 +42,6 @@ namespace Assets.Scripts.World
 			TotalBlockNumberZ = Settings.WorldSizeZ * ChunkSize;
 		}
 
-		void OnEnable()
-		{
-			_terrainGenerator = new TerrainGenerator(Settings);
-			_meshGenerator = new MeshGenerator(Settings);
-		}
-
         /// <summary>
 		/// Generates block types with hp and hp level.
 		/// Chunks and their objects (if first run = true).
@@ -55,6 +49,9 @@ namespace Assets.Scripts.World
 		/// </summary>
 		public IEnumerator CreateWorld(bool firstRun, Action callback)
         {
+            _terrainGenerator.Initialize(Settings);
+            _meshGenerator.Initialize(Settings);
+
             _stopwatch.Restart();
             ResetProgressBarVariables();
 
@@ -65,7 +62,30 @@ namespace Assets.Scripts.World
             yield return null;
 
             ProgressDescription = "Calculating heights...";
+
             var heights = _terrainGenerator.CalculateHeights();
+
+            // shader test code
+            //var swN = new Stopwatch();
+            //var swT = new Stopwatch();
+
+            //swN.Start();
+            //for (int i = 0; i < 20; i++)
+            //{
+            //    heights = _terrainGenerator.CalculateHeights();
+
+            //}
+            //swN.Stop();
+            //long timeN = swN.ElapsedTicks / 20;
+
+            //swT.Start();
+            //for (int i = 0; i < 20; i++)
+            //{
+            //    heights = _terrainGenerator.CalculateHeightsGPU();
+            //}
+            //swT.Stop();
+            //long timeT = swT.ElapsedTicks / 20;
+
             AlreadyGenerated += _progressStep;
             yield return null;
 
@@ -150,7 +170,7 @@ namespace Assets.Scripts.World
             AlreadyGenerated += _progressStep;
 
             _stopwatch.Stop();
-            UnityEngine.Debug.Log($"It took {_stopwatch.ElapsedTicks / TimeSpan.TicksPerMillisecond} ms to generate all terrain.");
+            UnityEngine.Debug.Log($"It took {_stopwatch.ElapsedTicks / TimeSpan.TicksPerMillisecond} ms to generate the world.");
 
             ProgressDescription = "Generation Completed";
             callback?.Invoke();

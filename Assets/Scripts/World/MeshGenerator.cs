@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace Assets.Scripts.World
 {
-	public class MeshGenerator
+	public class MeshGenerator : MonoBehaviour
 	{
 		const float waterUvConst = 1.0f / World.ChunkSize;
 
@@ -43,7 +43,7 @@ namespace Assets.Scripts.World
 
 		// order goes as follows
 		// NoCrack, Crack1, Crack2, Crack3, Crack4, Crack5, Crack6, Crack7, Crack8, Crack9, Crack10
-		readonly Vector2[,] _crackUVs;
+		Vector2[,] _crackUVs;
 
 		readonly Vector3 _p0 = new Vector3(-0.5f, -0.5f, 0.5f),
 						 _p1 = new Vector3(0.5f, -0.5f, 0.5f),
@@ -55,9 +55,9 @@ namespace Assets.Scripts.World
 						 _p7 = new Vector3(-0.5f, 0.5f, -0.5f);
 		#endregion
 
-		readonly int _worldSizeX, _worldSizeZ, _totalBlockNumberX, _totalBlockNumberY, _totalBlockNumberZ;
+		int _worldSizeX, _worldSizeZ, _totalBlockNumberX, _totalBlockNumberY, _totalBlockNumberZ;
 
-		public MeshGenerator(GameSettings options)
+		public void Initialize(GameSettings options)
 		{
 			_worldSizeX = options.WorldSizeX;
 			_worldSizeZ = options.WorldSizeZ;

@@ -1,5 +1,6 @@
 ﻿using Unity.Collections;
 using Unity.Jobs;
+using Unity.Mathematics;
 
 namespace Assets.Scripts.World
 {
@@ -8,17 +9,17 @@ namespace Assets.Scripts.World
 		[ReadOnly]
 		public int TotalBlockNumberX;
 
-		public NativeArray<HeightData> Result;
+		public NativeArray<int3> Result;
 
 		public void Execute(int i)
 		{
 			Utils.IndexDeflattenizer2D(i, TotalBlockNumberX, out int x, out int z);
 
-			Result[i] = new HeightData()
+			Result[i] = new int3()
 			{
-				Bedrock = TerrainGenerator.GenerateBedrockHeight(x, z),
-				Stone = TerrainGenerator.GenerateStoneHeight(x, z),
-				Dirt = TerrainGenerator.GenerateDirtHeight(x, z)
+				x = TerrainGenerator.GenerateBedrockHeight(x, z),
+				y = TerrainGenerator.GenerateStoneHeight(x, z),
+				z = TerrainGenerator.GenerateDirtHeight(x, z)
 			};
 		}
 	}
