@@ -266,9 +266,11 @@ namespace Assets.Scripts.World
             Status = WorldGeneratorStatus.AllReady;
 
             _stopwatch.Stop();
-            UnityEngine.Debug.Log($"It took {_stopwatch.ElapsedTicks / TimeSpan.TicksPerMillisecond} ms to generate all terrain.");
+            UnityEngine.Debug.Log($"It took {_stopwatch.ElapsedTicks / TimeSpan.TicksPerMillisecond} ms to load all terrain.");
 
-            ProgressDescription = "Generation Completed";
+            AlreadyGenerated = TerrainProgressSteps + MeshProgressSteps; // hardcoded end indicator
+
+            ProgressDescription = "Game Load Completed";
             callback.Invoke();
         }
 

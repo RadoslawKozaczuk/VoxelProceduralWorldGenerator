@@ -2,6 +2,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using Assets.Scripts.World;
+using Assets.Scripts;
 
 public class Game : MonoBehaviour
 {
@@ -20,8 +21,9 @@ public class Game : MonoBehaviour
 	[SerializeField] KeyCode _saveKey = KeyCode.K;
 	[SerializeField] KeyCode _loadKey = KeyCode.L;
 	[SerializeField] Vector3 _playerStartPosition;
+    [SerializeField] TextReveal _topMessage;
 
-	void Start()
+    void Start()
 	{
 		_crosshair.enabled = false;
 
@@ -34,22 +36,28 @@ public class Game : MonoBehaviour
 
 		_player.SetActive(false);
 
+        _topMessage.HideMessage();
+
         if(StartFromLoadGame)
         {
+            _topMessage.HideMessage();
             StartCoroutine(_world.LoadWorld(true, () =>
             {
                 CreatePlayer(_world.PlayerLoadedPosition, _world.PlayerLoadedRotation);
                 _player.SetActive(true);
                 _crosshair.enabled = true;
+                _topMessage.ShowNewMessage("Game Loaded Successfully");
             }));
         }
         else
         {
+            _topMessage.HideMessage();
             StartCoroutine(_world.CreateWorld(true, () =>
             {
                 CreatePlayer();
                 _player.SetActive(true);
                 _crosshair.enabled = true;
+                _topMessage.ShowNewMessage("New World Created Successfully");
             }));
         }
     }
@@ -99,7 +107,8 @@ public class Game : MonoBehaviour
 	{
 		if (Input.GetKeyDown(_saveKey))
 		{
-			var storage = new PersistentStorage(World.ChunkSize);
+            _topMessage.HideMessage();
+            var storage = new PersistentStorage(World.ChunkSize);
 			var t = _player.transform;
 
 			var playerRotation = new Vector3(
@@ -108,11 +117,13 @@ public class Game : MonoBehaviour
 				0);
 
 			storage.SaveGame(t.position, playerRotation, _world);
-			Debug.Log("Game Saved");
+            _topMessage.ShowNewMessage("Game Saved Successfully");
+            Debug.Log("Game Saved");
 		}
 		else if (Input.GetKeyDown(_loadKey))
 		{
-			_player.SetActive(false);
+            _topMessage.HideMessage();
+            _player.SetActive(false);
             _crosshair.enabled = false;
             
             StartCoroutine(_world.LoadWorld(false, () =>
@@ -120,6 +131,7 @@ public class Game : MonoBehaviour
                 CreatePlayer(_world.PlayerLoadedPosition, _world.PlayerLoadedRotation);
                 _player.SetActive(true);
                 _crosshair.enabled = true;
+                _topMessage.ShowNewMessage("Game Loaded Successfully");
             }));
 		}
 	}
