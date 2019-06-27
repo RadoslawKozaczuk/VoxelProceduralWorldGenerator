@@ -23,14 +23,14 @@ public class LevelLoader : MonoBehaviour
 		IsWater = true,
 		WaterLevel = 30,
 		SeedValue = 32000,
-		TreeProbability = TreeProbability.None,
+		TreeProbability = TreeProbability.Some,
 		WorldSizeX = 3,
 		WorldSizeZ = 3
 	};
 
 	int _waterLevel = 30;
 
-    void Start() => _settings.TreeProbability = TreeProbability.None;
+    void Start() => _settings.TreeProbability = TreeProbability.Some;
 
     public void NewGame()
 	{

@@ -1251,6 +1251,16 @@ PrefabInstance:
       propertyPath: _topMessage
       value: 
       objectReference: {fileID: 1269173747}
+    - target: {fileID: 114898284949759366, guid: 1fcd5e8ae70ba1e44a1f577082c26d51,
+        type: 3}
+      propertyPath: _playerStartPosition.x
+      value: 33.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 114898284949759366, guid: 1fcd5e8ae70ba1e44a1f577082c26d51,
+        type: 3}
+      propertyPath: _playerStartPosition.z
+      value: 12
+      objectReference: {fileID: 0}
     - target: {fileID: 4057085566991552, guid: 1fcd5e8ae70ba1e44a1f577082c26d51, type: 3}
       propertyPath: m_RootOrder
       value: 2

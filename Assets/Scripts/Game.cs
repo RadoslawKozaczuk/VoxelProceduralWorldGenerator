@@ -182,9 +182,13 @@ public class Game : MonoBehaviour
 	void CreatePlayer(Vector3? position = null, Vector3? rotation = null)
 	{
 		var playerPos = position ?? _playerStartPosition;
+        var maxY = Math.Max(
+            TerrainGenerator.GenerateDirtHeight(playerPos.x, playerPos.z),
+            TerrainGenerator.GenerateStoneHeight(playerPos.x, playerPos.z));
+
 		_player.transform.position = new Vector3(
 				playerPos.x,
-				TerrainGenerator.GenerateDirtHeight(playerPos.x, playerPos.z) + 2,
+                maxY + 2,
 				playerPos.z);
 
 		var fpc = _player.GetComponent<FirstPersonController>();
