@@ -23,12 +23,14 @@ public class LevelLoader : MonoBehaviour
 		IsWater = true,
 		WaterLevel = 30,
 		SeedValue = 32000,
-		TreeProbability = TreeProbability.Some,
+		TreeProbability = TreeProbability.None,
 		WorldSizeX = 3,
 		WorldSizeZ = 3
 	};
 
 	int _waterLevel = 30;
+
+    void Start() => _settings.TreeProbability = TreeProbability.None;
 
     public void NewGame()
 	{
@@ -57,9 +59,10 @@ public class LevelLoader : MonoBehaviour
 		_settings.SeedValue = newSeed;
 	}
 
-	public void SetTreeProbability(float value) => _settings.TreeProbability = (TreeProbability)(int)value;
+    // this crap gets called OnEnable for some reason so I had reassign it again in Start method
+    public void SetTreeProbability(float value) => _settings.TreeProbability = (TreeProbability)(int)value;
 
-	public void WaterLevelChanged(float value)
+    public void WaterLevelChanged(float value)
 	{
 		_settings.WaterLevel = (int)value;
 		_waterLevelText.text = "Water Level" + System.Environment.NewLine + _settings.WaterLevel.ToString();

@@ -15,4 +15,4 @@ public enum WorldGeneratorStatus { NotReady, TerrainReady, FacesReady, AllReady 
 
 public enum ChunkStatus { NotReady, NeedToBeRedrawn, NeedToBeRecreated, Ready }
 
-public enum TreeProbability { None, Some, Lots }
+public enum TreeProbability { None = 0, Some = 1, Lots = 2 }
