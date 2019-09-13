@@ -128,8 +128,6 @@ namespace Assets.Scripts.World
 			water = CreateMesh(waterData);
 		}
 
-		
-
 		public void RecalculateFacesAfterBlockDestroy(ref BlockData[,,] blocks, int blockX, int blockY, int blockZ)
 		{
 			/* // bitwise operators reminder

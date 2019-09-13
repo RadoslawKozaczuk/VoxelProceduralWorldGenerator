@@ -80,8 +80,8 @@ namespace Assets.Scripts.World
 			(int)Map(0, MaxHeight, 0, 1,
 				FractalBrownianMotion(x * Smooth, z * Smooth, Octaves, Persistence));
 
-		public static float Map(float newmin, float newmax, float origmin, float origmax, float value) =>
-			Mathf.Lerp(newmin, newmax, Mathf.InverseLerp(origmin, origmax, value));
+		public static float Map(float newMin, float newMax, float oldMin, float oldMax, float value) =>
+			Mathf.Lerp(newMin, newMax, Mathf.InverseLerp(oldMin, oldMax, value));
 
 		public static BlockTypes DetermineType(int worldX, int worldY, int worldZ, int3 height)
 		{

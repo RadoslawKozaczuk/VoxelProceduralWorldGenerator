@@ -186,10 +186,7 @@ public class Game : MonoBehaviour
             TerrainGenerator.GenerateDirtHeight(playerPos.x, playerPos.z),
             TerrainGenerator.GenerateStoneHeight(playerPos.x, playerPos.z));
 
-		_player.transform.position = new Vector3(
-				playerPos.x,
-                maxY + 2,
-				playerPos.z);
+		_player.transform.position = new Vector3(playerPos.x, maxY + 2, playerPos.z);
 
 		var fpc = _player.GetComponent<FirstPersonController>();
 		if (rotation.HasValue)
