@@ -62,30 +62,7 @@ namespace Assets.Scripts.World
             yield return null;
 
             ProgressDescription = "Calculating heights...";
-
             var heights = _terrainGenerator.CalculateHeights();
-
-            // shader test code
-            //var swN = new Stopwatch();
-            //var swT = new Stopwatch();
-
-            //swN.Start();
-            //for (int i = 0; i < 20; i++)
-            //{
-            //    heights = _terrainGenerator.CalculateHeights();
-
-            //}
-            //swN.Stop();
-            //long timeN = swN.ElapsedTicks / 20;
-
-            //swT.Start();
-            //for (int i = 0; i < 20; i++)
-            //{
-            //    heights = _terrainGenerator.CalculateHeightsGPU();
-            //}
-            //swT.Stop();
-            //long timeT = swT.ElapsedTicks / 20;
-
             AlreadyGenerated += _progressStep;
             yield return null;
 
@@ -109,6 +86,7 @@ namespace Assets.Scripts.World
 
             ProgressDescription = "Generating trees...";
             _terrainGenerator.AddTreesParallel(Settings.TreeProbability);
+            AlreadyGenerated += _progressStep;
             yield return null;
 
             ProgressDescription = "Chunk data initialization...";

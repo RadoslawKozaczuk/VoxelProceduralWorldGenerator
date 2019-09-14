@@ -14,6 +14,7 @@ namespace Assets.Scripts.World
         readonly int _logicalProcessorCount = Environment.ProcessorCount;
         readonly List<Task> _pendingTasks = new List<Task>();
         bool _isRunning = false; // this queue is very simplistic and adding new tasks is impossible when the queue is executing tasks
+        int _index = 0;
 
         /// <summary>
         /// Adds the given action to the queue.
@@ -77,11 +78,10 @@ namespace Assets.Scripts.World
             // start first 8 (or any processors the target machine has)
             for (int i = 0; i < _logicalProcessorCount; i++)
             {
-                if (_pendingTasks.Count == 0) // less than 8 was scheduled
+                if (_index == _pendingTasks.Count - 1) // less than 8 was scheduled
                     break;
 
-                _ongoingTasks[i] = _pendingTasks[0];
-                _pendingTasks.RemoveAt(0);
+                _ongoingTasks[i] = _pendingTasks[_index++];
                 _ongoingTasks[i].Start();
             }
 
@@ -91,17 +91,18 @@ namespace Assets.Scripts.World
             {
                 int completedId = Task.WaitAny(_ongoingTasks);
 
-                if (_pendingTasks.Count == 0)
+                if (_index == _pendingTasks.Count - 1)
                     break;
 
-                _ongoingTasks[completedId] = _pendingTasks[0];
-                _pendingTasks.RemoveAt(0);
+                _ongoingTasks[completedId] = _pendingTasks[_index++];
                 _ongoingTasks[completedId].Start();
             }
             while (true);
 
             Task.WaitAll(_ongoingTasks);
 
+            _pendingTasks.Clear();
+            _index = 0;
             _isRunning = false;
         }
 
