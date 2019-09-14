@@ -42,7 +42,7 @@ public class PersistentStorage
         for (x = 0; x < world.TotalBlockNumberX; x++)
             for (z = 0; z < world.TotalBlockNumberZ; z++)
                 for (y = 0; y < world.TotalBlockNumberY; y++)
-                    Write(world.Blocks[x, y, z]);
+                    Write(World.Blocks[x, y, z]);
 
         _writer.Close();
 		_writer.Dispose();

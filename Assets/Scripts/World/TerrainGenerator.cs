@@ -1,12 +1,15 @@
-﻿using System.Runtime.CompilerServices;
+﻿using System;
+using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
 using Unity.Collections;
 using Unity.Jobs;
-using UnityEngine;
 using Unity.Mathematics;
+using UnityEngine;
 
 namespace Assets.Scripts.World
 {
-	public class TerrainGenerator : MonoBehaviour
+    public class TerrainGenerator : MonoBehaviour
 	{
 		#region Constants
 		// caves should be more erratic so has to be a higher number
@@ -54,7 +57,7 @@ namespace Assets.Scripts.World
 
 		int _worldSizeX, _worldSizeZ, _totalBlockNumberX, _totalBlockNumberY, _totalBlockNumberZ;
 
-        [SerializeField] ComputeShader heightsShader;
+        [SerializeField] ComputeShader _heightsShader;
 
         public void Initialize(GameSettings options)
 		{
@@ -207,13 +210,13 @@ namespace Assets.Scripts.World
 
             // The FindKernel function takes a string name, which corresponds to one of the kernel names 
             // we set up in the compute shader. 
-            int kernel = heightsShader.FindKernel("CSMain");
+            int kernel = _heightsShader.FindKernel("CSMain");
 
-            heightsShader.SetBuffer(kernel, "Result", buffer);
-            heightsShader.SetInt("Seed", 1300);
+            _heightsShader.SetBuffer(kernel, "Result", buffer);
+            _heightsShader.SetInt("Seed", 1300);
 
             // the integers passed to the Dispatch call specify the number of thread groups we want to spawn
-            heightsShader.Dispatch(kernel, 16, 32, 16);
+            _heightsShader.Dispatch(kernel, 16, 32, 16);
 
             var output = new int3[_totalBlockNumberX * _totalBlockNumberZ];
             buffer.GetData(output);
@@ -290,7 +293,7 @@ namespace Assets.Scripts.World
 
 			for (int x = 1; x < _totalBlockNumberX - 1; x++)
 				// this 20 is hard coded as for now but generally it would be nice if
-				// this loop could know in advance where is the lowest grass
+				// this loop could know in advance where the lowest grass is
 				for (int y = 20; y < _totalBlockNumberY - TreeHeight - 1; y++)
 					for (int z = 1; z < _totalBlockNumberZ - 1; z++)
 					{
@@ -302,10 +305,86 @@ namespace Assets.Scripts.World
 					}
 		}
 
-		/// <summary>
-		/// Spread the water horizontally.
-		/// All air blocks that have a horizontal access to any water blocks will be turned into water blocks.
-		void PropagateWaterHorizontally(ref BlockData[,,] blocks, int currentY)
+        /// <summary>
+		/// Adds trees to the world.
+		/// If treeProb parameter is set to TreeProbability.None then no trees will be added.
+        /// In order to avoid potential collisions boundary cubes on x and z axis are ignored 
+        /// and therefore will never grow a tree resulting in slightly different although unnoticeable
+        /// for player results.
+		/// </summary>
+		public void AddTreesParallel(TreeProbability treeProb)
+        {
+            if (treeProb == TreeProbability.None)
+                return;
+
+            float woodbaseProbability = treeProb == TreeProbability.Some
+                ? WoodbaseSomeProbability
+                : WoodbaseHighProbability;
+
+            int logicalProcessorCount = Environment.ProcessorCount;
+            var pendingTasks = new List<Task>(World.Settings.WorldSizeX * World.Settings.WorldSizeZ);
+            var scheduledTasks = new Task[logicalProcessorCount];
+
+            // schedule one task per chunk
+            for (int i = 0, num = 0; i < World.Settings.WorldSizeX; i++)
+                for (int j = 0; j < World.Settings.WorldSizeZ; j++)
+                {
+                    // use variable capture to "pass in" parameters in order to avoid data share
+                    // because values changed outside of a task are also changed in the task
+                    int iCopy = i;
+                    int jCopy = j;
+
+                    // start first 8 (or any processors the target machine has)
+                    if (num < logicalProcessorCount)
+                    {
+                        scheduledTasks[num] = new Task(() => AddTreesInChunkParallel(woodbaseProbability, iCopy, jCopy));
+                        scheduledTasks[num].Start();
+                    }
+                    else
+                        pendingTasks.Add(new Task(() => AddTreesInChunkParallel(woodbaseProbability, iCopy, jCopy)));
+
+                    num++;
+                }
+
+            // start new task as soon as we have a free thread available
+            // and keep on doing that until you reach the end of the array
+            do
+            {
+                int completedId = Task.WaitAny(scheduledTasks);
+
+                if (pendingTasks.Count == 0)
+                    break;
+
+                scheduledTasks[completedId] = pendingTasks[0];
+                pendingTasks.RemoveAt(0);
+                scheduledTasks[completedId].Start();
+            }
+            while (true);
+
+            Task.WaitAll(scheduledTasks);
+        }
+
+        void AddTreesInChunkParallel(float woodbaseProbability, int chunkColumnX, int chunkColumnZ)
+        {
+            for (int x = 1 + chunkColumnX * World.ChunkSize; x < chunkColumnX * World.ChunkSize + World.ChunkSize - 1; x++)
+                // this 20 is hard coded as for now but generally it would be nice if
+                // this loop could know in advance where the lowest grass is
+                for (int y = 20; y < _totalBlockNumberY - TreeHeight - 1; y++)
+                    for (int z = 1 + chunkColumnZ * World.ChunkSize; z < chunkColumnZ * World.ChunkSize + World.ChunkSize - 1; z++)
+                    {
+                        if (World.Blocks[x, y, z].Type != BlockTypes.Grass)
+                            continue;
+
+                        if (IsThereEnoughSpaceForTree(in World.Blocks, x, y, z))
+                            if (FractalFunc(x, y, z, WoodbaseSmooth, WoodbaseOctaves) < woodbaseProbability)
+                                BuildTree(ref World.Blocks, x, y, z);
+                    }
+        }
+
+        /// <summary>
+        /// Spread the water horizontally.
+        /// All air blocks that have a horizontal access to any water blocks will be turned into water blocks.
+        void PropagateWaterHorizontally(ref BlockData[,,] blocks, int currentY)
 		{
 			/*
 				This algorithm works in two steps:

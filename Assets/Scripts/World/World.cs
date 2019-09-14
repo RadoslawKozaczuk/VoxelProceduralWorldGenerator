@@ -18,7 +18,7 @@ namespace Assets.Scripts.World
 
 		public ChunkData[,,] Chunks;
 		public ChunkObject[,,] ChunkObjects;
-		public BlockData[,,] Blocks;
+		public static BlockData[,,] Blocks;
 		public Vector3 PlayerLoadedRotation, PlayerLoadedPosition;
         public WorldGeneratorStatus Status;
         public float TerrainProgressSteps;
@@ -108,7 +108,7 @@ namespace Assets.Scripts.World
             yield return null;
 
             ProgressDescription = "Generating trees...";
-            _terrainGenerator.AddTrees(ref Blocks, Settings.TreeProbability);
+            _terrainGenerator.AddTreesParallel(Settings.TreeProbability);
             AlreadyGenerated += _progressStep;
             yield return null;
 
