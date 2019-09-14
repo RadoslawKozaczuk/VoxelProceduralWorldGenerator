@@ -5468,7 +5468,7 @@ MonoBehaviour:
   m_LineType: 0
   m_HideMobileInput: 0
   m_HideSoftKeyboard: 0
-  m_CharacterValidation: 8
+  m_CharacterValidation: 1
   m_RegexValue: 
   m_GlobalPointSize: 20
   m_CharacterLimit: 2
@@ -5537,7 +5537,7 @@ MonoBehaviour:
   m_RestoreOriginalTextOnEscape: 1
   m_isRichTextEditingAllowed: 0
   m_LineLimit: 0
-  m_InputValidator: {fileID: 11400000, guid: 1ce95866a973036499f4916b1e104a25, type: 2}
+  m_InputValidator: {fileID: 0}
 --- !u!114 &1504690807
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6853,7 +6853,7 @@ MonoBehaviour:
   m_LineType: 0
   m_HideMobileInput: 0
   m_HideSoftKeyboard: 0
-  m_CharacterValidation: 8
+  m_CharacterValidation: 1
   m_RegexValue: 
   m_GlobalPointSize: 20
   m_CharacterLimit: 2
@@ -6922,7 +6922,7 @@ MonoBehaviour:
   m_RestoreOriginalTextOnEscape: 1
   m_isRichTextEditingAllowed: 0
   m_LineLimit: 0
-  m_InputValidator: {fileID: 11400000, guid: 1ce95866a973036499f4916b1e104a25, type: 2}
+  m_InputValidator: {fileID: 0}
 --- !u!114 &1772299576
 MonoBehaviour:
   m_ObjectHideFlags: 0
