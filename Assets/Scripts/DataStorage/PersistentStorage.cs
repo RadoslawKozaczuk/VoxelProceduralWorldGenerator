@@ -27,16 +27,16 @@ public class PersistentStorage
 		Write(playerRotation);
 
 		// world parameters
-		_writer.Write((byte)World.ChunkSize);
+		_writer.Write((byte)World.CHUNK_SIZE);
 		_writer.Write((byte)World.Settings.WorldSizeX);
-		_writer.Write((byte)World.WorldSizeY);
+		_writer.Write((byte)World.WORLD_SIZE_Y);
 		_writer.Write((byte)World.Settings.WorldSizeZ);
 
         // chunk data
         int x, y, z;
         for (x = 0; x < World.Settings.WorldSizeX; x++)
             for (z = 0; z < World.Settings.WorldSizeZ; z++)
-                for (y = 0; y < World.WorldSizeY; y++)
+                for (y = 0; y < World.WORLD_SIZE_Y; y++)
                     Write(world.Chunks[x, y, z]);
 
         for (x = 0; x < world.TotalBlockNumberX; x++)

@@ -63,9 +63,9 @@ namespace Assets.Scripts.World
 		{
 			_worldSizeX = options.WorldSizeX;
 			_worldSizeZ = options.WorldSizeZ;
-			_totalBlockNumberX = _worldSizeX * World.ChunkSize;
-			_totalBlockNumberY = World.WorldSizeY * World.ChunkSize;
-			_totalBlockNumberZ = _worldSizeZ * World.ChunkSize;
+			_totalBlockNumberX = _worldSizeX * World.CHUNK_SIZE;
+			_totalBlockNumberY = World.WORLD_SIZE_Y * World.CHUNK_SIZE;
+			_totalBlockNumberZ = _worldSizeZ * World.CHUNK_SIZE;
 
 			WaterLevel = options.WaterLevel;
 			SeedValue = options.SeedValue;
@@ -333,11 +333,11 @@ namespace Assets.Scripts.World
 
         void AddTreesInChunkParallel(float woodbaseProbability, int chunkColumnX, int chunkColumnZ)
         {
-            for (int x = 1 + chunkColumnX * World.ChunkSize; x < chunkColumnX * World.ChunkSize + World.ChunkSize - 1; x++)
+            for (int x = 1 + chunkColumnX * World.CHUNK_SIZE; x < chunkColumnX * World.CHUNK_SIZE + World.CHUNK_SIZE - 1; x++)
                 // this 20 is hard coded as for now but generally it would be nice if
                 // this loop could know in advance where the lowest grass is
                 for (int y = 20; y < _totalBlockNumberY - TreeHeight - 1; y++)
-                    for (int z = 1 + chunkColumnZ * World.ChunkSize; z < chunkColumnZ * World.ChunkSize + World.ChunkSize - 1; z++)
+                    for (int z = 1 + chunkColumnZ * World.CHUNK_SIZE; z < chunkColumnZ * World.CHUNK_SIZE + World.CHUNK_SIZE - 1; z++)
                     {
                         if (World.Blocks[x, y, z].Type != BlockTypes.Grass)
                             continue;

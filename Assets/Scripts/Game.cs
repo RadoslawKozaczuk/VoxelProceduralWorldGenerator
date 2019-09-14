@@ -32,7 +32,6 @@ public class Game : MonoBehaviour
 			+ "Build - RPM" + Environment.NewLine
 			+ $"Save Game - { _saveKey }" + Environment.NewLine
 			+ $"Load Game - { _loadKey }";
-		Debug.Log("Waiting instructions...");
 
 		_player.SetActive(false);
 
@@ -77,6 +76,9 @@ public class Game : MonoBehaviour
             _world.RedrawChunksIfNecessary();
             HandleInput();
         }
+
+        if (Input.GetKeyDown(KeyCode.Escape))
+            Application.Quit();
     }
 
 	public void ProcessBlockHit(Vector3 hitBlock)
@@ -108,7 +110,7 @@ public class Game : MonoBehaviour
 		if (Input.GetKeyDown(_saveKey))
 		{
             _topMessage.HideMessage();
-            var storage = new PersistentStorage(World.ChunkSize);
+            var storage = new PersistentStorage(World.CHUNK_SIZE);
 			var t = _player.transform;
 
 			var playerRotation = new Vector3(
@@ -140,9 +142,9 @@ public class Game : MonoBehaviour
 		out int chunkX, out int chunkY, out int chunkZ,
 		out int blockX, out int blockY, out int blockZ)
 	{
-		chunkX = hitBlock.x < 0 ? 0 : (int)(hitBlock.x / World.ChunkSize);
-		chunkY = hitBlock.y < 0 ? 0 : (int)(hitBlock.y / World.ChunkSize);
-		chunkZ = hitBlock.z < 0 ? 0 : (int)(hitBlock.z / World.ChunkSize);
+		chunkX = hitBlock.x < 0 ? 0 : (int)(hitBlock.x / World.CHUNK_SIZE);
+		chunkY = hitBlock.y < 0 ? 0 : (int)(hitBlock.y / World.CHUNK_SIZE);
+		chunkZ = hitBlock.z < 0 ? 0 : (int)(hitBlock.z / World.CHUNK_SIZE);
 
 		blockX = (int)hitBlock.x;
 		blockY = (int)hitBlock.y;
@@ -155,7 +157,7 @@ public class Game : MonoBehaviour
 	void CheckNeighboringChunks(int blockX, int blockY, int blockZ, int chunkX, int chunkY, int chunkZ)
 	{
 		// right check
-		if (blockX == World.ChunkSize - 1 && chunkX + 1 < World.Settings.WorldSizeX)
+		if (blockX == World.CHUNK_SIZE - 1 && chunkX + 1 < World.Settings.WorldSizeX)
 			_world.Chunks[chunkX + 1, chunkY, chunkZ].Status = ChunkStatus.NeedToBeRecreated;
 
 		// left check
@@ -163,7 +165,7 @@ public class Game : MonoBehaviour
 			_world.Chunks[chunkX - 1, chunkY, chunkZ].Status = ChunkStatus.NeedToBeRecreated;
 
 		// top check
-		if (blockY == World.ChunkSize - 1 && chunkY + 1 < World.WorldSizeY)
+		if (blockY == World.CHUNK_SIZE - 1 && chunkY + 1 < World.WORLD_SIZE_Y)
 			_world.Chunks[chunkX, chunkY + 1, chunkZ].Status = ChunkStatus.NeedToBeRecreated;
 
 		// bottom check
@@ -171,7 +173,7 @@ public class Game : MonoBehaviour
 			_world.Chunks[chunkX, chunkY - 1, chunkZ].Status = ChunkStatus.NeedToBeRecreated;
 
 		// front check
-		if (blockZ == World.ChunkSize - 1 && chunkZ + 1 < World.Settings.WorldSizeZ)
+		if (blockZ == World.CHUNK_SIZE - 1 && chunkZ + 1 < World.Settings.WorldSizeZ)
 			_world.Chunks[chunkX, chunkY, chunkZ + 1].Status = ChunkStatus.NeedToBeRecreated;
 
 		// back check

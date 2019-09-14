@@ -231,7 +231,7 @@ Canvas:
   m_OverrideSorting: 0
   m_OverridePixelPerfect: 0
   m_SortingBucketNormalizedSize: 0
-  m_AdditionalShaderChannelsFlag: 25
+  m_AdditionalShaderChannelsFlag: 1
   m_SortingLayerID: 0
   m_SortingOrder: 0
   m_TargetDisplay: 0
@@ -5471,7 +5471,7 @@ MonoBehaviour:
   m_CharacterValidation: 1
   m_RegexValue: 
   m_GlobalPointSize: 20
-  m_CharacterLimit: 2
+  m_CharacterLimit: 1
   m_OnEndEdit:
     m_PersistentCalls:
       m_Calls:
@@ -6856,7 +6856,7 @@ MonoBehaviour:
   m_CharacterValidation: 1
   m_RegexValue: 
   m_GlobalPointSize: 20
-  m_CharacterLimit: 2
+  m_CharacterLimit: 1
   m_OnEndEdit:
     m_PersistentCalls:
       m_Calls:

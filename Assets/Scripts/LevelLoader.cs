@@ -107,16 +107,16 @@ public class LevelLoader : MonoBehaviour
 
     void SetWorldSizeDescription()
     {
-        int totalNumberOfCubes = _settings.WorldSizeX * World.WorldSizeY * _settings.WorldSizeZ
-            * World.ChunkSize * World.ChunkSize * World.ChunkSize;
-        int numberOfCubesInChunk = World.ChunkSize * World.ChunkSize * World.ChunkSize;
+        int totalNumberOfCubes = _settings.WorldSizeX * World.WORLD_SIZE_Y * _settings.WorldSizeZ
+            * World.CHUNK_SIZE * World.CHUNK_SIZE * World.CHUNK_SIZE;
+        int numberOfCubesInChunk = World.CHUNK_SIZE * World.CHUNK_SIZE * World.CHUNK_SIZE;
 
         var nfi = (NumberFormatInfo)CultureInfo.InvariantCulture.NumberFormat.Clone();
         nfi.NumberGroupSeparator = " ";
 
         _worldSizeDescription.text = $@"World's size is measured in chunks. 
 Height is always equal to 4.
-Each chunk is made of {World.ChunkSize}^3 = { numberOfCubesInChunk.ToString("#,0", nfi) } cubes.
+Each chunk is made of {World.CHUNK_SIZE}^3 = { numberOfCubesInChunk.ToString("#,0", nfi) } cubes.
 Total number of cubes is: <b>{ totalNumberOfCubes.ToString("#,0", nfi) }</b>";
     }
 

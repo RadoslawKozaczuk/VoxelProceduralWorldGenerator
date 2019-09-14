@@ -6,7 +6,7 @@ namespace Assets.Scripts.World
 {
 	public class MeshGenerator : MonoBehaviour
 	{
-		const float waterUvConst = 1.0f / World.ChunkSize;
+		const float waterUvConst = 1.0f / World.CHUNK_SIZE;
 
 		#region Readonly lookup tables
 		readonly Vector2[,] _blockUVs = {
@@ -61,9 +61,9 @@ namespace Assets.Scripts.World
 		{
 			_worldSizeX = options.WorldSizeX;
 			_worldSizeZ = options.WorldSizeZ;
-			_totalBlockNumberX = _worldSizeX * World.ChunkSize;
-			_totalBlockNumberY = World.WorldSizeY * World.ChunkSize;
-			_totalBlockNumberZ = _worldSizeZ * World.ChunkSize;
+			_totalBlockNumberX = _worldSizeX * World.CHUNK_SIZE;
+			_totalBlockNumberY = World.WORLD_SIZE_Y * World.CHUNK_SIZE;
+			_totalBlockNumberZ = _worldSizeZ * World.CHUNK_SIZE;
 
 			_crackUVs = FillCrackUvTable();
 		}
@@ -98,13 +98,13 @@ namespace Assets.Scripts.World
 			int index = 0, triIndex = 0, waterIndex = 0, waterTriIndex = 0;
 
 			var localBlockCoodinates = new Vector3Int();
-			for (int x = 0; x < World.ChunkSize; x++)
+			for (int x = 0; x < World.CHUNK_SIZE; x++)
 			{
 				localBlockCoodinates.x = x;
-				for (int y = 0; y < World.ChunkSize; y++)
+				for (int y = 0; y < World.CHUNK_SIZE; y++)
 				{
 					localBlockCoodinates.y = y;
-					for (int z = 0; z < World.ChunkSize; z++)
+					for (int z = 0; z < World.CHUNK_SIZE; z++)
 					{
 						localBlockCoodinates.z = z;
 
@@ -383,9 +383,9 @@ namespace Assets.Scripts.World
 
 			// offset needs to be calculated
 			int x, y, z;
-			for (x = chunkPos.x; x < chunkPos.x + World.ChunkSize; x++)
-				for (y = chunkPos.y; y < chunkPos.y + World.ChunkSize; y++)
-					for (z = chunkPos.z; z < chunkPos.z + World.ChunkSize; z++)
+			for (x = chunkPos.x; x < chunkPos.x + World.CHUNK_SIZE; x++)
+				for (y = chunkPos.y; y < chunkPos.y + World.CHUNK_SIZE; y++)
+					for (z = chunkPos.z; z < chunkPos.z + World.CHUNK_SIZE; z++)
 					{
 						b = ref blocks[x, y, z];
 

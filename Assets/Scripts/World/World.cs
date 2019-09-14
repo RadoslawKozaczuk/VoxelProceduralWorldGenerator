@@ -9,8 +9,8 @@ namespace Assets.Scripts.World
 	[CreateAssetMenu]
 	public class World : ScriptableObject
 	{
-		public const int WorldSizeY = 4, ChunkSize = 32;
-		const int OverallNumberOfGenerationSteps = 9;
+		public const int WORLD_SIZE_Y = 4, CHUNK_SIZE = 32;
+		const int TERRAIN_GENERATION_STEPS = 9;
 
 		public static GameSettings Settings;
 
@@ -37,9 +37,9 @@ namespace Assets.Scripts.World
 
 		World()
 		{
-			TotalBlockNumberX = Settings.WorldSizeX * ChunkSize;
-			TotalBlockNumberY = WorldSizeY * ChunkSize;
-			TotalBlockNumberZ = Settings.WorldSizeZ * ChunkSize;
+			TotalBlockNumberX = Settings.WorldSizeX * CHUNK_SIZE;
+			TotalBlockNumberY = WORLD_SIZE_Y * CHUNK_SIZE;
+			TotalBlockNumberZ = Settings.WorldSizeZ * CHUNK_SIZE;
 		}
 
         /// <summary>
@@ -57,7 +57,7 @@ namespace Assets.Scripts.World
 
             ProgressDescription = "Initialization...";
             Status = WorldGeneratorStatus.NotReady;
-            Blocks = new BlockData[Settings.WorldSizeX * ChunkSize, WorldSizeY * ChunkSize, Settings.WorldSizeZ * ChunkSize];
+            Blocks = new BlockData[Settings.WorldSizeX * CHUNK_SIZE, WORLD_SIZE_Y * CHUNK_SIZE, Settings.WorldSizeZ * CHUNK_SIZE];
             AlreadyGenerated += _progressStep;
             yield return null;
 
@@ -95,13 +95,13 @@ namespace Assets.Scripts.World
 
             // chunkData need to be initialized earlier in order to allow main loop iterate over chunks before their meshes are ready
             // thanks to this we can display chunk as soon as they become ready 
-            Chunks = new ChunkData[Settings.WorldSizeX, WorldSizeY, Settings.WorldSizeZ];
+            Chunks = new ChunkData[Settings.WorldSizeX, WORLD_SIZE_Y, Settings.WorldSizeZ];
             for (int x = 0; x < Settings.WorldSizeX; x++)
                 for (int z = 0; z < Settings.WorldSizeZ; z++)
-                    for (int y = 0; y < WorldSizeY; y++)
-                        Chunks[x, y, z] = new ChunkData(new Vector3Int(x, y, z), new Vector3Int(x * ChunkSize, y * ChunkSize, z * ChunkSize));
+                    for (int y = 0; y < WORLD_SIZE_Y; y++)
+                        Chunks[x, y, z] = new ChunkData(new Vector3Int(x, y, z), new Vector3Int(x * CHUNK_SIZE, y * CHUNK_SIZE, z * CHUNK_SIZE));
 
-            ChunkObjects = new ChunkObject[Settings.WorldSizeX, WorldSizeY, Settings.WorldSizeZ];
+            ChunkObjects = new ChunkObject[Settings.WorldSizeX, WORLD_SIZE_Y, Settings.WorldSizeZ];
             yield return null;
 
             ProgressDescription = "Calculating faces...";
@@ -118,7 +118,7 @@ namespace Assets.Scripts.World
             // create chunk objects one by one 
             for (int x = 0; x < Settings.WorldSizeX; x++)
                 for (int z = 0; z < Settings.WorldSizeZ; z++)
-                    for (int y = 0; y < WorldSizeY; y++)
+                    for (int y = 0; y < WORLD_SIZE_Y; y++)
                     {
                         ChunkData chunkData = Chunks[x, y, z];
                         _meshGenerator.CalculateMeshes(ref Blocks, chunkData.Position, out Mesh terrainMesh, out Mesh waterMesh);
@@ -143,7 +143,6 @@ namespace Assets.Scripts.World
                     }
 
             Status = WorldGeneratorStatus.AllReady;
-
             AlreadyGenerated += _progressStep;
 
             _stopwatch.Stop();
@@ -158,14 +157,14 @@ namespace Assets.Scripts.World
 		/// Chunks and their objects (if first run = true).
 		/// And calculates faces.
 		/// </summary>
-		public IEnumerator LoadWorld(bool firstRun, Action callback = null)
+		public IEnumerator LoadWorld(bool firstRun, Action callback)
         {
             ResetProgressBarVariables();
             _stopwatch.Restart();
 
             ProgressDescription = "Loading data...";
             Status = WorldGeneratorStatus.NotReady;
-            var storage = new PersistentStorage(ChunkSize);
+            var storage = new PersistentStorage(CHUNK_SIZE);
             SaveGameData save = storage.LoadGame();
             Settings.WorldSizeX = save.WorldSizeX;
             Settings.WorldSizeZ = save.WorldSizeZ;
@@ -188,15 +187,15 @@ namespace Assets.Scripts.World
                 ProgressDescription = "Chunk data initialization...";
                 // chunkData need to be initialized earlier in order to allow main loop iterate over chunks before their meshes are ready
                 // thanks to this we can display chunk as soon as they become ready 
-                Chunks = new ChunkData[Settings.WorldSizeX, WorldSizeY, Settings.WorldSizeZ];
+                Chunks = new ChunkData[Settings.WorldSizeX, WORLD_SIZE_Y, Settings.WorldSizeZ];
                 for (int x = 0; x < Settings.WorldSizeX; x++)
                     for (int z = 0; z < Settings.WorldSizeZ; z++)
-                        for (int y = 0; y < WorldSizeY; y++)
+                        for (int y = 0; y < WORLD_SIZE_Y; y++)
                             Chunks[x, y, z] = new ChunkData(
                                 new Vector3Int(x, y, z), 
-                                new Vector3Int(x * ChunkSize, y * ChunkSize, z * ChunkSize));
+                                new Vector3Int(x * CHUNK_SIZE, y * CHUNK_SIZE, z * CHUNK_SIZE));
 
-                ChunkObjects = new ChunkObject[Settings.WorldSizeX, WorldSizeY, Settings.WorldSizeZ];
+                ChunkObjects = new ChunkObject[Settings.WorldSizeX, WORLD_SIZE_Y, Settings.WorldSizeZ];
                 AlreadyGenerated += _progressStep;
                 yield return null; // give back control
             }
@@ -216,7 +215,7 @@ namespace Assets.Scripts.World
             // create chunk objects one by one 
             for (int x = 0; x < Settings.WorldSizeX; x++)
                 for (int z = 0; z < Settings.WorldSizeZ; z++)
-                    for (int y = 0; y < WorldSizeY; y++)
+                    for (int y = 0; y < WORLD_SIZE_Y; y++)
                     {
                         ChunkData chunkData = Chunks[x, y, z];
                         _meshGenerator.CalculateMeshes(ref Blocks, chunkData.Position, out Mesh terrainMesh, out Mesh waterMesh);
@@ -246,9 +245,9 @@ namespace Assets.Scripts.World
             UnityEngine.Debug.Log($"It took {_stopwatch.ElapsedTicks / TimeSpan.TicksPerMillisecond} ms to load all terrain.");
 
             AlreadyGenerated = TerrainProgressSteps + MeshProgressSteps; // hardcoded end indicator
-
             ProgressDescription = "Game Load Completed";
-            callback.Invoke();
+
+            callback?.Invoke();
         }
 
         /// <summary>
@@ -305,7 +304,7 @@ namespace Assets.Scripts.World
 		{
 			for (int x = 0; x < Settings.WorldSizeX; x++)
 				for (int z = 0; z < Settings.WorldSizeZ; z++)
-					for (int y = 0; y < WorldSizeY; y++)
+					for (int y = 0; y < WORLD_SIZE_Y; y++)
 					{
 						ref ChunkData chunkData = ref Chunks[x, y, z];
 
@@ -330,12 +329,12 @@ namespace Assets.Scripts.World
 			_progressStep = 1;
 			AlreadyGenerated = 0;
 
-			MeshProgressSteps = Settings.WorldSizeX * WorldSizeY * Settings.WorldSizeZ;
+			MeshProgressSteps = Settings.WorldSizeX * WORLD_SIZE_Y * Settings.WorldSizeZ;
 
-			while (OverallNumberOfGenerationSteps * _progressStep * 2f < MeshProgressSteps)
+			while (TERRAIN_GENERATION_STEPS * _progressStep * 2f < MeshProgressSteps)
 				_progressStep++;
 
-			TerrainProgressSteps = OverallNumberOfGenerationSteps * _progressStep;
+			TerrainProgressSteps = TERRAIN_GENERATION_STEPS * _progressStep;
 		}
 
 		byte CalculateHealthLevel(int hp, int maxHp)

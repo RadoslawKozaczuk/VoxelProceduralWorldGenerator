@@ -41,11 +41,10 @@ public class FirstPersonController : MonoBehaviour
 	bool _jumping;
 	AudioSource _audioSource;
 
-	// Use this for initialization
-	private void Start()
+	void Start()
 	{
 		_characterController = GetComponent<CharacterController>();
-		_camera = Camera.main;
+		_camera = Camera.allCameras[1];
 		_originalCameraPosition = _camera.transform.localPosition;
 		_fovKick.Setup(_camera);
 		_headBob.Setup(_camera, _stepInterval);
@@ -56,7 +55,6 @@ public class FirstPersonController : MonoBehaviour
 		MouseLook.Init(transform, _camera.transform);
 	}
 
-	// Update is called once per frame
 	void Update()
 	{
 		RotateView();
@@ -79,51 +77,51 @@ public class FirstPersonController : MonoBehaviour
 		_previouslyGrounded = _characterController.isGrounded;
 	}
 
-	void PlayLandingSound()
+    void FixedUpdate()
+    {
+        GetInput(out float speed);
+
+        // always move along the camera forward as it is the direction that it being aimed at
+        Vector3 desiredMove = transform.forward * _input.y + transform.right * _input.x;
+
+        // get a normal for the surface that is being touched to move along it
+        Physics.SphereCast(transform.position, _characterController.radius, Vector3.down, out RaycastHit hitInfo,
+            _characterController.height / 2f, Physics.AllLayers, QueryTriggerInteraction.Ignore);
+
+        desiredMove = Vector3.ProjectOnPlane(desiredMove, hitInfo.normal).normalized;
+
+        _moveDir.x = desiredMove.x * speed;
+        _moveDir.z = desiredMove.z * speed;
+
+        if (_characterController.isGrounded)
+        {
+            _moveDir.y = -_stickToGroundForce;
+
+            if (_jump)
+            {
+                _moveDir.y = _jumpSpeed;
+                PlayJumpSound();
+                _jump = false;
+                _jumping = true;
+            }
+        }
+        else
+        {
+            _moveDir += Physics.gravity * _gravityMultiplier * Time.fixedDeltaTime;
+        }
+        _collisionFlags = _characterController.Move(_moveDir * Time.fixedDeltaTime);
+
+        ProgressStepCycle(speed);
+        UpdateCameraPosition(speed);
+
+        MouseLook.UpdateCursorLock();
+    }
+
+    void PlayLandingSound()
 	{
 		_audioSource.clip = _landSound;
 		_audioSource.Play();
 		_nextStep = _stepCycle + .5f;
-	}
-
-	void FixedUpdate()
-	{
-		GetInput(out float speed);
-
-		// always move along the camera forward as it is the direction that it being aimed at
-		Vector3 desiredMove = transform.forward * _input.y + transform.right * _input.x;
-
-		// get a normal for the surface that is being touched to move along it
-		Physics.SphereCast(transform.position, _characterController.radius, Vector3.down, out RaycastHit hitInfo,
-			_characterController.height / 2f, Physics.AllLayers, QueryTriggerInteraction.Ignore);
-
-		desiredMove = Vector3.ProjectOnPlane(desiredMove, hitInfo.normal).normalized;
-
-		_moveDir.x = desiredMove.x * speed;
-		_moveDir.z = desiredMove.z * speed;
-
-		if (_characterController.isGrounded)
-		{
-			_moveDir.y = -_stickToGroundForce;
-
-			if (_jump)
-			{
-				_moveDir.y = _jumpSpeed;
-				PlayJumpSound();
-				_jump = false;
-				_jumping = true;
-			}
-		}
-		else
-		{
-			_moveDir += Physics.gravity * _gravityMultiplier * Time.fixedDeltaTime;
-		}
-		_collisionFlags = _characterController.Move(_moveDir * Time.fixedDeltaTime);
-
-		ProgressStepCycle(speed);
-		UpdateCameraPosition(speed);
-
-		MouseLook.UpdateCursorLock();
 	}
 
 	void PlayJumpSound()
