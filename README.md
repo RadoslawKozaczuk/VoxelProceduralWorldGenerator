@@ -1,5 +1,6 @@
 # VoxelProceduralWorldGenerator
 Contains easy-to-read, clean, and highly optimized code written with a focus on data (data-oriented approach), that is able to create Minecraft-like worlds.
+
 It can generate ~1 million cubes per second (on i7-7700HQ) and that includes creating trees, different types of terrain and resources, as well as various caves with realistically spread water that leaves upper parts of the caves filled with air.
 
 Important parts:
@@ -15,4 +16,5 @@ Important parts:
 ![Generated World](https://i.imgur.com/R1HfNmB.jpg)
 
 Kind Regards
+
 Radek
