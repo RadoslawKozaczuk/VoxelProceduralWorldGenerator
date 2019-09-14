@@ -321,47 +321,14 @@ namespace Assets.Scripts.World
                 ? WoodbaseSomeProbability
                 : WoodbaseHighProbability;
 
-            int logicalProcessorCount = Environment.ProcessorCount;
-            var pendingTasks = new List<Task>(World.Settings.WorldSizeX * World.Settings.WorldSizeZ);
-            var scheduledTasks = new Task[logicalProcessorCount];
+            var queue = new MultiThreadTaskQueue();
 
             // schedule one task per chunk
-            for (int i = 0, num = 0; i < World.Settings.WorldSizeX; i++)
+            for (int i = 0; i < World.Settings.WorldSizeX; i++)
                 for (int j = 0; j < World.Settings.WorldSizeZ; j++)
-                {
-                    // use variable capture to "pass in" parameters in order to avoid data share
-                    // because values changed outside of a task are also changed in the task
-                    int iCopy = i;
-                    int jCopy = j;
+                    queue.ScheduleTask<float, int, int>(AddTreesInChunkParallel, woodbaseProbability, i, j);
 
-                    // start first 8 (or any processors the target machine has)
-                    if (num < logicalProcessorCount)
-                    {
-                        scheduledTasks[num] = new Task(() => AddTreesInChunkParallel(woodbaseProbability, iCopy, jCopy));
-                        scheduledTasks[num].Start();
-                    }
-                    else
-                        pendingTasks.Add(new Task(() => AddTreesInChunkParallel(woodbaseProbability, iCopy, jCopy)));
-
-                    num++;
-                }
-
-            // start new task as soon as we have a free thread available
-            // and keep on doing that until you reach the end of the array
-            do
-            {
-                int completedId = Task.WaitAny(scheduledTasks);
-
-                if (pendingTasks.Count == 0)
-                    break;
-
-                scheduledTasks[completedId] = pendingTasks[0];
-                pendingTasks.RemoveAt(0);
-                scheduledTasks[completedId].Start();
-            }
-            while (true);
-
-            Task.WaitAll(scheduledTasks);
+            queue.RunAllInParallel(); // this is synchronous
         }
 
         void AddTreesInChunkParallel(float woodbaseProbability, int chunkColumnX, int chunkColumnZ)

@@ -109,7 +109,6 @@ namespace Assets.Scripts.World
 
             ProgressDescription = "Generating trees...";
             _terrainGenerator.AddTreesParallel(Settings.TreeProbability);
-            AlreadyGenerated += _progressStep;
             yield return null;
 
             ProgressDescription = "Chunk data initialization...";
