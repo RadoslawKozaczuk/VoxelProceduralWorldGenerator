@@ -56,7 +56,7 @@ Material:
     - _WeightNormal: 0
     m_Colors:
     - _ClipRect: {r: -32767, g: -32767, b: 32767, a: 32767}
-    - _FaceColor: {r: 1, g: 0.937262, b: 0, a: 1}
+    - _FaceColor: {r: 0, g: 0, b: 0, a: 1}
     - _OutlineColor: {r: 0, g: 0, b: 0, a: 1}
     - _UnderlayColor: {r: 0, g: 0, b: 0, a: 0.5}
 --- !u!114 &11400000
@@ -7711,6 +7711,7 @@ MonoBehaviour:
           m_XAdvance: 0
           m_YAdvance: 0
       m_FeatureLookupFlags: 0
+  fallbackFontAssets: []
   m_FallbackFontAssetTable:
   - {fileID: 11400000, guid: 2e498d1c8094910479dc3e1b768306a4, type: 2}
   m_CreationSettings:

@@ -3,6 +3,8 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using Assets.Scripts.World;
+using TMPro;
+using System.Globalization;
 
 public class LevelLoader : MonoBehaviour
 {
@@ -10,10 +12,11 @@ public class LevelLoader : MonoBehaviour
 	[SerializeField] Slider _slider;
 	[SerializeField] Text _progressText;
 	[SerializeField] Text _description;
-	[SerializeField] InputField _worldSizeX;
-	[SerializeField] InputField _worldSizeZ;
-	[SerializeField] InputField _seedInputField;
-	[SerializeField] Text _waterLevelText;
+	[SerializeField] TMP_InputField _worldSizeX;
+	[SerializeField] TMP_InputField _worldSizeZ;
+    [SerializeField] TextMeshProUGUI _worldSizeDescription;
+    [SerializeField] TMP_InputField _seedInputField;
+	[SerializeField] TextMeshProUGUI _waterLevelText;
 	[SerializeField] Slider _waterSlider;
     [SerializeField] RectTransform _footer;
 
@@ -28,9 +31,13 @@ public class LevelLoader : MonoBehaviour
 		WorldSizeZ = 3
 	};
 
-	int _waterLevel = 30;
+    int _waterLevel = 30;
 
-    void Start() => _settings.TreeProbability = TreeProbability.Some;
+    void Start()
+    {
+        _settings.TreeProbability = TreeProbability.Some;
+        SetWorldSizeDescription();
+    }
 
     public void NewGame()
 	{
@@ -46,15 +53,32 @@ public class LevelLoader : MonoBehaviour
 
 	public void QuitGame() => Application.Quit();
 
-	public void WorldParametersChange()
+	public void WorldParametersChanged()
 	{
-		_settings.WorldSizeX = int.Parse(_worldSizeX.text);
-		_settings.WorldSizeZ = int.Parse(_worldSizeZ.text);
-	}
+        int xInput = int.Parse(_worldSizeX.text);
+        int zInput = int.Parse(_worldSizeZ.text);
+
+        if (xInput <= 0)
+        {
+            xInput = 1;
+            _worldSizeX.text = xInput.ToString();
+        }
+
+        if (zInput <= 0)
+        {
+            zInput = 1;
+            _worldSizeZ.text = zInput.ToString();
+        }
+
+        _settings.WorldSizeX = xInput;
+		_settings.WorldSizeZ = zInput;
+
+        SetWorldSizeDescription();
+    }
 
 	public void RandomSeed()
 	{
-		var newSeed = Random.Range(10000, 1000000);
+		var newSeed = Random.Range(1000, 1000000);
 		_seedInputField.text = newSeed.ToString();
 		_settings.SeedValue = newSeed;
 	}
@@ -65,7 +89,7 @@ public class LevelLoader : MonoBehaviour
     public void WaterLevelChanged(float value)
 	{
 		_settings.WaterLevel = (int)value;
-		_waterLevelText.text = "Water Level" + System.Environment.NewLine + _settings.WaterLevel.ToString();
+		_waterLevelText.text = "Water Level " + _settings.WaterLevel.ToString();
 	}
 
 	public void WaterToggleChanged(bool value)
@@ -73,14 +97,30 @@ public class LevelLoader : MonoBehaviour
 		_settings.IsWater = value;
 
 		_waterLevelText.text = _settings.IsWater
-			? "Water Level" + System.Environment.NewLine + _waterLevel.ToString()
+			? "Water Level " + _waterLevel.ToString()
 			: "No Water";
 
 		_waterSlider.enabled = value;
+        _waterSlider.handleRect.gameObject.SetActive(value);
 		_waterSlider.interactable = value;
 	}
 
-	IEnumerator LoadLevelAsync(int sceneIndex)
+    void SetWorldSizeDescription()
+    {
+        int totalNumberOfCubes = _settings.WorldSizeX * World.WorldSizeY * _settings.WorldSizeZ
+            * World.ChunkSize * World.ChunkSize * World.ChunkSize;
+        int numberOfCubesInChunk = World.ChunkSize * World.ChunkSize * World.ChunkSize;
+
+        var nfi = (NumberFormatInfo)CultureInfo.InvariantCulture.NumberFormat.Clone();
+        nfi.NumberGroupSeparator = " ";
+
+        _worldSizeDescription.text = $@"World's size is measured in chunks. 
+Height is always equal to 4.
+Each chunk is made of {World.ChunkSize}^3 = { numberOfCubesInChunk.ToString("#,0", nfi) } cubes.
+Total number of cubes is: <b>{ totalNumberOfCubes.ToString("#,0", nfi) }</b>";
+    }
+
+    IEnumerator LoadLevelAsync(int sceneIndex)
 	{
         World.Settings = _settings;
         _footer.gameObject.SetActive(true);
