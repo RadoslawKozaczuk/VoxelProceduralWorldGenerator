@@ -100,8 +100,8 @@ public class PersistentStorage
 
 	BlockData ReadBlock() => new BlockData
 	{
-		Faces = (Cubesides)_reader.ReadByte(),
-		Type = (BlockTypes)_reader.ReadByte(),
+		Faces = (Cubeside)_reader.ReadByte(),
+		Type = (BlockType)_reader.ReadByte(),
 		Hp = _reader.ReadByte(),
 		HealthLevel = _reader.ReadByte()
 	};

@@ -19,8 +19,8 @@ public class SaveGameData
 
 public struct BlockData
 {
-	public Cubesides Faces;
-	public BlockTypes Type;
+	public Cubeside Faces;
+	public BlockType Type;
 	public byte Hp;
 	public byte HealthLevel; // corresponds to the visible crack appearance texture
 }

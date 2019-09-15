@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Runtime.CompilerServices;
-using System.Threading.Tasks;
+﻿using System.Runtime.CompilerServices;
 using Unity.Collections;
 using Unity.Jobs;
 using Unity.Mathematics;
@@ -86,36 +83,41 @@ namespace Assets.Scripts.World
 		public static float Map(float newMin, float newMax, float oldMin, float oldMax, float value) =>
 			Mathf.Lerp(newMin, newMax, Mathf.InverseLerp(oldMin, oldMax, value));
 
-		public static BlockTypes DetermineType(int worldX, int worldY, int worldZ, int3 height)
+		public static BlockType DetermineType(int worldX, int worldY, int worldZ, int3 height)
 		{
-			if (worldY == 0) return BlockTypes.Bedrock;
+			if (worldY == 0)
+                return BlockType.Bedrock;
 
 			// check if this suppose to be a cave
 			if (FractalFunc(worldX, worldY, worldZ, CaveSmooth, CaveOctaves) < CaveProbability)
-				return BlockTypes.Air;
+				return BlockType.Air;
 
 			// bedrock
-			if (worldY <= height.x) return BlockTypes.Bedrock;
+			if (worldY <= height.x)
+                return BlockType.Bedrock;
 
 			// stone
 			if (worldY <= height.y)
 			{
 				if (worldY < DiamondMaxHeight
                     && FractalFunc(worldX, worldY, worldZ, DiamondSmooth, DiamondOctaves) < DiamondProbability)
-					return BlockTypes.Diamond;
+					return BlockType.Diamond;
 
 				if (worldY < RedstoneMaxHeight
                     && FractalFunc(worldX, worldY, worldZ, RedstoneSmooth, RedstoneOctaves) < RedstoneProbability)
-					return BlockTypes.Redstone;
+					return BlockType.Redstone;
 
-				return BlockTypes.Stone;
+				return BlockType.Stone;
 			}
 
 			// dirt
-			if (worldY == height.z) return BlockTypes.Grass;
-			if (worldY < height.z) return BlockTypes.Dirt;
+			if (worldY == height.z)
+                return BlockType.Grass;
 
-			return BlockTypes.Air;
+			if (worldY < height.z)
+                return BlockType.Dirt;
+
+			return BlockType.Air;
 		}
 
 		// good noise generator
@@ -157,7 +159,7 @@ namespace Assets.Scripts.World
         /// One for Bedrock, Stone and Dirt. Heights determines up to where certain types appear.
         /// x is Bedrock, y is Stone and z is Dirt.
         /// </summary>
-        public int3[] CalculateHeights()
+        public int3[] CalculateHeightsJobSystem()
 		{
 			// output data
 			var heights = new int3[_totalBlockNumberX * _totalBlockNumberZ];
@@ -224,12 +226,12 @@ namespace Assets.Scripts.World
             return output;
         }
 
-        public BlockTypes[] CalculateBlockTypes(int3[] heights)
+        public BlockType[] CalculateBlockTypes(int3[] heights)
 		{
 			var inputSize = _totalBlockNumberX * _totalBlockNumberY * _totalBlockNumberZ;
 
 			// output data
-			var types = new BlockTypes[inputSize];
+			var types = new BlockType[inputSize];
 
 			var typeJob = new BlockTypeJob()
 			{
@@ -240,7 +242,7 @@ namespace Assets.Scripts.World
 				Heights = new NativeArray<int3>(heights, Allocator.TempJob),
 
 				// output
-				Result = new NativeArray<BlockTypes>(types, Allocator.TempJob)
+				Result = new NativeArray<BlockType>(types, Allocator.TempJob)
 			};
 
 			var typeJobHandle = typeJob.Schedule(inputSize, 8);
@@ -254,16 +256,47 @@ namespace Assets.Scripts.World
 			return types;
 		}
 
-		public void AddWater(ref BlockData[,,] blocks)
+        public void CalculateBlockTypesParallel()
+        {
+            var multiThreadTaskQueue = new MultiThreadTaskQueue();
+
+            for (int x = 0; x < _totalBlockNumberX; x++)
+                for (int z = 0; z < _totalBlockNumberZ; z++)
+                    multiThreadTaskQueue.ScheduleTask(CalculateBlockTypesForColumnParallel, x, z);
+
+            multiThreadTaskQueue.RunAllInParallel();
+        }
+
+        void CalculateBlockTypesForColumnParallel(int colX, int colZ)
+        {
+            int3 height = new int3()
+            {
+                x = GenerateBedrockHeight(colX, colZ),
+                y = GenerateStoneHeight(colX, colZ),
+                z = GenerateDirtHeight(colX, colZ)
+            };
+
+            // this optimization would require rearranging BlockType enum which cause a lot of breaks
+            //int max = height.x; // max could be passed to the loop below but it requires air to be default type
+            //if (height.y > max)
+            //    max = height.y;
+            //if (height.z > max)
+            //    max = height.z;
+
+            for (int y = 0; y < _totalBlockNumberY; y++)
+                CreateBlock(ref World.Blocks[colX, y, colZ], DetermineType(colX, y, colZ, height));
+        }
+
+        public void AddWater(ref BlockData[,,] blocks)
 		{
 			// first run - turn all Air blocks at the WaterLevel and one level below into Water blocks
 			for (int x = 0; x < _totalBlockNumberX; x++)
 				for (int z = 0; z < _totalBlockNumberZ; z++)
-					if (blocks[x, WaterLevel, z].Type == BlockTypes.Air)
+					if (blocks[x, WaterLevel, z].Type == BlockType.Air)
 					{
-						blocks[x, WaterLevel, z].Type = BlockTypes.Water;
-						if (blocks[x, WaterLevel - 1, z].Type == BlockTypes.Air) // level down scan
-							blocks[x, WaterLevel - 1, z].Type = BlockTypes.Water;
+						blocks[x, WaterLevel, z].Type = BlockType.Water;
+						if (blocks[x, WaterLevel - 1, z].Type == BlockType.Air) // level down scan
+							blocks[x, WaterLevel - 1, z].Type = BlockType.Water;
 					}
 
 			PropagateWaterHorizontally(ref blocks, WaterLevel - 1);
@@ -297,7 +330,7 @@ namespace Assets.Scripts.World
 				for (int y = 20; y < _totalBlockNumberY - TreeHeight - 1; y++)
 					for (int z = 1; z < _totalBlockNumberZ - 1; z++)
 					{
-						if (blocks[x, y, z].Type != BlockTypes.Grass) continue;
+						if (blocks[x, y, z].Type != BlockType.Grass) continue;
 
 						if (IsThereEnoughSpaceForTree(in blocks, x, y, z))
 							if (FractalFunc(x, y, z, WoodbaseSmooth, WoodbaseOctaves) < woodbaseProbability)
@@ -326,7 +359,7 @@ namespace Assets.Scripts.World
             // schedule one task per chunk
             for (int i = 0; i < World.Settings.WorldSizeX; i++)
                 for (int j = 0; j < World.Settings.WorldSizeZ; j++)
-                    queue.ScheduleTask<float, int, int>(AddTreesInChunkParallel, woodbaseProbability, i, j);
+                    queue.ScheduleTask(AddTreesInChunkParallel, woodbaseProbability, i, j);
 
             queue.RunAllInParallel(); // this is synchronous
         }
@@ -339,7 +372,7 @@ namespace Assets.Scripts.World
                 for (int y = 20; y < _totalBlockNumberY - TreeHeight - 1; y++)
                     for (int z = 1 + chunkColumnZ * World.CHUNK_SIZE; z < chunkColumnZ * World.CHUNK_SIZE + World.CHUNK_SIZE - 1; z++)
                     {
-                        if (World.Blocks[x, y, z].Type != BlockTypes.Grass)
+                        if (World.Blocks[x, y, z].Type != BlockType.Grass)
                             continue;
 
                         if (IsThereEnoughSpaceForTree(in World.Blocks, x, y, z))
@@ -362,7 +395,7 @@ namespace Assets.Scripts.World
 
 			// === Step 1 ===
 			bool foundWater = false;
-			BlockTypes type;
+			BlockType type;
 			int x, z; // iteration variables
 
 			// z asc
@@ -371,7 +404,7 @@ namespace Assets.Scripts.World
 				{
 					type = blocks[x, currentY, z].Type;
 					if (ChangeToWater())
-						blocks[x, currentY, z].Type = BlockTypes.Water;
+						blocks[x, currentY, z].Type = BlockType.Water;
 				}
 
 			// x asc
@@ -380,7 +413,7 @@ namespace Assets.Scripts.World
 				{
 					type = blocks[x, currentY, z].Type;
 					if (ChangeToWater())
-						blocks[x, currentY, z].Type = BlockTypes.Water;
+						blocks[x, currentY, z].Type = BlockType.Water;
 				}
 
 			// z desc
@@ -389,7 +422,7 @@ namespace Assets.Scripts.World
 				{
 					type = blocks[x, currentY, z].Type;
 					if (ChangeToWater())
-						blocks[x, currentY, z].Type = BlockTypes.Water;
+						blocks[x, currentY, z].Type = BlockType.Water;
 				}
 
 			// x desc
@@ -398,7 +431,7 @@ namespace Assets.Scripts.World
 				{
 					type = blocks[x, currentY, z].Type;
 					if (ChangeToWater())
-						blocks[x, currentY, z].Type = BlockTypes.Water;
+						blocks[x, currentY, z].Type = BlockType.Water;
 				}
 
 			// local functions introduced in C# 7.0 are quite useful as they have access to all variables in the upper scope
@@ -410,13 +443,13 @@ namespace Assets.Scripts.World
 				if (foundWater)
 				{
 					// this block is air
-					if (type == BlockTypes.Air)
+					if (type == BlockType.Air)
 						return true;
 
-					if (type != BlockTypes.Water)
+					if (type != BlockType.Water)
 						foundWater = false;
 				}
-				else if (type == BlockTypes.Water)
+				else if (type == BlockType.Water)
 					foundWater = true;
 
 				return false;
@@ -431,26 +464,26 @@ namespace Assets.Scripts.World
 
                 for (x = 0; x < _totalBlockNumberX; x++)
                     for (z = 0; z < _totalBlockNumberZ; z++)
-                        if (blocks[x, currentY, z].Type == BlockTypes.Air)
+                        if (blocks[x, currentY, z].Type == BlockType.Air)
                         {
-                            if (x < _totalBlockNumberX - 1 && blocks[x + 1, currentY, z].Type == BlockTypes.Water) // right
+                            if (x < _totalBlockNumberX - 1 && blocks[x + 1, currentY, z].Type == BlockType.Water) // right
                             {
-                                blocks[x, currentY, z].Type = BlockTypes.Water;
+                                blocks[x, currentY, z].Type = BlockType.Water;
                                 reiterate = true;
                             }
-                            else if (x > 0 && blocks[x - 1, currentY, z].Type == BlockTypes.Water) // left
+                            else if (x > 0 && blocks[x - 1, currentY, z].Type == BlockType.Water) // left
                             {
-                                blocks[x, currentY, z].Type = BlockTypes.Water;
+                                blocks[x, currentY, z].Type = BlockType.Water;
                                 reiterate = true;
                             }
-                            else if (z < _totalBlockNumberZ - 1 && blocks[x, currentY, z + 1].Type == BlockTypes.Water) // front
+                            else if (z < _totalBlockNumberZ - 1 && blocks[x, currentY, z + 1].Type == BlockType.Water) // front
                             {
-                                blocks[x, currentY, z].Type = BlockTypes.Water;
+                                blocks[x, currentY, z].Type = BlockType.Water;
                                 reiterate = true;
                             }
-                            else if (z > 0 && blocks[x, currentY, z - 1].Type == BlockTypes.Water) // back
+                            else if (z > 0 && blocks[x, currentY, z - 1].Type == BlockType.Water) // back
                             {
-                                blocks[x, currentY, z].Type = BlockTypes.Water;
+                                blocks[x, currentY, z].Type = BlockType.Water;
                                 reiterate = true;
                             }
                         }
@@ -466,9 +499,9 @@ namespace Assets.Scripts.World
 			bool waterAdded = false;
 			for (int x = 0; x < _totalBlockNumberX; x++)
 				for (int z = 0; z < _totalBlockNumberZ; z++)
-					if (blocks[x, currentY, z].Type == BlockTypes.Water && blocks[x, currentY - 1, z].Type == BlockTypes.Air)
+					if (blocks[x, currentY, z].Type == BlockType.Water && blocks[x, currentY - 1, z].Type == BlockType.Air)
 					{
-						blocks[x, currentY - 1, z].Type = BlockTypes.Water;
+						blocks[x, currentY - 1, z].Type = BlockType.Water;
 						waterAdded = true;
 					}
 
@@ -480,14 +513,14 @@ namespace Assets.Scripts.World
 		{
 			for (int i = 2; i < TreeHeight; i++)
 			{
-				if (blocks[x + 1, y + i, z].Type != BlockTypes.Air
-					|| blocks[x - 1, y + i, z].Type != BlockTypes.Air
-					|| blocks[x, y + i, z + 1].Type != BlockTypes.Air
-					|| blocks[x, y + i, z - 1].Type != BlockTypes.Air
-					|| blocks[x + 1, y + i, z + 1].Type != BlockTypes.Air
-					|| blocks[x + 1, y + i, z - 1].Type != BlockTypes.Air
-					|| blocks[x - 1, y + i, z + 1].Type != BlockTypes.Air
-					|| blocks[x - 1, y + i, z - 1].Type != BlockTypes.Air)
+				if (blocks[x + 1, y + i, z].Type != BlockType.Air
+					|| blocks[x - 1, y + i, z].Type != BlockType.Air
+					|| blocks[x, y + i, z + 1].Type != BlockType.Air
+					|| blocks[x, y + i, z - 1].Type != BlockType.Air
+					|| blocks[x + 1, y + i, z + 1].Type != BlockType.Air
+					|| blocks[x + 1, y + i, z - 1].Type != BlockType.Air
+					|| blocks[x - 1, y + i, z + 1].Type != BlockType.Air
+					|| blocks[x - 1, y + i, z - 1].Type != BlockType.Air)
 					return false;
 			}
 
@@ -497,21 +530,21 @@ namespace Assets.Scripts.World
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		void BuildTree(ref BlockData[,,] blocks, int x, int y, int z)
 		{
-			CreateBlock(ref blocks[x, y, z], BlockTypes.Woodbase);
-			CreateBlock(ref blocks[x, y + 1, z], BlockTypes.Wood);
-			CreateBlock(ref blocks[x, y + 2, z], BlockTypes.Wood);
+			CreateBlock(ref blocks[x, y, z], BlockType.Woodbase);
+			CreateBlock(ref blocks[x, y + 1, z], BlockType.Wood);
+			CreateBlock(ref blocks[x, y + 2, z], BlockType.Wood);
 
 			int i, j, k;
 			for (i = -1; i <= 1; i++)
 				for (j = -1; j <= 1; j++)
 					for (k = 3; k <= 4; k++)
-						CreateBlock(ref blocks[x + i, y + k, z + j], BlockTypes.Leaves);
+						CreateBlock(ref blocks[x + i, y + k, z + j], BlockType.Leaves);
 
-			CreateBlock(ref blocks[x, y + 5, z], BlockTypes.Leaves);
+			CreateBlock(ref blocks[x, y + 5, z], BlockType.Leaves);
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		void CreateBlock(ref BlockData block, BlockTypes type)
+		void CreateBlock(ref BlockData block, BlockType type)
 		{
 			block.Type = type;
 			block.Hp = LookupTables.BlockHealthMax[(int)type];

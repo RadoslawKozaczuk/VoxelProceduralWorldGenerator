@@ -9,7 +9,7 @@ public class BlockInteraction : MonoBehaviour
 	[SerializeField] Camera _weaponCamera;
 
 	AudioSource _audioSource;
-	BlockTypes _buildBlockType = BlockTypes.Stone;
+	BlockType _buildBlockType = BlockType.Stone;
 
 	void Start() => _audioSource = GetComponent<AudioSource>();
 
@@ -78,42 +78,42 @@ public class BlockInteraction : MonoBehaviour
 	{
 		if (Input.GetKeyDown("1"))
 		{
-			_buildBlockType = BlockTypes.Grass;
+			_buildBlockType = BlockType.Grass;
 			Debug.Log("Change build block type to Grass");
 		}
 		else if (Input.GetKeyDown("2"))
 		{
-			_buildBlockType = BlockTypes.Dirt;
+			_buildBlockType = BlockType.Dirt;
 			Debug.Log("Change build block type to Dirt");
 		}
 		else if (Input.GetKeyDown("3"))
 		{
-			_buildBlockType = BlockTypes.Stone;
+			_buildBlockType = BlockType.Stone;
 			Debug.Log("Change build block type to Stone");
 		}
 		else if (Input.GetKeyDown("4"))
 		{
-			_buildBlockType = BlockTypes.Diamond;
+			_buildBlockType = BlockType.Diamond;
 			Debug.Log("Change build block type to Diamond");
 		}
 		else if (Input.GetKeyDown("5"))
 		{
-			_buildBlockType = BlockTypes.Bedrock;
+			_buildBlockType = BlockType.Bedrock;
 			Debug.Log("Change build block type to Bedrock");
 		}
 		else if (Input.GetKeyDown("6"))
 		{
-			_buildBlockType = BlockTypes.Redstone;
+			_buildBlockType = BlockType.Redstone;
 			Debug.Log("Change build block type to Redstone");
 		}
 		else if (Input.GetKeyDown("7"))
 		{
-			_buildBlockType = BlockTypes.Sand;
+			_buildBlockType = BlockType.Sand;
 			Debug.Log("Change build block type to Sand");
 		}
 		else if (Input.GetKeyDown("8"))
 		{
-			_buildBlockType = BlockTypes.Water;
+			_buildBlockType = BlockType.Water;
 			Debug.Log("Change build block type to Water");
 		}
 	}

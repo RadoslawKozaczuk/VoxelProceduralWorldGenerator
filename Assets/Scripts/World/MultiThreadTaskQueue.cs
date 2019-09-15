@@ -5,9 +5,8 @@ using System.Threading.Tasks;
 namespace Assets.Scripts.World
 {
     /// <summary>
-    /// This queue adds some additional overhead although it is still way faster than it would have been without parallelization.
-    /// On the other hand it is way more convenient to use.
-    /// For example it encapsulates things that are often source of problems - the necessity of parameters copy.
+    /// This queue adds some small overhead although it provides interface much more convenient to use than manual tasks scheduling.
+    /// It is very simplistic queue and adding tasks after execution start is not possible.
     /// </summary>
     class MultiThreadTaskQueue
     {
@@ -17,54 +16,61 @@ namespace Assets.Scripts.World
         int _index = 0;
 
         /// <summary>
-        /// Adds the given action to the queue.
-        /// Template types must match in type, order and number the parameters of the given method.
-        /// Important: To run the task in parallel add all tasks and then call RunAllInParallel method.
+        /// Adds the given action to the queue. Tasks are not executed until RunAllInParallel method is called.
+        /// Important: template types must match in type, order and number the parameters of the given method.
         /// </summary>
-        public void ScheduleTask<T1, T2, T3>(Action<T1, T2, T3> action, params object[] array)
+        public void ScheduleTask<T1, T2, T3>(Action<T1, T2, T3> action, T1 arg1, T2 arg2, T3 arg3)
             where T1 : struct
             where T2 : struct
             where T3 : struct
         {
 #if UNITY_EDITOR || UNITY_DEVELOPMENT
-            Assertions(action.Method, array, 3);
+            Assertions(action.Method, 3);
 #endif
 
             // use variable capture to 'pass in' parameters in order to avoid data share
             // we have to do it because values changed outside of a task are also changed in the task
-            T1 copy1 = (T1)array[0];
-            T2 copy2 = (T2)array[1];
-            T3 copy3 = (T3)array[2];
+            T1 copy1 = arg1;
+            T2 copy2 = arg2;
+            T3 copy3 = arg3;
 
             _pendingTasks.Add(new Task(() => action(copy1, copy2, copy3)));
         }
 
-        public void ScheduleTask<T1, T2>(Action<T1, T2> action, params object[] array)
+        /// <summary>
+        /// Adds the given action to the queue. Tasks are not executed until RunAllInParallel method is called.
+        /// Important: template types must match in type, order and number the parameters of the given method.
+        /// </summary>
+        public void ScheduleTask<T1, T2>(Action<T1, T2> action, T1 arg1, T2 arg2)
             where T1 : struct
             where T2 : struct
         {
 #if UNITY_EDITOR || UNITY_DEVELOPMENT
-            Assertions(action.Method, array, 3);
+            Assertions(action.Method, 2);
 #endif
 
             // use variable capture to 'pass in' parameters in order to avoid data share
             // we have to do it because values changed outside of a task are also changed in the task
-            T1 copy1 = (T1)array[0];
-            T2 copy2 = (T2)array[1];
+            T1 copy1 = arg1;
+            T2 copy2 = arg2;
 
             _pendingTasks.Add(new Task(() => action(copy1, copy2)));
         }
 
-        public void ScheduleTask<T>(Action<T> action, params object[] array)
+        /// <summary>
+        /// Adds the given action to the queue. Tasks are not executed until RunAllInParallel method is called.
+        /// Important: template types must match in type, order and number the parameters of the given method.
+        /// </summary>
+        public void ScheduleTask<T>(Action<T> action, T arg)
             where T : struct
         {
 #if UNITY_EDITOR || UNITY_DEVELOPMENT
-            Assertions(action.Method, array, 3);
+            Assertions(action.Method, 1);
 #endif
 
             // use variable capture to 'pass in' parameters in order to avoid data share
             // we have to do it because values changed outside of a task are also changed in the task
-            T copy = (T)array[0];
+            T copy = arg;
 
             _pendingTasks.Add(new Task(() => action(copy)));
         }
@@ -107,18 +113,12 @@ namespace Assets.Scripts.World
         }
 
 #if UNITY_EDITOR || UNITY_DEVELOPMENT
-        void Assertions(System.Reflection.MethodInfo info, object[] paramArray, int paramNumber)
+        void Assertions(System.Reflection.MethodInfo info, int paramNumber)
         {
-            System.Reflection.ParameterInfo[] paramInfo = info.GetParameters();
-
-            if (paramInfo.Length != paramNumber)
+            if (info.GetParameters().Length != paramNumber)
                 throw new System.ArgumentException($"Given action has the number of parameters different than {paramNumber}. " +
                     "Please use a method overload with the number of parameters corresponding to the number of parameters of the action.",
                     "action");
-            else if (paramArray.Length != paramNumber)
-                throw new System.ArgumentException($"The number of parameters is different than expected ({paramNumber}). " +
-                    "Please use a different method overload.",
-                    "array");
             else if (_isRunning)
                 throw new System.ArgumentException("Adding new tasks after queue execution start in not allowed.");
         }

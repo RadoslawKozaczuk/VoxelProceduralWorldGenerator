@@ -93,7 +93,7 @@ public class Game : MonoBehaviour
 			CheckNeighboringChunks(blockX, blockY, blockZ, chunkX, chunkY, chunkZ);
 	}
 
-	public void ProcessBuildBlock(Vector3 hitBlock, BlockTypes type)
+	public void ProcessBuildBlock(Vector3 hitBlock, BlockType type)
 	{
 		FindChunkAndBlock(hitBlock, out int chunkX, out int chunkY, out int chunkZ, out int blockX, out int blockY, out int blockZ);
 

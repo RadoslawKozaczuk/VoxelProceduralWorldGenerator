@@ -15,7 +15,7 @@ namespace Assets.Scripts.World
 		[ReadOnly]
 		public NativeArray<int3> Heights;
 
-		public NativeArray<BlockTypes> Result;
+		public NativeArray<BlockType> Result;
 
 		public void Execute(int i)
 		{

@@ -6,7 +6,7 @@ namespace Assets.Scripts.World
 {
 	public class MeshGenerator : MonoBehaviour
 	{
-		const float waterUvConst = 1.0f / World.CHUNK_SIZE;
+		const float WATER_UV_CONST = 1.0f / World.CHUNK_SIZE;
 
 		#region Readonly lookup tables
 		readonly Vector2[,] _blockUVs = {
@@ -111,12 +111,12 @@ namespace Assets.Scripts.World
 						// offset must be included
 						ref BlockData b = ref blocks[x + chunkPos.x, y + chunkPos.y, z + chunkPos.z];
 
-						if (b.Faces == 0 || b.Type == BlockTypes.Air)
+						if (b.Faces == 0 || b.Type == BlockType.Air)
 							continue;
 
-						if (b.Type == BlockTypes.Water)
+						if (b.Type == BlockType.Water)
 							CreateWaterQuad(ref b, ref waterIndex, ref waterTriIndex, ref waterData, ref localBlockCoodinates);
-						else if (b.Type == BlockTypes.Grass)
+						else if (b.Type == BlockType.Grass)
 							CreateGrassQuads(ref b, ref index, ref triIndex, ref terrainData, ref localBlockCoodinates);
 						else
 							CreateStandardQuads(ref b, ref index, ref triIndex, ref terrainData, ref localBlockCoodinates);
@@ -140,94 +140,94 @@ namespace Assets.Scripts.World
 			blocks[blockX, blockY, blockZ].Faces = 0;
 
 			if (blockX > 0)
-				if (blocks[blockX - 1, blockY, blockZ].Type != BlockTypes.Air)
-					blocks[blockX - 1, blockY, blockZ].Faces |= Cubesides.Right;
+				if (blocks[blockX - 1, blockY, blockZ].Type != BlockType.Air)
+					blocks[blockX - 1, blockY, blockZ].Faces |= Cubeside.Right;
 
 			if (blockX < _totalBlockNumberX - 1)
-				if (blocks[blockX + 1, blockY, blockZ].Type != BlockTypes.Air)
-					blocks[blockX + 1, blockY, blockZ].Faces |= Cubesides.Left;
+				if (blocks[blockX + 1, blockY, blockZ].Type != BlockType.Air)
+					blocks[blockX + 1, blockY, blockZ].Faces |= Cubeside.Left;
 
 			if (blockY > 0)
-				if (blocks[blockX, blockY - 1, blockZ].Type != BlockTypes.Air)
-					blocks[blockX, blockY - 1, blockZ].Faces |= Cubesides.Top;
+				if (blocks[blockX, blockY - 1, blockZ].Type != BlockType.Air)
+					blocks[blockX, blockY - 1, blockZ].Faces |= Cubeside.Top;
 
 			if (blockY < _totalBlockNumberY - 1)
-				if (blocks[blockX, blockY + 1, blockZ].Type != BlockTypes.Air)
-					blocks[blockX, blockY + 1, blockZ].Faces |= Cubesides.Bottom;
+				if (blocks[blockX, blockY + 1, blockZ].Type != BlockType.Air)
+					blocks[blockX, blockY + 1, blockZ].Faces |= Cubeside.Bottom;
 
 			if (blockZ > 0)
-				if (blocks[blockX, blockY, blockZ - 1].Type != BlockTypes.Air)
-					blocks[blockX, blockY, blockZ - 1].Faces |= Cubesides.Front;
+				if (blocks[blockX, blockY, blockZ - 1].Type != BlockType.Air)
+					blocks[blockX, blockY, blockZ - 1].Faces |= Cubeside.Front;
 
 			if (blockZ < _totalBlockNumberZ - 1)
-				if (blocks[blockX, blockY, blockZ + 1].Type != BlockTypes.Air)
-					blocks[blockX, blockY, blockZ + 1].Faces |= Cubesides.Back;
+				if (blocks[blockX, blockY, blockZ + 1].Type != BlockType.Air)
+					blocks[blockX, blockY, blockZ + 1].Faces |= Cubeside.Back;
 		}
 
 		public void RecalculateFacesAfterBlockBuild(ref BlockData[,,] blocks, int blockX, int blockY, int blockZ)
 		{
 			ref BlockData b = ref blocks[blockX, blockY, blockZ];
-			BlockTypes type;
+			BlockType type;
 
 			if (blockX > 0)
 			{
 				type = blocks[blockX - 1, blockY, blockZ].Type;
-				if (type == BlockTypes.Air || type == BlockTypes.Water)
-					b.Faces |= Cubesides.Left;
+				if (type == BlockType.Air || type == BlockType.Water)
+					b.Faces |= Cubeside.Left;
 				else
-					blocks[blockX - 1, blockY, blockZ].Faces &= ~Cubesides.Right;
+					blocks[blockX - 1, blockY, blockZ].Faces &= ~Cubeside.Right;
 			}
-			else b.Faces |= Cubesides.Left;
+			else b.Faces |= Cubeside.Left;
 
 			if (blockX < _totalBlockNumberX - 1)
 			{
 				type = blocks[blockX + 1, blockY, blockZ].Type;
-				if (type == BlockTypes.Air || type == BlockTypes.Water)
-					b.Faces |= Cubesides.Right;
+				if (type == BlockType.Air || type == BlockType.Water)
+					b.Faces |= Cubeside.Right;
 				else
-					blocks[blockX + 1, blockY, blockZ].Faces &= ~Cubesides.Left;
+					blocks[blockX + 1, blockY, blockZ].Faces &= ~Cubeside.Left;
 			}
-			else b.Faces |= Cubesides.Right;
+			else b.Faces |= Cubeside.Right;
 
 			if (blockY > 0)
 			{
 				type = blocks[blockX, blockY - 1, blockZ].Type;
-				if (type == BlockTypes.Air || type == BlockTypes.Water)
-					b.Faces |= Cubesides.Bottom;
+				if (type == BlockType.Air || type == BlockType.Water)
+					b.Faces |= Cubeside.Bottom;
 				else
-					blocks[blockX, blockY - 1, blockZ].Faces &= ~Cubesides.Top;
+					blocks[blockX, blockY - 1, blockZ].Faces &= ~Cubeside.Top;
 			}
-			else b.Faces |= Cubesides.Bottom;
+			else b.Faces |= Cubeside.Bottom;
 
 			if (blockY < _totalBlockNumberY - 1)
 			{
 				type = blocks[blockX, blockY + 1, blockZ].Type;
-				if (type == BlockTypes.Air || type == BlockTypes.Water)
-					b.Faces |= Cubesides.Top;
+				if (type == BlockType.Air || type == BlockType.Water)
+					b.Faces |= Cubeside.Top;
 				else
-					blocks[blockX, blockY + 1, blockZ].Faces &= ~Cubesides.Bottom;
+					blocks[blockX, blockY + 1, blockZ].Faces &= ~Cubeside.Bottom;
 			}
-			else b.Faces |= Cubesides.Top;
+			else b.Faces |= Cubeside.Top;
 
 			if (blockZ > 0)
 			{
 				type = blocks[blockX, blockY, blockZ - 1].Type;
-				if (type == BlockTypes.Air || type == BlockTypes.Water)
-					b.Faces |= Cubesides.Back;
+				if (type == BlockType.Air || type == BlockType.Water)
+					b.Faces |= Cubeside.Back;
 				else
-					blocks[blockX, blockY, blockZ - 1].Faces &= ~Cubesides.Front;
+					blocks[blockX, blockY, blockZ - 1].Faces &= ~Cubeside.Front;
 			}
-			else b.Faces |= Cubesides.Back;
+			else b.Faces |= Cubeside.Back;
 
 			if (blockZ < _totalBlockNumberZ - 1)
 			{
 				type = blocks[blockX, blockY, blockZ + 1].Type;
-				if (type == BlockTypes.Air || type == BlockTypes.Water)
-					b.Faces |= Cubesides.Front;
+				if (type == BlockType.Air || type == BlockType.Water)
+					b.Faces |= Cubeside.Front;
 				else
-					blocks[blockX, blockY, blockZ + 1].Faces &= ~Cubesides.Back;
+					blocks[blockX, blockY, blockZ + 1].Faces &= ~Cubeside.Back;
 			}
-			else b.Faces |= Cubesides.Front;
+			else b.Faces |= Cubeside.Front;
 		}
 
 		/// <summary>
@@ -239,59 +239,59 @@ namespace Assets.Scripts.World
 				for (int y = 0; y < _totalBlockNumberY; y++)
 					for (int z = 0; z < _totalBlockNumberZ; z++)
 					{
-						BlockTypes type = blocks[x, y, z].Type;
+						BlockType type = blocks[x, y, z].Type;
 
-						if (type == BlockTypes.Air)
+						if (type == BlockType.Air)
 						{
 							// check block on the right
 							if (x < _totalBlockNumberX - 1)
-								if (blocks[x + 1, y, z].Type != BlockTypes.Air)
-									blocks[x + 1, y, z].Faces |= Cubesides.Left;
+								if (blocks[x + 1, y, z].Type != BlockType.Air)
+									blocks[x + 1, y, z].Faces |= Cubeside.Left;
 
 							// check block above
 							if (y < _totalBlockNumberY - 1)
-								if (blocks[x, y + 1, z].Type != BlockTypes.Air)
-									blocks[x, y + 1, z].Faces |= Cubesides.Bottom;
+								if (blocks[x, y + 1, z].Type != BlockType.Air)
+									blocks[x, y + 1, z].Faces |= Cubeside.Bottom;
 
 							// check block in front
 							if (z < _totalBlockNumberZ - 1)
-								if (blocks[x, y, z + 1].Type != BlockTypes.Air)
-									blocks[x, y, z + 1].Faces |= Cubesides.Back;
+								if (blocks[x, y, z + 1].Type != BlockType.Air)
+									blocks[x, y, z + 1].Faces |= Cubeside.Back;
 						}
-						else if (type == BlockTypes.Water)
+						else if (type == BlockType.Water)
 						{
 							if (y < _totalBlockNumberY - 1)
-								if (blocks[x, y + 1, z].Type == BlockTypes.Air)
-									blocks[x, y, z].Faces |= Cubesides.Top;
+								if (blocks[x, y + 1, z].Type == BlockType.Air)
+									blocks[x, y, z].Faces |= Cubeside.Top;
 
 							// check block on the right
 							if (x < _totalBlockNumberX - 1)
-								if (blocks[x + 1, y, z].Type != BlockTypes.Air)
-									blocks[x + 1, y, z].Faces |= Cubesides.Left;
+								if (blocks[x + 1, y, z].Type != BlockType.Air)
+									blocks[x + 1, y, z].Faces |= Cubeside.Left;
 
 							// check block above
 							if (y < _totalBlockNumberY - 1)
-								if (blocks[x, y + 1, z].Type != BlockTypes.Air)
-									blocks[x, y + 1, z].Faces |= Cubesides.Bottom;
+								if (blocks[x, y + 1, z].Type != BlockType.Air)
+									blocks[x, y + 1, z].Faces |= Cubeside.Bottom;
 
 							// check block in front
 							if (z < _totalBlockNumberZ - 1)
-								if (blocks[x, y, z + 1].Type != BlockTypes.Air)
-									blocks[x, y, z + 1].Faces |= Cubesides.Back;
+								if (blocks[x, y, z + 1].Type != BlockType.Air)
+									blocks[x, y, z + 1].Faces |= Cubeside.Back;
 						}
 						else
 						{
 							if (x < _totalBlockNumberX - 1)
-								if (blocks[x + 1, y, z].Type == BlockTypes.Air || blocks[x + 1, y, z].Type == BlockTypes.Water)
-									blocks[x, y, z].Faces |= Cubesides.Right;
+								if (blocks[x + 1, y, z].Type == BlockType.Air || blocks[x + 1, y, z].Type == BlockType.Water)
+									blocks[x, y, z].Faces |= Cubeside.Right;
 
 							if (y < _totalBlockNumberY - 1)
-								if (blocks[x, y + 1, z].Type == BlockTypes.Air || blocks[x, y + 1, z].Type == BlockTypes.Water)
-									blocks[x, y, z].Faces |= Cubesides.Top;
+								if (blocks[x, y + 1, z].Type == BlockType.Air || blocks[x, y + 1, z].Type == BlockType.Water)
+									blocks[x, y, z].Faces |= Cubeside.Top;
 
 							if (z < _totalBlockNumberZ - 1)
-								if (blocks[x, y, z + 1].Type == BlockTypes.Air || blocks[x, y, z + 1].Type == BlockTypes.Water)
-									blocks[x, y, z].Faces |= Cubesides.Front;
+								if (blocks[x, y, z + 1].Type == BlockType.Air || blocks[x, y, z + 1].Type == BlockType.Water)
+									blocks[x, y, z].Faces |= Cubeside.Front;
 						}
 					}
 		}
@@ -311,8 +311,8 @@ namespace Assets.Scripts.World
 				for (z = 0; z < _totalBlockNumberZ; z++)
 				{
 					b = ref blocks[x, y, z];
-					if (b.Type != BlockTypes.Water && b.Type != BlockTypes.Air)
-						b.Faces |= Cubesides.Right;
+					if (b.Type != BlockType.Water && b.Type != BlockType.Air)
+						b.Faces |= Cubeside.Right;
 				}
 
 			// left world boundaries check
@@ -321,21 +321,21 @@ namespace Assets.Scripts.World
 				for (z = 0; z < _totalBlockNumberZ; z++)
 				{
 					b = ref blocks[x, y, z];
-					if (b.Type != BlockTypes.Water && b.Type != BlockTypes.Air)
-						b.Faces |= Cubesides.Left;
+					if (b.Type != BlockType.Water && b.Type != BlockType.Air)
+						b.Faces |= Cubeside.Left;
 				}
 
 			// top world boundaries check
 			y = _totalBlockNumberY - 1;
 			for (x = 0; x < _totalBlockNumberX; x++)
 				for (z = 0; z < _totalBlockNumberZ; z++)
-					blocks[x, y, z].Faces |= Cubesides.Top; // there will always be air
+					blocks[x, y, z].Faces |= Cubeside.Top; // there will always be air
 
 			// bottom world boundaries check
 			y = 0;
 			for (x = 0; x < _totalBlockNumberX; x++)
 				for (z = 0; z < _totalBlockNumberZ; z++)
-					blocks[x, y, z].Faces |= Cubesides.Bottom; // there will always be bedrock
+					blocks[x, y, z].Faces |= Cubeside.Bottom; // there will always be bedrock
 
 			// front world boundaries check
 			z = _totalBlockNumberZ - 1;
@@ -343,8 +343,8 @@ namespace Assets.Scripts.World
 				for (y = 0; y < _totalBlockNumberY; y++)
 				{
 					b = ref blocks[x, y, z];
-					if (b.Type != BlockTypes.Water && b.Type != BlockTypes.Air)
-						b.Faces |= Cubesides.Front;
+					if (b.Type != BlockType.Water && b.Type != BlockType.Air)
+						b.Faces |= Cubeside.Front;
 				}
 
 			// back world boundaries check
@@ -353,8 +353,8 @@ namespace Assets.Scripts.World
 				for (y = 0; y < _totalBlockNumberY; y++)
 				{
 					b = ref blocks[x, y, z];
-					if (b.Type != BlockTypes.Water && b.Type != BlockTypes.Air)
-						b.Faces |= Cubesides.Back;
+					if (b.Type != BlockType.Water && b.Type != BlockType.Air)
+						b.Faces |= Cubeside.Back;
 				}
 		}
 
@@ -389,12 +389,12 @@ namespace Assets.Scripts.World
 					{
 						b = ref blocks[x, y, z];
 
-						if (b.Type == BlockTypes.Water)
+						if (b.Type == BlockType.Water)
 						{
-							if ((b.Faces & Cubesides.Top) == Cubesides.Top)
+							if ((b.Faces & Cubeside.Top) == Cubeside.Top)
 								wSize += 4;
 						}
-						else if (b.Type != BlockTypes.Air)
+						else if (b.Type != BlockType.Air)
 						{
 							// Around two times faster (which is still insignificant at all in this context - 10ms on a 7*4*7 map...).
 							// Although, I still decided to leave it here for learning purpose.
@@ -425,7 +425,7 @@ namespace Assets.Scripts.World
 					uv01 = _blockUVs[typeIndex, 2],
 					uv11 = _blockUVs[typeIndex, 3];
 
-			if (block.Faces.HasFlag(Cubesides.Top))
+			if (block.Faces.HasFlag(Cubeside.Top))
 			{
 				AddQuadComponents(ref index, ref triIndex, ref data, Vector3.up,
 					ref uv11, ref uv01, ref uv00, ref uv10,
@@ -433,7 +433,7 @@ namespace Assets.Scripts.World
 				AddSuvs(ref block, ref data);
 			}
 
-			if (block.Faces.HasFlag(Cubesides.Bottom))
+			if (block.Faces.HasFlag(Cubeside.Bottom))
 			{
 				AddQuadComponents(ref index, ref triIndex, ref data, Vector3.down,
 					ref uv11, ref uv01, ref uv00, ref uv10,
@@ -441,7 +441,7 @@ namespace Assets.Scripts.World
 				AddSuvs(ref block, ref data);
 			}
 
-			if (block.Faces.HasFlag(Cubesides.Left))
+			if (block.Faces.HasFlag(Cubeside.Left))
 			{
 				AddQuadComponents(ref index, ref triIndex, ref data, Vector3.left,
 					ref uv11, ref uv01, ref uv00, ref uv10,
@@ -449,7 +449,7 @@ namespace Assets.Scripts.World
 				AddSuvs(ref block, ref data);
 			}
 
-			if (block.Faces.HasFlag(Cubesides.Right))
+			if (block.Faces.HasFlag(Cubeside.Right))
 			{
 				AddQuadComponents(ref index, ref triIndex, ref data, Vector3.right,
 					ref uv11, ref uv01, ref uv00, ref uv10,
@@ -457,7 +457,7 @@ namespace Assets.Scripts.World
 				AddSuvs(ref block, ref data);
 			}
 
-			if (block.Faces.HasFlag(Cubesides.Front))
+			if (block.Faces.HasFlag(Cubeside.Front))
 			{
 				AddQuadComponents(ref index, ref triIndex, ref data, Vector3.forward,
 					ref uv11, ref uv01, ref uv00, ref uv10,
@@ -465,7 +465,7 @@ namespace Assets.Scripts.World
 				AddSuvs(ref block, ref data);
 			}
 
-			if (block.Faces.HasFlag(Cubesides.Back))
+			if (block.Faces.HasFlag(Cubeside.Back))
 			{
 				AddQuadComponents(ref index, ref triIndex, ref data, Vector3.back,
 					ref uv11, ref uv01, ref uv00, ref uv10,
@@ -483,7 +483,7 @@ namespace Assets.Scripts.World
 					uv01side = _blockUVs[typeIndex + 1, 2],
 					uv11side = _blockUVs[typeIndex + 1, 3];
 
-			if (block.Faces.HasFlag(Cubesides.Top))
+			if (block.Faces.HasFlag(Cubeside.Top))
 			{
 				Vector2 uv00top = _blockUVs[typeIndex, 0],
 						uv10top = _blockUVs[typeIndex, 1],
@@ -496,7 +496,7 @@ namespace Assets.Scripts.World
 				AddSuvs(ref block, ref data);
 			}
 
-			if (block.Faces.HasFlag(Cubesides.Bottom))
+			if (block.Faces.HasFlag(Cubeside.Bottom))
 			{
 				int restIndex = typeIndex - 10;
 				Vector2 uv00bot = _blockUVs[restIndex, 0],
@@ -510,7 +510,7 @@ namespace Assets.Scripts.World
 				AddSuvs(ref block, ref data);
 			}
 
-			if (block.Faces.HasFlag(Cubesides.Left))
+			if (block.Faces.HasFlag(Cubeside.Left))
 			{
 				AddQuadComponents(ref index, ref triIndex, ref data, Vector3.left,
 					ref uv00side, ref uv10side, ref uv11side, ref uv01side,
@@ -518,7 +518,7 @@ namespace Assets.Scripts.World
 				AddSuvs(ref block, ref data);
 			}
 
-			if (block.Faces.HasFlag(Cubesides.Right))
+			if (block.Faces.HasFlag(Cubeside.Right))
 			{
 				AddQuadComponents(ref index, ref triIndex, ref data, Vector3.right,
 					ref uv00side, ref uv10side, ref uv11side, ref uv01side,
@@ -526,7 +526,7 @@ namespace Assets.Scripts.World
 				AddSuvs(ref block, ref data);
 			}
 
-			if (block.Faces.HasFlag(Cubesides.Front))
+			if (block.Faces.HasFlag(Cubeside.Front))
 			{
 				AddQuadComponents(ref index, ref triIndex, ref data, Vector3.forward,
 					ref uv00side, ref uv10side, ref uv11side, ref uv01side,
@@ -534,7 +534,7 @@ namespace Assets.Scripts.World
 				AddSuvs(ref block, ref data);
 			}
 
-			if (block.Faces.HasFlag(Cubesides.Back))
+			if (block.Faces.HasFlag(Cubeside.Back))
 			{
 				AddQuadComponents(ref index, ref triIndex, ref data, Vector3.back,
 					ref uv00side, ref uv10side, ref uv11side, ref uv01side,
@@ -546,14 +546,14 @@ namespace Assets.Scripts.World
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		void CreateWaterQuad(ref BlockData block, ref int index, ref int triIndex, ref MeshData data, ref Vector3Int localBlockCoord)
 		{
-			if (block.Faces.HasFlag(Cubesides.Top))
+			if (block.Faces.HasFlag(Cubeside.Top))
 			{
 				// all possible UVs
 				// left-top, right-top, left-bottom, right-bottom
-				Vector2 uv00 = new Vector2(waterUvConst * localBlockCoord.x, 1 - waterUvConst * localBlockCoord.z),
-					uv10 = new Vector2(waterUvConst * (localBlockCoord.x + 1), 1 - waterUvConst * localBlockCoord.z),
-					uv01 = new Vector2(waterUvConst * localBlockCoord.x, 1 - waterUvConst * (localBlockCoord.z + 1)),
-					uv11 = new Vector2(waterUvConst * (localBlockCoord.x + 1), 1 - waterUvConst * (localBlockCoord.z + 1));
+				Vector2 uv00 = new Vector2(WATER_UV_CONST * localBlockCoord.x, 1 - WATER_UV_CONST * localBlockCoord.z),
+					uv10 = new Vector2(WATER_UV_CONST * (localBlockCoord.x + 1), 1 - WATER_UV_CONST * localBlockCoord.z),
+					uv01 = new Vector2(WATER_UV_CONST * localBlockCoord.x, 1 - WATER_UV_CONST * (localBlockCoord.z + 1)),
+					uv11 = new Vector2(WATER_UV_CONST * (localBlockCoord.x + 1), 1 - WATER_UV_CONST * (localBlockCoord.z + 1));
 
 				AddQuadComponents(ref index, ref triIndex, ref data, Vector3.up,
 					ref uv11, ref uv01, ref uv00, ref uv10,

@@ -61,20 +61,30 @@ namespace Assets.Scripts.World
             AlreadyGenerated += _progressStep;
             yield return null;
 
-            ProgressDescription = "Calculating heights...";
-            var heights = _terrainGenerator.CalculateHeights();
-            AlreadyGenerated += _progressStep;
-            yield return null;
+            if (Settings.ComputingAcceleration == ComputingAcceleration.UnityJobSystem)
+            {
+                ProgressDescription = "Calculating heights...";
+                var heights = _terrainGenerator.CalculateHeightsJobSystem();
+                AlreadyGenerated += _progressStep;
+                yield return null;
 
-            ProgressDescription = "Calculating block types...";
-            var types = _terrainGenerator.CalculateBlockTypes(heights);
-            AlreadyGenerated += _progressStep;
-            yield return null;
+                ProgressDescription = "Calculating block types...";
+                var types = _terrainGenerator.CalculateBlockTypes(heights);
+                AlreadyGenerated += _progressStep;
+                yield return null;
 
-            ProgressDescription = "Job output deflattenization...";
-            DeflattenizeOutput(ref types);
-            AlreadyGenerated += _progressStep;
-            yield return null;
+                ProgressDescription = "Job output deflattenization...";
+                DeflattenizeOutput(ref types);
+                AlreadyGenerated += _progressStep;
+                yield return null;
+            }
+            else if(Settings.ComputingAcceleration == ComputingAcceleration.PureCSParallelisation)
+            {
+                ProgressDescription = "Calculating block types...";
+                _terrainGenerator.CalculateBlockTypesParallel();
+                AlreadyGenerated += _progressStep * 3;
+                yield return null;
+            }
 
             if (Settings.IsWater)
             {
@@ -257,7 +267,7 @@ namespace Assets.Scripts.World
 		{
 			ref BlockData b = ref Blocks[blockX, blockY, blockZ];
 
-            if(b.Type == BlockTypes.Air)
+            if(b.Type == BlockType.Air)
             {
                 UnityEngine.Debug.LogError("Block of type Air was hit which should have never happened. Probably wrong block coordinates calculation.");
                 return false;
@@ -265,7 +275,7 @@ namespace Assets.Scripts.World
 
             if (--b.Hp == 0)
             {
-                b.Type = BlockTypes.Air;
+                b.Type = BlockType.Air;
                 _meshGenerator.RecalculateFacesAfterBlockDestroy(ref Blocks, blockX, blockY, blockZ);
                 chunkData.Status = ChunkStatus.NeedToBeRecreated;
                 return true;
@@ -283,11 +293,11 @@ namespace Assets.Scripts.World
 		/// <summary>
 		/// Returns true if a new block has been built.
 		/// </summary>
-		public bool BuildBlock(int blockX, int blockY, int blockZ, BlockTypes type, ChunkData chunkData)
+		public bool BuildBlock(int blockX, int blockY, int blockZ, BlockType type, ChunkData chunkData)
 		{
 			ref BlockData b = ref Blocks[blockX, blockY, blockZ];
 
-			if (b.Type != BlockTypes.Air) return false;
+			if (b.Type != BlockType.Air) return false;
 
 			_meshGenerator.RecalculateFacesAfterBlockBuild(ref Blocks, blockX, blockY, blockZ);
 
@@ -349,7 +359,7 @@ namespace Assets.Scripts.World
 			return (byte)(11 - level); // array is in reverse order so we subtract our value from 11
 		}
 
-		void DeflattenizeOutput(ref BlockTypes[] types)
+		void DeflattenizeOutput(ref BlockType[] types)
 		{
 			for (int x = 0; x < TotalBlockNumberX; x++)
 				for (int y = 0; y < TotalBlockNumberY; y++)
