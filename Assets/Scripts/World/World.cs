@@ -31,7 +31,7 @@ namespace Assets.Scripts.World
 		[SerializeField] Material _terrainTexture;
 		[SerializeField] Material _waterTexture;
 
-		Stopwatch _stopwatch = new Stopwatch();
+		readonly Stopwatch _stopwatch = new Stopwatch();
 		Scene _worldScene;
 		int _progressStep = 1;
 

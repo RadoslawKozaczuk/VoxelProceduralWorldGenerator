@@ -7,9 +7,15 @@ namespace Assets.Scripts.World
 	public class MeshGenerator : MonoBehaviour
 	{
 		const float WATER_UV_CONST = 1.0f / World.CHUNK_SIZE;
+        const int DIRT_TEXTURE_INDEX = 0;
+        const int GRASS_TEXTURE_INDEX = 10;
+        const int GRASS_SIDE_TEXTURE_INDEX = 11;
+        const float UV_UNIT = 0.0625f;
 
-		#region Readonly lookup tables
-		readonly Vector2[,] _blockUVs = {
+        #region Readonly lookup tables
+        // could be nice to create it in a constructor based on some human readable units instead of float coordinates
+        // for example 1 instead of 0.0625f
+        readonly Vector2[,] _blockUVs = {
 						// left-bottom, right-bottom, left-top, right-top
 		/*DIRT*/		{new Vector2(0.125f, 0.9375f), new Vector2(0.1875f, 0.9375f),
 							new Vector2(0.125f, 1.0f), new Vector2(0.1875f, 1.0f)},
@@ -41,10 +47,7 @@ namespace Assets.Scripts.World
 		// BUG: Tile sheet provided is broken and some tiles overlap each other
 		};
 
-		// order goes as follows
-		// NoCrack, Crack1, Crack2, Crack3, Crack4, Crack5, Crack6, Crack7, Crack8, Crack9, Crack10
-		Vector2[,] _crackUVs;
-
+		readonly Vector2[,] _crackUVs;
 		readonly Vector3 _p0 = new Vector3(-0.5f, -0.5f, 0.5f),
 						 _p1 = new Vector3(0.5f, -0.5f, 0.5f),
 						 _p2 = new Vector3(0.5f, -0.5f, -0.5f),
@@ -55,17 +58,37 @@ namespace Assets.Scripts.World
 						 _p7 = new Vector3(-0.5f, 0.5f, -0.5f);
 		#endregion
 
-		int _worldSizeX, _worldSizeZ, _totalBlockNumberX, _totalBlockNumberY, _totalBlockNumberZ;
+		int _worldSizeX, _worldSizeZ, _totalBlockNumberX, _totalBlockNumberZ;
+        readonly int _totalBlockNumberY;
 
-		public void Initialize(GameSettings options)
+        public MeshGenerator()
+        {
+            _crackUVs = new Vector2[11, 4];
+
+            // add noCrack
+            _crackUVs[0, 0] = new Vector2(0.6875f, 0f);
+            _crackUVs[0, 1] = new Vector2(0.75f, 0f);
+            _crackUVs[0, 2] = new Vector2(0.6875f, UV_UNIT);
+            _crackUVs[0, 3] = new Vector2(0.75f, UV_UNIT);
+
+            // add cracks from crack1 to crack10
+            for (int i = 1; i < 11; i++)
+            {
+                _crackUVs[i, 0] = new Vector2((i - 1) * UV_UNIT, 0f); // left-bottom
+                _crackUVs[i, 1] = new Vector2(i * UV_UNIT, 0f); // right-bottom
+                _crackUVs[i, 2] = new Vector2((i - 1) * UV_UNIT, UV_UNIT); // left-top
+                _crackUVs[i, 3] = new Vector2(i * UV_UNIT, UV_UNIT); // right-top
+            }
+
+            _totalBlockNumberY = World.WORLD_SIZE_Y * World.CHUNK_SIZE;
+        }
+
+        public void Initialize(GameSettings options)
 		{
 			_worldSizeX = options.WorldSizeX;
 			_worldSizeZ = options.WorldSizeZ;
 			_totalBlockNumberX = _worldSizeX * World.CHUNK_SIZE;
-			_totalBlockNumberY = World.WORLD_SIZE_Y * World.CHUNK_SIZE;
 			_totalBlockNumberZ = _worldSizeZ * World.CHUNK_SIZE;
-
-			_crackUVs = FillCrackUvTable();
 		}
 
 		/// <summary>
@@ -477,18 +500,17 @@ namespace Assets.Scripts.World
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		void CreateGrassQuads(ref BlockData block, ref int index, ref int triIndex, ref MeshData data, ref Vector3Int localBlockCoord)
 		{
-			int typeIndex = (int)block.Type;
-			Vector2 uv00side = _blockUVs[typeIndex + 1, 0],
-					uv10side = _blockUVs[typeIndex + 1, 1],
-					uv01side = _blockUVs[typeIndex + 1, 2],
-					uv11side = _blockUVs[typeIndex + 1, 3];
+			Vector2 uv00side = _blockUVs[GRASS_SIDE_TEXTURE_INDEX, 0],
+					uv10side = _blockUVs[GRASS_SIDE_TEXTURE_INDEX, 1],
+					uv01side = _blockUVs[GRASS_SIDE_TEXTURE_INDEX, 2],
+					uv11side = _blockUVs[GRASS_SIDE_TEXTURE_INDEX, 3];
 
 			if (block.Faces.HasFlag(Cubeside.Top))
 			{
-				Vector2 uv00top = _blockUVs[typeIndex, 0],
-						uv10top = _blockUVs[typeIndex, 1],
-						uv01top = _blockUVs[typeIndex, 2],
-						uv11top = _blockUVs[typeIndex, 3];
+				Vector2 uv00top = _blockUVs[GRASS_TEXTURE_INDEX, 0],
+						uv10top = _blockUVs[GRASS_TEXTURE_INDEX, 1],
+						uv01top = _blockUVs[GRASS_TEXTURE_INDEX, 2],
+						uv11top = _blockUVs[GRASS_TEXTURE_INDEX, 3];
 
 				AddQuadComponents(ref index, ref triIndex, ref data, Vector3.up,
 					ref uv11top, ref uv01top, ref uv00top, ref uv10top,
@@ -498,11 +520,10 @@ namespace Assets.Scripts.World
 
 			if (block.Faces.HasFlag(Cubeside.Bottom))
 			{
-				int restIndex = typeIndex - 10;
-				Vector2 uv00bot = _blockUVs[restIndex, 0],
-						uv10bot = _blockUVs[restIndex, 1],
-						uv01bot = _blockUVs[restIndex, 2],
-						uv11bot = _blockUVs[restIndex, 3];
+				Vector2 uv00bot = _blockUVs[DIRT_TEXTURE_INDEX, 0],
+						uv10bot = _blockUVs[DIRT_TEXTURE_INDEX, 1],
+						uv01bot = _blockUVs[DIRT_TEXTURE_INDEX, 2],
+						uv11bot = _blockUVs[DIRT_TEXTURE_INDEX, 3];
 
 				AddQuadComponents(ref index, ref triIndex, ref data, Vector3.down,
 					ref uv11bot, ref uv01bot, ref uv00bot, ref uv10bot,
@@ -565,8 +586,8 @@ namespace Assets.Scripts.World
 			ref Vector2 uv11, ref Vector2 uv01, ref Vector2 uv00, ref Vector2 uv10,
 			Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3)
 		{
-			// add normals
-			data.Normals[index] = normal;
+            // add normals
+            data.Normals[index] = normal;
 			data.Normals[index + 1] = normal;
 			data.Normals[index + 2] = normal;
 			data.Normals[index + 3] = normal;
@@ -592,38 +613,14 @@ namespace Assets.Scripts.World
 			data.Triangles[triIndex++] = index + 1;
 
 			index += 4;
-		}
+        }
 
-		void AddSuvs(ref BlockData block, ref MeshData data)
+        void AddSuvs(ref BlockData block, ref MeshData data)
 		{
 			data.Suvs.Add(_crackUVs[block.HealthLevel, 3]); // top right corner
 			data.Suvs.Add(_crackUVs[block.HealthLevel, 2]); // top left corner
 			data.Suvs.Add(_crackUVs[block.HealthLevel, 0]); // bottom left corner
 			data.Suvs.Add(_crackUVs[block.HealthLevel, 1]); // bottom right corner
-		}
-
-		Vector2[,] FillCrackUvTable()
-		{
-			var crackUVs = new Vector2[11, 4];
-
-			// NoCrack
-			crackUVs[0, 0] = new Vector2(0.6875f, 0f);
-			crackUVs[0, 1] = new Vector2(0.75f, 0f);
-			crackUVs[0, 2] = new Vector2(0.6875f, 0.0625f);
-			crackUVs[0, 3] = new Vector2(0.75f, 0.0625f);
-
-			float singleUnit = 0.0625f;
-
-			// Crack1, Crack2, Crack3, Crack4, Crack5, Crack6, Crack7, Crack8, Crack9, Crack10
-			for (int i = 1; i < 11; i++)
-			{
-				crackUVs[i, 0] = new Vector2((i - 1) * singleUnit, 0f); // left-bottom
-				crackUVs[i, 1] = new Vector2(i * singleUnit, 0f); // right-bottom
-				crackUVs[i, 2] = new Vector2((i - 1) * singleUnit, 0.0625f); // left-top
-				crackUVs[i, 3] = new Vector2(i * singleUnit, 0.0625f); // right-top
-			}
-
-			return crackUVs;
 		}
 	}
 }
