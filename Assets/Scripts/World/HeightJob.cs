@@ -1,13 +1,17 @@
 ﻿using Unity.Collections;
 using Unity.Jobs;
 using Unity.Mathematics;
+using Unity.Burst;
 
 namespace Assets.Scripts.World
 {
+	[BurstCompile(CompileSynchronously = true)]
 	struct HeightJob : IJobParallelFor
 	{
 		[ReadOnly]
 		public int TotalBlockNumberX;
+		[ReadOnly]
+		public float SeedValue;
 
 		public NativeArray<int3> Result;
 
@@ -17,9 +21,9 @@ namespace Assets.Scripts.World
 
 			Result[i] = new int3()
 			{
-				x = TerrainGenerator.GenerateBedrockHeight(x, z),
-				y = TerrainGenerator.GenerateStoneHeight(x, z),
-				z = TerrainGenerator.GenerateDirtHeight(x, z)
+				x = TerrainGenerator.GenerateBedrockHeight(SeedValue, x, z),
+				y = TerrainGenerator.GenerateStoneHeight(SeedValue, x, z),
+				z = TerrainGenerator.GenerateDirtHeight(SeedValue, x, z)
 			};
 		}
 	}
