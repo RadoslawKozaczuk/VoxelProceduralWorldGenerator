@@ -49,8 +49,8 @@ namespace Assets.Scripts.World
 		const float PersistenceBedrock = 0.5f;
 		#endregion
 
-		public static int WaterLevel; // inclusive
-		public static float SeedValue;
+		public int WaterLevel; // inclusive
+		public float SeedValue;
 
 		int _worldSizeX, _worldSizeZ, _totalBlockNumberX, _totalBlockNumberY, _totalBlockNumberZ;
 
@@ -168,7 +168,7 @@ namespace Assets.Scripts.World
 			{
 				// input
 				TotalBlockNumberX = _totalBlockNumberX,
-				SeedValue = TerrainGenerator.SeedValue,
+				SeedValue = SeedValue,
 
 				// output
 				Result = new NativeArray<int3>(heights, Allocator.TempJob)
@@ -270,7 +270,6 @@ namespace Assets.Scripts.World
 
         void CalculateBlockTypesForColumnParallel(int colX, int colZ)
         {
-			//TODO using a static value here (SeedValue), should not be static - Apollo
             int3 height = new int3()
             {
                 x = GenerateBedrockHeight(SeedValue, colX, colZ),

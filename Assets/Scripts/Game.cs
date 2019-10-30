@@ -183,11 +183,10 @@ public class Game : MonoBehaviour
 
 	void CreatePlayer(Vector3? position = null, Vector3? rotation = null)
 	{
-		//TODO using a static value here (SeedValue), should not be static - Apollo
 		var playerPos = position ?? _playerStartPosition;
         var maxY = Math.Max(
-            TerrainGenerator.GenerateDirtHeight(TerrainGenerator.SeedValue, playerPos.x, playerPos.z),
-            TerrainGenerator.GenerateStoneHeight(TerrainGenerator.SeedValue, playerPos.x, playerPos.z));
+            TerrainGenerator.GenerateDirtHeight(World.Settings.SeedValue, playerPos.x, playerPos.z),
+            TerrainGenerator.GenerateStoneHeight(World.Settings.SeedValue, playerPos.x, playerPos.z));
 
 		_player.transform.position = new Vector3(playerPos.x, maxY + 2, playerPos.z);
 

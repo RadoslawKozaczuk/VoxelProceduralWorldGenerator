@@ -404,7 +404,7 @@ namespace Assets.Scripts.World
 
 			ref BlockData b = ref blocks[0, 0, 0]; // assign anything
 
-			//caching - this will be atleast make this function 2x faster
+			// caching - this will make this function at least 2x faster
 			int cachedX = chunkPos.x;
 			int cachedY = chunkPos.y;
 			int cachedZ = chunkPos.z;
@@ -423,34 +423,30 @@ namespace Assets.Scripts.World
 								wSize += 4;
 						}
 						else if (b.Type != BlockType.Air)
-						{
-							// Around two times faster (which is still insignificant at all in this context - 10ms on a 7*4*7 map...).
-							// Although, I still decided to leave it here for learning purpose.
-							// Unfortunately, I cannot make it a method and not lose all the little gain it gives as the compiler
-							// does not care about my inlining suggestions at all...
-
-							// Apollo : if you build to IL2cpp the compiler will inline it, it does it automaticly sometimes.
-
-							// count all the 1s (bit-wise) in the given number
-							int bitCount = 0;
-							int n = (int)b.Faces;
-							while (n != 0)
-							{
-								bitCount++;
-								n &= n - 1;
-							}
-							tSize += bitCount * 4;
-						}
+							tSize += CountFaces(b.Faces) * 4;
 					}
 		}
 
-		//Apollo - bitwise enum check is 20x faster
-		static bool HasFlag(Cubeside sides, Cubeside side)
-		{
-			return (sides & side) != 0;
-		}
+        // Around two times faster (which is still insignificant at all in this context - 10ms on a 7*4*7 map...).
+        // Although, I still decided to leave it here for learning purpose.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        int CountFaces(Cubeside faces)
+        {
+            int bitCount = 0;
+            int n = (int)faces;
+            while (n != 0)
+            {
+                bitCount++;
+                n &= n - 1;
+            }
+            return bitCount;
+        }
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+        // Apollo - bitwise enum check is 20x faster
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        bool HasFlag(Cubeside sides, Cubeside side) => (sides & side) != 0;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
 		void CreateStandardQuads(ref BlockData block, ref int index, ref int triIndex, ref MeshData data, ref Vector3Int localBlockCoord)
 		{
 			int typeIndex = (int)block.Type;
