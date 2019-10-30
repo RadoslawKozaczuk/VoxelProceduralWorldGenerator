@@ -18,6 +18,7 @@ Important parts:
 Kind Regards
 
 Radek
-
-Acknowledgements:
+<br/>
+<br/>
+Acknowledgements:<br/>
 Apollo - for Burst compiler introduction plus other minor but important changes
