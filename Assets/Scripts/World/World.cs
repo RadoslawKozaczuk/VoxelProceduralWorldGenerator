@@ -158,7 +158,7 @@ namespace Assets.Scripts.World
             _stopwatch.Stop();
             UnityEngine.Debug.Log($"It took {_stopwatch.ElapsedTicks / TimeSpan.TicksPerMillisecond} ms to generate the world.");
 
-            ProgressDescription = "Generation Completed";
+            ProgressDescription = $"Generation Completed {_stopwatch.ElapsedTicks / TimeSpan.TicksPerMillisecond} ms";
             callback?.Invoke();
         }
 
@@ -425,6 +425,8 @@ namespace Assets.Scripts.World
 
             var mfW = (MeshFilter)chunkObject.Water.AddComponent(typeof(MeshFilter));
             mfW.mesh = waterMesh;
+
+            
         }
 	}
 }
