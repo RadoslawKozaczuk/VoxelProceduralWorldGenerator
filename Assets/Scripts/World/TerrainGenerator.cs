@@ -83,7 +83,11 @@ namespace Assets.Scripts.World
 		public static float Map(float newMin, float newMax, float oldMin, float oldMax, float value) =>
 			Mathf.Lerp(newMin, newMax, Mathf.InverseLerp(oldMin, oldMax, value));
 
-		public static BlockType DetermineType(float seedValue, int worldX, int worldY, int worldZ, int3 height)
+        /// <summary>
+        /// Heights are inclusive.
+        /// First height is bedrock, second is stone, and the third is dirt.
+        /// </summary>
+		public static BlockType DetermineType(float seedValue, int worldX, int worldY, int worldZ, int3 heights)
 		{
 			if (worldY == 0)
                 return BlockType.Bedrock;
@@ -93,11 +97,11 @@ namespace Assets.Scripts.World
 				return BlockType.Air;
 
 			// bedrock
-			if (worldY <= height.x)
+			if (worldY <= heights.x)
                 return BlockType.Bedrock;
 
 			// stone
-			if (worldY <= height.y)
+			if (worldY <= heights.y)
 			{
 				if (worldY < DiamondMaxHeight
                     && FractalFunc(seedValue, worldX, worldY, worldZ, DiamondSmooth, DiamondOctaves) < DiamondProbability)
@@ -111,10 +115,10 @@ namespace Assets.Scripts.World
 			}
 
 			// dirt
-			if (worldY == height.z)
+			if (worldY == heights.z)
                 return BlockType.Grass;
 
-			if (worldY < height.z)
+			if (worldY < heights.z)
                 return BlockType.Dirt;
 
 			return BlockType.Air;
@@ -198,7 +202,7 @@ namespace Assets.Scripts.World
 
             // unfortunately shaders can receive only one dim data
             // there is no 2-dimensional buffers in HLSL
-            // would be nice if we could pass 2d data seet
+            // would be nice if we could pass 2d data set
 
             // preparing - this takes the most time at the moment
             for (int x = 0; x < _totalBlockNumberX; x++)
@@ -257,15 +261,48 @@ namespace Assets.Scripts.World
 			return types;
 		}
 
+        public BlockTypeColumn[] CalculateBlockColumn()
+        {
+            int inputSize = _totalBlockNumberX * _totalBlockNumberY * _totalBlockNumberZ;
+
+            var outputArray = new BlockTypeColumn[inputSize];
+
+            var job = new BlockColumnJob()
+            {
+                // input
+                TotalBlockNumberX = _totalBlockNumberX,
+                TotalBlockNumberY = _totalBlockNumberY,
+                TotalBlockNumberZ = _totalBlockNumberZ,
+                SeedValue = SeedValue,
+
+                // output
+                Result = new NativeArray<BlockTypeColumn>(outputArray, Allocator.TempJob)
+            };
+
+            // second parameter is the Innerloop Batch Count (whatever it may be)
+            // according to Unity's documentation when job is small 32 or 64 makes sense
+            // for huge work loads the preferred value is 1, hence the value below
+            // unfortunately, the documentation does not provide any knowledge on how to precisely determine this value, just hints
+            var jobHandle = job.Schedule(inputSize, 8);
+            jobHandle.Complete();
+            job.Result.CopyTo(outputArray);
+
+            // cleanup
+            job.Result.Dispose();
+
+            return outputArray;
+        }
+
         public void CalculateBlockTypesParallel()
         {
-            var multiThreadTaskQueue = new MultiThreadTaskQueue();
+            var queue = new MultiThreadTaskQueue();
 
-            for (int x = 0; x < _totalBlockNumberX; x++)
-                for (int z = 0; z < _totalBlockNumberZ; z++)
-                    multiThreadTaskQueue.ScheduleTask(CalculateBlockTypesForColumnParallel, x, z);
+            int x, z;
+            for (x = 0; x < _totalBlockNumberX; x++)
+                for (z = 0; z < _totalBlockNumberZ; z++)
+                    queue.ScheduleTask(CalculateBlockTypesForColumnParallel, x, z);
 
-            multiThreadTaskQueue.RunAllInParallel();
+            queue.RunAllInParallel();
         }
 
         void CalculateBlockTypesForColumnParallel(int colX, int colZ)
@@ -277,14 +314,15 @@ namespace Assets.Scripts.World
                 z = GenerateDirtHeight(SeedValue, colX, colZ)
             };
 
-            // this optimization would require rearranging BlockType enum which cause a lot of breaks
-            //int max = height.x; // max could be passed to the loop below but it requires air to be default type
-            //if (height.y > max)
-            //    max = height.y;
-            //if (height.z > max)
-            //    max = height.z;
+            // omit everything about the maximum height as it is air anyway
+            int max = height.x;
+            if (height.y > max)
+                max = height.y;
+            if (height.z > max)
+                max = height.z;
 
-            for (int y = 0; y < _totalBlockNumberY; y++)
+            // height is inclusive
+            for (int y = 0; y <= max; y++)
                 CreateBlock(ref World.Blocks[colX, y, colZ], DetermineType(SeedValue, colX, y, colZ, height));
         }
 
@@ -303,13 +341,17 @@ namespace Assets.Scripts.World
 			PropagateWaterHorizontally(ref blocks, WaterLevel - 1);
 
 			int currentY = WaterLevel - 1;
+
 			bool waterAdded = true;
 			while (waterAdded)
 			{
-				waterAdded = AddWaterBelow(ref blocks, currentY);
-				if (waterAdded)
-					PropagateWaterHorizontally(ref blocks, --currentY);
-			}
+                waterAdded = currentY > 1 
+                    ? AddWaterBelow(ref blocks, currentY) 
+                    : false;
+
+                if (waterAdded)
+                    PropagateWaterHorizontally(ref blocks, --currentY);
+            }
 		}
 
 		/// <summary>
@@ -334,7 +376,6 @@ namespace Assets.Scripts.World
 						if (blocks[x, y, z].Type != BlockType.Grass) continue;
 
 						if (IsThereEnoughSpaceForTree(in blocks, x, y, z))
-							//TODO using a static value here, should not be static - Apollo
 							if (FractalFunc(SeedValue, x, y, z, WoodbaseSmooth, WoodbaseOctaves) < woodbaseProbability)
 								BuildTree(ref blocks, x, y, z);
 					}
@@ -401,7 +442,7 @@ namespace Assets.Scripts.World
 			BlockType type;
 			int x, z; // iteration variables
 
-			// z asc
+			// z ascending
 			for (x = 0; x < _totalBlockNumberX; x++)
 				for (z = 0; z < _totalBlockNumberZ; z++)
 				{
@@ -410,7 +451,7 @@ namespace Assets.Scripts.World
 						blocks[x, currentY, z].Type = BlockType.Water;
 				}
 
-			// x asc
+			// x ascending
 			for (z = 0; z < _totalBlockNumberZ; z++)
 				for (x = 0; x < _totalBlockNumberX; x++)
 				{
@@ -419,7 +460,7 @@ namespace Assets.Scripts.World
 						blocks[x, currentY, z].Type = BlockType.Water;
 				}
 
-			// z desc
+			// z descending
 			for (x = 0; x < _totalBlockNumberX; x++)
 				for (z = _totalBlockNumberZ - 1; z >= 0; z--)
 				{
@@ -428,7 +469,7 @@ namespace Assets.Scripts.World
 						blocks[x, currentY, z].Type = BlockType.Water;
 				}
 
-			// x desc
+			// x descending
 			for (z = 0; z < _totalBlockNumberZ; z++)
 				for (x = _totalBlockNumberX - 1; x >= 0; x--)
 				{
@@ -499,14 +540,23 @@ namespace Assets.Scripts.World
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		bool AddWaterBelow(ref BlockData[,,] blocks, int currentY)
 		{
-			bool waterAdded = false;
+            // assertion 
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            if(currentY < 1)
+                throw new System.ArgumentException("Y value cannot be lower than 1.", "currentY");
+#endif
+
+            bool waterAdded = false;
 			for (int x = 0; x < _totalBlockNumberX; x++)
 				for (int z = 0; z < _totalBlockNumberZ; z++)
-					if (blocks[x, currentY, z].Type == BlockType.Water && blocks[x, currentY - 1, z].Type == BlockType.Air)
-					{
-						blocks[x, currentY - 1, z].Type = BlockType.Water;
-						waterAdded = true;
-					}
+                {
+                    if (blocks[x, currentY, z].Type == BlockType.Water
+                        && blocks[x, currentY - 1, z].Type == BlockType.Air)
+                    {
+                        blocks[x, currentY - 1, z].Type = BlockType.Water;
+                        waterAdded = true;
+                    }
+                }
 
 			return waterAdded;
 		}

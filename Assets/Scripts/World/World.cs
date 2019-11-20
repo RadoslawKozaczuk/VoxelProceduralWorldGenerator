@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics;
+using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -73,6 +75,14 @@ namespace Assets.Scripts.World
                 AlreadyGenerated += _progressStep;
                 yield return null;
 
+                // new way of calculating unfortunately slower
+                // it uses job system but calculates entire columns 
+                // this approach needs static array allocation
+                //ProgressDescription = "Calculating block types...";
+                //BlockTypeColumn[] types = _terrainGenerator.CalculateBlockColumn();
+                //AlreadyGenerated += _progressStep;
+                //yield return null;
+
                 ProgressDescription = "Job output deflattenization...";
                 DeflattenizeOutput(ref types);
                 AlreadyGenerated += _progressStep;
@@ -85,6 +95,27 @@ namespace Assets.Scripts.World
                 AlreadyGenerated += _progressStep * 3;
                 yield return null;
             }
+
+            // check one
+            var invalidBlocks = new List<int4>();
+            for(int x = 0; x < TotalBlockNumberX; x++)
+                for(int y = 0; y < TotalBlockNumberY; y++)
+                    for(int z = 0; z < TotalBlockNumberZ; z++)
+                    {
+                        int value = (int)Blocks[x, y, z].Type;
+                        if (value > (int)BlockType.Grass)
+                            invalidBlocks.Add(new int4(x, y, z, value));
+                    }
+
+            // check two
+            var levelOneNonBedRocks = new List<int4>();
+            for (int x = 0; x < TotalBlockNumberX; x++)
+                for (int z = 0; z < TotalBlockNumberZ; z++)
+                {
+                    int value = (int)Blocks[x, 0, z].Type;
+                    if (value != (int)BlockType.Bedrock)
+                       levelOneNonBedRocks.Add(new int4(x, 0, z, value));
+                }
 
             if (Settings.IsWater)
             {
@@ -359,19 +390,43 @@ namespace Assets.Scripts.World
 			return (byte)(11 - level); // array is in reverse order so we subtract our value from 11
 		}
 
-		void DeflattenizeOutput(ref BlockType[] types)
-		{
-			for (int x = 0; x < TotalBlockNumberX; x++)
-				for (int y = 0; y < TotalBlockNumberY; y++)
-					for (int z = 0; z < TotalBlockNumberZ; z++)
-					{
-						var type = types[Utils.IndexFlattenizer3D(x, y, z, TotalBlockNumberX, TotalBlockNumberY)];
+        void DeflattenizeOutput(ref BlockType[] types)
+        {
+            for (int x = 0; x < TotalBlockNumberX; x++)
+                for (int y = 0; y < TotalBlockNumberY; y++)
+                    for (int z = 0; z < TotalBlockNumberZ; z++)
+                    {
+                        var type = types[Utils.IndexFlattenizer3D(x, y, z, TotalBlockNumberX, TotalBlockNumberY)];
 
-						ref BlockData b = ref Blocks[x, y, z];
-						b.Type = type;
-						b.Hp = LookupTables.BlockHealthMax[(int)type];
-					}
-		}
+                        ref BlockData b = ref Blocks[x, y, z];
+                        b.Type = type;
+                        b.Hp = LookupTables.BlockHealthMax[(int)type];
+                    }
+        }
+
+        void DeflattenizeOutput(ref BlockTypeColumn[] columns)
+        {
+            for (int x = 0; x < TotalBlockNumberX; x++)
+                for (int z = 0; z < TotalBlockNumberZ; z++)
+                {
+                    BlockTypeColumn column = columns[Utils.IndexFlattenizer2D(x, z, TotalBlockNumberX)];
+
+                    // heights are inclusive
+                    for (int y = 0; y <= column.TerrainLevel; y++)
+                    {
+                        BlockType type;
+                        
+                        unsafe
+                        {
+                            type = (BlockType)column.Types[y];
+                        }
+                        
+                        ref BlockData b = ref Blocks[x, y, z];
+                        b.Type = type;
+                        b.Hp = LookupTables.BlockHealthMax[(int)type];
+                    }
+                }
+        }
 
         /// <summary>
         /// Sets both meshes and mesh mesh collider.

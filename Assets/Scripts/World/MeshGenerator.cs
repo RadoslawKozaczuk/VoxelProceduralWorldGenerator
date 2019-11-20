@@ -7,42 +7,33 @@ namespace Assets.Scripts.World
 	public class MeshGenerator : MonoBehaviour
 	{
 		const float WATER_UV_CONST = 1.0f / World.CHUNK_SIZE;
-        const int DIRT_TEXTURE_INDEX = 0;
-        const int GRASS_TEXTURE_INDEX = 10;
-        const int GRASS_SIDE_TEXTURE_INDEX = 11;
-        const float UV_UNIT = 0.0625f;
+
+        // these values must match BlockType enumerator
+        const int DIRT_TEXTURE_INDEX = 1;
+        const int GRASS_TEXTURE_INDEX = 11;
+        const int GRASS_SIDE_TEXTURE_INDEX = 12;
+        const float UV_UNIT = 0.0625f; // tile sheet is 16 x 16
 
         #region Readonly lookup tables
         // could be nice to create it in a constructor based on some human readable units instead of float coordinates
         // for example 1 instead of 0.0625f
         readonly Vector2[,] _blockUVs = {
+
 						// left-bottom, right-bottom, left-top, right-top
-		/*DIRT*/		{new Vector2(0.125f, 0.9375f), new Vector2(0.1875f, 0.9375f),
-							new Vector2(0.125f, 1.0f), new Vector2(0.1875f, 1.0f)},
-		/*STONE*/		{new Vector2(0, 0.875f), new Vector2(0.0625f, 0.875f),
-							new Vector2(0, 0.9375f), new Vector2(0.0625f, 0.9375f)},
-		/*DIAMOND*/		{new Vector2 (0.125f, 0.75f), new Vector2(0.1875f, 0.75f),
-							new Vector2(0.125f, 0.8125f), new Vector2(0.1875f, 0.81f)},
-		/*BEDROCK*/		{new Vector2(0.3125f, 0.8125f), new Vector2(0.375f, 0.8125f),
-							new Vector2(0.3125f, 0.875f), new Vector2(0.375f, 0.875f)},
-		/*REDSTONE*/	{new Vector2(0.1875f, 0.75f), new Vector2(0.25f, 0.75f),
-							new Vector2(0.1875f, 0.8125f), new Vector2(0.25f, 0.8125f)},
-		/*SAND*/		{new Vector2(0.125f, 0.875f), new Vector2(0.1875f, 0.875f),
-							new Vector2(0.125f, 0.9375f), new Vector2(0.1875f, 0.9375f)},
-		/*LEAVES*/		{new Vector2(0.0625f,0.375f), new Vector2(0.125f,0.375f),
-							new Vector2(0.0625f,0.4375f), new Vector2(0.125f,0.4375f)},
-		/*WOOD*/		{new Vector2(0.375f,0.625f), new Vector2(0.4375f,0.625f),
-							new Vector2(0.375f,0.6875f), new Vector2(0.4375f,0.6875f)},
-		/*WOODBASE*/	{new Vector2(0.375f,0.625f), new Vector2(0.4375f,0.625f),
-							new Vector2(0.375f,0.6875f), new Vector2(0.4375f,0.6875f)},
+        /*AIR (dummy)*/ { Vector2.zero, Vector2.zero, Vector2.zero, Vector2.zero },
 
-		/*WATER*/		{new Vector2(0.875f,0.125f), new Vector2(0.9375f,0.125f),
-							new Vector2(0.875f,0.1875f), new Vector2(0.9375f,0.1875f)},
-
-		/*GRASS*/		{new Vector2(0.125f, 0.375f), new Vector2(0.1875f, 0.375f),
-							new Vector2(0.125f, 0.4375f), new Vector2(0.1875f, 0.4375f)},
-        /*GRASS SIDE*/	{new Vector2(0.1875f, 0.9375f), new Vector2(0.25f, 0.9375f),
-							new Vector2(0.1875f, 1.0f), new Vector2(0.25f, 1.0f)},
+		/*DIRT*/		{ new Vector2(2, 15), new Vector2(3, 15), new Vector2(2, 16), new Vector2(3, 16) },
+		/*STONE*/		{ new Vector2(0, 14), new Vector2(1, 14), new Vector2(0, 15), new Vector2(1, 15) },
+		/*DIAMOND*/		{ new Vector2(2, 12), new Vector2(3, 12), new Vector2(2, 13), new Vector2(3, 13) },
+		/*BEDROCK*/		{ new Vector2(5, 13), new Vector2(6, 13), new Vector2(5, 14), new Vector2(6, 14) },
+		/*REDSTONE*/	{ new Vector2(3, 12), new Vector2(4, 12), new Vector2(3, 13), new Vector2(4, 13) },
+		/*SAND*/		{ new Vector2(2, 14), new Vector2(3, 14), new Vector2(2, 15), new Vector2(3, 15) },
+		/*LEAVES*/		{ new Vector2(1, 6),  new Vector2(2, 6),  new Vector2(1, 7),  new Vector2(2, 7) },
+		/*WOOD*/		{ new Vector2(6, 10), new Vector2(7, 10), new Vector2(6, 11), new Vector2(7, 11) },
+		/*WOODBASE*/	{ new Vector2(6, 10), new Vector2(7, 10), new Vector2(6, 11), new Vector2(7, 11) },
+		/*WATER*/		{ new Vector2(14, 2), new Vector2(15, 2), new Vector2(14, 3), new Vector2(15, 3) },
+		/*GRASS*/		{ new Vector2(2, 6),  new Vector2(3, 6),  new Vector2(2, 7),  new Vector2(3, 7) },
+        /*GRASS SIDE*/	{ new Vector2(3, 15), new Vector2(4, 15), new Vector2(3, 16), new Vector2(4, 16) },
 
 		// BUG: Tile sheet provided is broken and some tiles overlap each other
 		};
@@ -56,10 +47,10 @@ namespace Assets.Scripts.World
 						 _p5 = new Vector3(0.5f, 0.5f, 0.5f),
 						 _p6 = new Vector3(0.5f, 0.5f, -0.5f),
 						 _p7 = new Vector3(-0.5f, 0.5f, -0.5f);
-		#endregion
+        #endregion
 
-		int _worldSizeX, _worldSizeZ, _totalBlockNumberX, _totalBlockNumberZ;
         readonly int _totalBlockNumberY;
+        int _worldSizeX, _worldSizeZ, _totalBlockNumberX, _totalBlockNumberZ;
 
         public MeshGenerator()
         {
@@ -81,6 +72,15 @@ namespace Assets.Scripts.World
             }
 
             _totalBlockNumberY = World.WORLD_SIZE_Y * World.CHUNK_SIZE;
+
+            for (int i = 0; i < _blockUVs.GetLength(0); i++)
+            {
+                for (int j = 0; j < 4; j++)
+                {
+                    _blockUVs[i, j].x *= UV_UNIT;
+                    _blockUVs[i, j].y *= UV_UNIT;
+                }
+            }
         }
 
         public void Initialize(GameSettings options)
@@ -444,18 +444,18 @@ namespace Assets.Scripts.World
 
         // Apollo - bitwise enum check is 20x faster
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        bool HasFlag(Cubeside sides, Cubeside side) => (sides & side) != 0;
+        bool HasFlag(Cubeside source, Cubeside target) => (source & target) != 0;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
 		void CreateStandardQuads(ref BlockData block, ref int index, ref int triIndex, ref MeshData data, ref Vector3Int localBlockCoord)
 		{
 			int typeIndex = (int)block.Type;
 
-			// all possible UVs
-			Vector2 uv00 = _blockUVs[typeIndex, 0],
-					uv10 = _blockUVs[typeIndex, 1],
-					uv01 = _blockUVs[typeIndex, 2],
-					uv11 = _blockUVs[typeIndex, 3];
+            // all possible UVs
+            Vector2 uv00 = _blockUVs[typeIndex, 0],
+                    uv10 = _blockUVs[typeIndex, 1],
+                    uv01 = _blockUVs[typeIndex, 2],
+                    uv11 = _blockUVs[typeIndex, 3];
 
 			if (HasFlag(block.Faces, Cubeside.Top))
 			{

@@ -36,6 +36,7 @@ public class LevelLoader : MonoBehaviour
     void Start()
     {
         _settings.TreeProbability = TreeProbability.Some;
+        _settings.ComputingAcceleration = ComputingAcceleration.PureCSParallelisation;
         SetWorldSizeDescription();
     }
 

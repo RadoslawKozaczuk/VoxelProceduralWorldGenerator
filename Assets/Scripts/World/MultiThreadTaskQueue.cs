@@ -79,33 +79,34 @@ namespace Assets.Scripts.World
         {
             _isRunning = true;
 
-            var _ongoingTasks = new Task[_logicalProcessorCount];
-
+            var ongoingTasks = new Task[_logicalProcessorCount];
+            
             // start first 8 (or any processors the target machine has)
-            for (int i = 0; i < _logicalProcessorCount; i++)
+            for (_index = 0; _index < _logicalProcessorCount; _index++)
             {
-                if (_index == _pendingTasks.Count - 1) // less than 8 was scheduled
+                if (_index == _pendingTasks.Count - 1) // less than <logicalProcessorCount> was scheduled
                     break;
 
-                _ongoingTasks[i] = _pendingTasks[_index++];
-                _ongoingTasks[i].Start();
+                ongoingTasks[_index] = _pendingTasks[_index];
+                ongoingTasks[_index].Start();
             }
 
             // start new task as soon as we have a free thread available
             // and keep on doing that until you reach the end of the array
             do
             {
-                int completedId = Task.WaitAny(_ongoingTasks);
+                // in rare cases first 8 scheduled tasks may run completed before we reach Task.WaitAny line
+                int completedId = Task.WaitAny(ongoingTasks);
 
                 if (_index == _pendingTasks.Count - 1)
                     break;
 
-                _ongoingTasks[completedId] = _pendingTasks[_index++];
-                _ongoingTasks[completedId].Start();
+                ongoingTasks[completedId] = _pendingTasks[++_index];
+                ongoingTasks[completedId].Start();
             }
             while (true);
 
-            Task.WaitAll(_ongoingTasks);
+            Task.WaitAll(ongoingTasks);
 
             _pendingTasks.Clear();
             _index = 0;

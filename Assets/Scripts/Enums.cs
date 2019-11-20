@@ -1,11 +1,12 @@
 ﻿using System;
 
+// whenever you change these values you also have to change MeshGenerator constants
 public enum BlockType : byte
 {
-	Dirt, Stone, Diamond, Bedrock, Redstone, Sand, Leaves, Wood, Woodbase,
+    Air, // air need to be the default value (zero) to allow additional performance optimizations
+    Dirt, Stone, Diamond, Bedrock, Redstone, Sand, Leaves, Wood, Woodbase,
 	Water,
-	Grass, // types that have different textures on sides and bottom
-	Air
+	Grass // types that have different textures on sides and bottom
 }
 
 [Flags]
