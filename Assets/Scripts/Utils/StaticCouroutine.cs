@@ -17,9 +17,7 @@ namespace Assets.Scripts
             onComplete();
         }
 
-        static public void DoCoroutine(IEnumerator coroutine, Action onComplete = null)
-        {
-            instance.StartCoroutine(instance.Perform(coroutine, onComplete));
-        }
+        static public void DoCoroutine(IEnumerator coroutine, Action onComplete = null) 
+            => instance.StartCoroutine(instance.Perform(coroutine, onComplete));
     }
 }

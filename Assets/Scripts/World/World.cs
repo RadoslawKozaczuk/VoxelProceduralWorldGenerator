@@ -481,8 +481,6 @@ namespace Assets.Scripts.World
 
             var mfW = (MeshFilter)chunkObject.Water.AddComponent(typeof(MeshFilter));
             mfW.mesh = waterMesh;
-
-            
         }
 	}
 }

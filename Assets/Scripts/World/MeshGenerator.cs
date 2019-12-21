@@ -15,10 +15,7 @@ namespace Assets.Scripts.World
         const float UV_UNIT = 0.0625f; // tile sheet is 16 x 16
 
         #region Readonly lookup tables
-        // could be nice to create it in a constructor based on some human readable units instead of float coordinates
-        // for example 1 instead of 0.0625f
         readonly Vector2[,] _blockUVs = {
-
 						// left-bottom, right-bottom, left-top, right-top
         /*AIR (dummy)*/ { Vector2.zero, Vector2.zero, Vector2.zero, Vector2.zero },
 
@@ -74,13 +71,11 @@ namespace Assets.Scripts.World
             _totalBlockNumberY = World.WORLD_SIZE_Y * World.CHUNK_SIZE;
 
             for (int i = 0; i < _blockUVs.GetLength(0); i++)
-            {
                 for (int j = 0; j < 4; j++)
                 {
                     _blockUVs[i, j].x *= UV_UNIT;
                     _blockUVs[i, j].y *= UV_UNIT;
                 }
-            }
         }
 
         public void Initialize(GameSettings options)
@@ -94,7 +89,6 @@ namespace Assets.Scripts.World
 		/// <summary>
 		/// This method creates mesh data necessary to create a mesh.
 		/// Calculating two meshes at once is faster than creating them one by one.
-        /// Although, do not use this method if you do not need one of the meshes.
 		/// </summary>
 		public void CalculateMeshes(ref BlockData[,,] blocks, Vector3Int chunkPos, out Mesh terrain, out Mesh water)
 		{
@@ -109,43 +103,66 @@ namespace Assets.Scripts.World
 				triangles: new int[(int)(1.5f * tSize)]
 			);
 
-			var waterData = new MeshData
-			(
-				uvs: new Vector2[wSize],
-				suvs: new List<Vector2>(wSize),
-				verticies: new Vector3[wSize],
-				normals: new Vector3[wSize],
-				triangles: new int[(int)(1.5f * wSize)]
-			);
-
-			int index = 0, triIndex = 0, waterIndex = 0, waterTriIndex = 0;
-
+			int index = 0, triIndex = 0;
 			
-			for (int x = 0; x < World.CHUNK_SIZE; x++)
+			if(wSize > 0)
 			{
-				for (int y = 0; y < World.CHUNK_SIZE; y++)
-				{
-					for (int z = 0; z < World.CHUNK_SIZE; z++)
-					{
-						// offset must be included
-						ref BlockData b = ref blocks[x + chunkPos.x, y + chunkPos.y, z + chunkPos.z];
+				// this structure does not need to be created if the water is no present
+				var waterData = new MeshData
+				(
+					uvs: new Vector2[wSize],
+					suvs: new List<Vector2>(wSize),
+					verticies: new Vector3[wSize],
+					normals: new Vector3[wSize],
+					triangles: new int[(int)(1.5f * wSize)]
+				);
 
-						if (b.Faces == 0 || b.Type == BlockType.Air)
-							continue;
+				int waterIndex = 0, waterTriIndex = 0;
 
-						var localBlockCoodinates = new ReadonlyVector3Int(x, y, z);
-						if (b.Type == BlockType.Water)
-							CreateWaterQuad(ref b, ref waterIndex, ref waterTriIndex, ref waterData, in localBlockCoodinates);
-						else if (b.Type == BlockType.Grass)
-							CreateGrassQuads(ref b, ref index, ref triIndex, ref terrainData, in localBlockCoodinates);
-						else
-							CreateStandardQuads(ref b, ref index, ref triIndex, ref terrainData, in localBlockCoodinates);
-					}
-				}
+				for (int x = 0; x < World.CHUNK_SIZE; x++)
+					for (int y = 0; y < World.CHUNK_SIZE; y++)
+						for (int z = 0; z < World.CHUNK_SIZE; z++)
+						{
+							// offset must be included
+							ref BlockData b = ref blocks[x + chunkPos.x, y + chunkPos.y, z + chunkPos.z];
+
+							if (b.Faces == 0 || b.Type == BlockType.Air)
+								continue;
+
+							var localBlockCoodinates = new ReadonlyVector3Int(x, y, z);
+							if (b.Type == BlockType.Water)
+								CreateWaterQuad(ref b, ref waterIndex, ref waterTriIndex, ref waterData, in localBlockCoodinates);
+							else if (b.Type == BlockType.Grass)
+								CreateGrassQuads(ref b, ref index, ref triIndex, ref terrainData, in localBlockCoodinates);
+							else
+								CreateStandardQuads(ref b, ref index, ref triIndex, ref terrainData, in localBlockCoodinates);
+						}
+
+				water = CreateMesh(waterData);
+			}
+			else // water mesh size is equal zero therefore the loop can be slightly simplified
+			{
+				for (int x = 0; x < World.CHUNK_SIZE; x++)
+					for (int y = 0; y < World.CHUNK_SIZE; y++)
+						for (int z = 0; z < World.CHUNK_SIZE; z++)
+						{
+							// offset must be included
+							ref BlockData b = ref blocks[x + chunkPos.x, y + chunkPos.y, z + chunkPos.z];
+
+							if (b.Faces == 0 || b.Type == BlockType.Air)
+								continue;
+
+							var localBlockCoodinates = new ReadonlyVector3Int(x, y, z);
+							if (b.Type == BlockType.Grass)
+								CreateGrassQuads(ref b, ref index, ref triIndex, ref terrainData, in localBlockCoodinates);
+							else
+								CreateStandardQuads(ref b, ref index, ref triIndex, ref terrainData, in localBlockCoodinates);
+						}
+
+				water = null;
 			}
 
 			terrain = CreateMesh(terrainData);
-			water = CreateMesh(waterData);
 		}
 
 		public void RecalculateFacesAfterBlockDestroy(ref BlockData[,,] blocks, int blockX, int blockY, int blockZ)
