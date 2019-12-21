@@ -120,29 +120,26 @@ namespace Assets.Scripts.World
 
 			int index = 0, triIndex = 0, waterIndex = 0, waterTriIndex = 0;
 
-			var localBlockCoodinates = new Vector3Int();
+			
 			for (int x = 0; x < World.CHUNK_SIZE; x++)
 			{
-				localBlockCoodinates.x = x;
 				for (int y = 0; y < World.CHUNK_SIZE; y++)
 				{
-					localBlockCoodinates.y = y;
 					for (int z = 0; z < World.CHUNK_SIZE; z++)
 					{
-						localBlockCoodinates.z = z;
-						
 						// offset must be included
 						ref BlockData b = ref blocks[x + chunkPos.x, y + chunkPos.y, z + chunkPos.z];
 
 						if (b.Faces == 0 || b.Type == BlockType.Air)
 							continue;
 
+						var localBlockCoodinates = new ReadonlyVector3Int(x, y, z);
 						if (b.Type == BlockType.Water)
-							CreateWaterQuad(ref b, ref waterIndex, ref waterTriIndex, ref waterData, ref localBlockCoodinates);
+							CreateWaterQuad(ref b, ref waterIndex, ref waterTriIndex, ref waterData, in localBlockCoodinates);
 						else if (b.Type == BlockType.Grass)
-							CreateGrassQuads(ref b, ref index, ref triIndex, ref terrainData, ref localBlockCoodinates);
+							CreateGrassQuads(ref b, ref index, ref triIndex, ref terrainData, in localBlockCoodinates);
 						else
-							CreateStandardQuads(ref b, ref index, ref triIndex, ref terrainData, ref localBlockCoodinates);
+							CreateStandardQuads(ref b, ref index, ref triIndex, ref terrainData, in localBlockCoodinates);
 					}
 				}
 			}
@@ -447,7 +444,7 @@ namespace Assets.Scripts.World
         bool HasFlag(Cubeside source, Cubeside target) => (source & target) != 0;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-		void CreateStandardQuads(ref BlockData block, ref int index, ref int triIndex, ref MeshData data, ref Vector3Int localBlockCoord)
+		void CreateStandardQuads(ref BlockData block, ref int index, ref int triIndex, ref MeshData data, in ReadonlyVector3Int localBlockCoord)
 		{
 			int typeIndex = (int)block.Type;
 
@@ -461,7 +458,7 @@ namespace Assets.Scripts.World
 			{
 				AddQuadComponents(ref index, ref triIndex, ref data, Vector3.up,
 					ref uv11, ref uv01, ref uv00, ref uv10,
-					_p7 + localBlockCoord, _p6 + localBlockCoord, _p5 + localBlockCoord, _p4 + localBlockCoord);
+					_p7.Add(in localBlockCoord), _p6.Add(in localBlockCoord), _p5.Add(in localBlockCoord), _p4.Add(in localBlockCoord));
 				AddSuvs(ref block, ref data);
 			}
 
@@ -469,7 +466,7 @@ namespace Assets.Scripts.World
 			{
 				AddQuadComponents(ref index, ref triIndex, ref data, Vector3.down,
 					ref uv11, ref uv01, ref uv00, ref uv10,
-					_p0 + localBlockCoord, _p1 + localBlockCoord, _p2 + localBlockCoord, _p3 + localBlockCoord);
+					_p0.Add(in localBlockCoord), _p1.Add(in localBlockCoord), _p2.Add(in localBlockCoord), _p3.Add(in localBlockCoord));
 				AddSuvs(ref block, ref data);
 			}
 
@@ -477,7 +474,7 @@ namespace Assets.Scripts.World
 			{
 				AddQuadComponents(ref index, ref triIndex, ref data, Vector3.left,
 					ref uv11, ref uv01, ref uv00, ref uv10,
-					_p7 + localBlockCoord, _p4 + localBlockCoord, _p0 + localBlockCoord, _p3 + localBlockCoord);
+					_p7.Add(in localBlockCoord), _p4.Add(in localBlockCoord), _p0.Add(in localBlockCoord), _p3.Add(in localBlockCoord));
 				AddSuvs(ref block, ref data);
 			}
 
@@ -485,7 +482,7 @@ namespace Assets.Scripts.World
 			{
 				AddQuadComponents(ref index, ref triIndex, ref data, Vector3.right,
 					ref uv11, ref uv01, ref uv00, ref uv10,
-					_p5 + localBlockCoord, _p6 + localBlockCoord, _p2 + localBlockCoord, _p1 + localBlockCoord);
+					_p5.Add(in localBlockCoord), _p6.Add(in localBlockCoord), _p2.Add(in localBlockCoord), _p1.Add(in localBlockCoord));
 				AddSuvs(ref block, ref data);
 			}
 
@@ -493,7 +490,7 @@ namespace Assets.Scripts.World
 			{
 				AddQuadComponents(ref index, ref triIndex, ref data, Vector3.forward,
 					ref uv11, ref uv01, ref uv00, ref uv10,
-					_p4 + localBlockCoord, _p5 + localBlockCoord, _p1 + localBlockCoord, _p0 + localBlockCoord);
+					_p4.Add(in localBlockCoord), _p5.Add(in localBlockCoord), _p1.Add(in localBlockCoord), _p0.Add(in localBlockCoord));
 				AddSuvs(ref block, ref data);
 			}
 
@@ -501,13 +498,13 @@ namespace Assets.Scripts.World
 			{
 				AddQuadComponents(ref index, ref triIndex, ref data, Vector3.back,
 					ref uv11, ref uv01, ref uv00, ref uv10,
-					_p6 + localBlockCoord, _p7 + localBlockCoord, _p3 + localBlockCoord, _p2 + localBlockCoord);
+					_p6.Add(in localBlockCoord), _p7.Add(in localBlockCoord), _p3.Add(in localBlockCoord), _p2.Add(in localBlockCoord));
 				AddSuvs(ref block, ref data);
 			}
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		void CreateGrassQuads(ref BlockData block, ref int index, ref int triIndex, ref MeshData data, ref Vector3Int localBlockCoord)
+		void CreateGrassQuads(ref BlockData block, ref int index, ref int triIndex, ref MeshData data, in ReadonlyVector3Int localBlockCoord)
 		{
 			Vector2 uv00side = _blockUVs[GRASS_SIDE_TEXTURE_INDEX, 0],
 					uv10side = _blockUVs[GRASS_SIDE_TEXTURE_INDEX, 1],
@@ -523,7 +520,7 @@ namespace Assets.Scripts.World
 
 				AddQuadComponents(ref index, ref triIndex, ref data, Vector3.up,
 					ref uv11top, ref uv01top, ref uv00top, ref uv10top,
-					_p7 + localBlockCoord, _p6 + localBlockCoord, _p5 + localBlockCoord, _p4 + localBlockCoord);
+					_p7.Add(in localBlockCoord), _p6.Add(in localBlockCoord), _p5.Add(in localBlockCoord), _p4.Add(in localBlockCoord));
 				AddSuvs(ref block, ref data);
 			}
 
@@ -536,7 +533,7 @@ namespace Assets.Scripts.World
 
 				AddQuadComponents(ref index, ref triIndex, ref data, Vector3.down,
 					ref uv11bot, ref uv01bot, ref uv00bot, ref uv10bot,
-					_p0 + localBlockCoord, _p1 + localBlockCoord, _p2 + localBlockCoord, _p3 + localBlockCoord);
+					_p0.Add(in localBlockCoord), _p1.Add(in localBlockCoord), _p2.Add(in localBlockCoord), _p3.Add(in localBlockCoord));
 				AddSuvs(ref block, ref data);
 			}
 
@@ -544,7 +541,7 @@ namespace Assets.Scripts.World
 			{
 				AddQuadComponents(ref index, ref triIndex, ref data, Vector3.left,
 					ref uv00side, ref uv10side, ref uv11side, ref uv01side,
-					_p7 + localBlockCoord, _p4 + localBlockCoord, _p0 + localBlockCoord, _p3 + localBlockCoord);
+					_p7.Add(in localBlockCoord), _p4.Add(in localBlockCoord), _p0.Add(in localBlockCoord), _p3.Add(in localBlockCoord));
 				AddSuvs(ref block, ref data);
 			}
 
@@ -552,7 +549,7 @@ namespace Assets.Scripts.World
 			{
 				AddQuadComponents(ref index, ref triIndex, ref data, Vector3.right,
 					ref uv00side, ref uv10side, ref uv11side, ref uv01side,
-					_p5 + localBlockCoord, _p6 + localBlockCoord, _p2 + localBlockCoord, _p1 + localBlockCoord);
+					_p5.Add(in localBlockCoord), _p6.Add(in localBlockCoord), _p2.Add(in localBlockCoord), _p1.Add(in localBlockCoord));
 				AddSuvs(ref block, ref data);
 			}
 
@@ -560,7 +557,7 @@ namespace Assets.Scripts.World
 			{
 				AddQuadComponents(ref index, ref triIndex, ref data, Vector3.forward,
 					ref uv00side, ref uv10side, ref uv11side, ref uv01side,
-					_p4 + localBlockCoord, _p5 + localBlockCoord, _p1 + localBlockCoord, _p0 + localBlockCoord);
+					_p4.Add(in localBlockCoord), _p6.Add(in localBlockCoord), _p1.Add(in localBlockCoord), _p0.Add(in localBlockCoord));
 				AddSuvs(ref block, ref data);
 			}
 
@@ -568,26 +565,26 @@ namespace Assets.Scripts.World
 			{
 				AddQuadComponents(ref index, ref triIndex, ref data, Vector3.back,
 					ref uv00side, ref uv10side, ref uv11side, ref uv01side,
-					_p6 + localBlockCoord, _p7 + localBlockCoord, _p3 + localBlockCoord, _p2 + localBlockCoord);
+					_p6.Add(in localBlockCoord), _p7.Add(in localBlockCoord), _p3.Add(in localBlockCoord), _p2.Add(in localBlockCoord));
 				AddSuvs(ref block, ref data);
 			}
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		void CreateWaterQuad(ref BlockData block, ref int index, ref int triIndex, ref MeshData data, ref Vector3Int localBlockCoord)
+		void CreateWaterQuad(ref BlockData block, ref int index, ref int triIndex, ref MeshData data, in ReadonlyVector3Int localBlockCoord)
 		{
 			if (HasFlag(block.Faces, Cubeside.Top))
 			{
 				// all possible UVs
 				// left-top, right-top, left-bottom, right-bottom
-				Vector2 uv00 = new Vector2(WATER_UV_CONST * localBlockCoord.x, 1 - WATER_UV_CONST * localBlockCoord.z),
-					uv10 = new Vector2(WATER_UV_CONST * (localBlockCoord.x + 1), 1 - WATER_UV_CONST * localBlockCoord.z),
-					uv01 = new Vector2(WATER_UV_CONST * localBlockCoord.x, 1 - WATER_UV_CONST * (localBlockCoord.z + 1)),
-					uv11 = new Vector2(WATER_UV_CONST * (localBlockCoord.x + 1), 1 - WATER_UV_CONST * (localBlockCoord.z + 1));
+				Vector2 uv00 = new Vector2(WATER_UV_CONST * localBlockCoord.X, 1 - WATER_UV_CONST * localBlockCoord.Z),
+					uv10 = new Vector2(WATER_UV_CONST * (localBlockCoord.X + 1), 1 - WATER_UV_CONST * localBlockCoord.Z),
+					uv01 = new Vector2(WATER_UV_CONST * localBlockCoord.X, 1 - WATER_UV_CONST * (localBlockCoord.Z + 1)),
+					uv11 = new Vector2(WATER_UV_CONST * (localBlockCoord.X + 1), 1 - WATER_UV_CONST * (localBlockCoord.Z + 1));
 
 				AddQuadComponents(ref index, ref triIndex, ref data, Vector3.up,
 					ref uv11, ref uv01, ref uv00, ref uv10,
-					_p7 + localBlockCoord, _p6 + localBlockCoord, _p5 + localBlockCoord, _p4 + localBlockCoord);
+					_p7.Add(in localBlockCoord), _p6.Add(in localBlockCoord), _p5.Add(in localBlockCoord), _p4.Add(in localBlockCoord));
 			}
 		}
 
