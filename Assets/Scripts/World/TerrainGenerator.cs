@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace Assets.Scripts.World
 {
-    public class TerrainGenerator : MonoBehaviour
+    public class TerrainGenerator
 	{
 		#region Constants
 		// caves should be more erratic so has to be a higher number
@@ -373,7 +373,8 @@ namespace Assets.Scripts.World
 				for (int y = 20; y < _totalBlockNumberY - TreeHeight - 1; y++)
 					for (int z = 1; z < _totalBlockNumberZ - 1; z++)
 					{
-						if (blocks[x, y, z].Type != BlockType.Grass) continue;
+						if (blocks[x, y, z].Type != BlockType.Grass) 
+							continue;
 
 						if (IsThereEnoughSpaceForTree(in blocks, x, y, z))
 							if (FractalFunc(SeedValue, x, y, z, WoodbaseSmooth, WoodbaseOctaves) < woodbaseProbability)
@@ -419,7 +420,6 @@ namespace Assets.Scripts.World
                             continue;
 
                         if (IsThereEnoughSpaceForTree(in World.Blocks, x, y, z))
-							//TODO using a static value here, should not be static - Apollo
                             if (FractalFunc(SeedValue, x, y, z, WoodbaseSmooth, WoodbaseOctaves) < woodbaseProbability)
                                 BuildTree(ref World.Blocks, x, y, z);
                     }

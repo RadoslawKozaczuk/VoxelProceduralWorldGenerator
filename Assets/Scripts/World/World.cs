@@ -28,13 +28,14 @@ namespace Assets.Scripts.World
         public float AlreadyGenerated;
 		public string ProgressDescription;
 
-		[SerializeField] TerrainGenerator _terrainGenerator;
-		[SerializeField] MeshGenerator _meshGenerator;
-		[SerializeField] Material _terrainTexture;
-		[SerializeField] Material _waterTexture;
+        [SerializeField] Material _terrainTexture;
+        [SerializeField] Material _waterTexture;
 
+        readonly TerrainGenerator _terrainGenerator = new TerrainGenerator();
+        readonly MeshGenerator _meshGenerator = new MeshGenerator();
 		readonly Stopwatch _stopwatch = new Stopwatch();
-		Scene _worldScene;
+		
+        Scene _worldScene;
 		int _progressStep = 1;
 
 		World()

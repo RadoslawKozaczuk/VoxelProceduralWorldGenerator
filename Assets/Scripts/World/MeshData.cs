@@ -3,12 +3,21 @@ using UnityEngine;
 
 namespace Assets.Scripts.World
 {
-	public struct MeshData
+	public readonly struct MeshData
 	{
-		public Vector2[] Uvs;
-		public List<Vector2> Suvs;
-		public Vector3[] Verticies;
-		public Vector3[] Normals;
-		public int[] Triangles;
+		public readonly Vector2[] Uvs;
+		public readonly List<Vector2> Suvs;
+		public readonly Vector3[] Verticies;
+		public readonly Vector3[] Normals;
+		public readonly int[] Triangles;
+
+		public MeshData(Vector2[] uvs, List<Vector2> suvs, Vector3[] verticies, Vector3[] normals, int[] triangles)
+		{
+			Uvs = uvs;
+			Suvs = suvs;
+			Verticies = verticies;
+			Normals = normals;
+			Triangles = triangles;
+		}
 	}
 }

@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace Assets.Scripts.World
 {
-	public class MeshGenerator : MonoBehaviour
+	public class MeshGenerator
 	{
 		const float WATER_UV_CONST = 1.0f / World.CHUNK_SIZE;
 
@@ -101,22 +101,22 @@ namespace Assets.Scripts.World
 			CalculateMeshesSize(ref blocks, chunkPos, out int tSize, out int wSize);
 
 			var terrainData = new MeshData
-			{
-				Uvs = new Vector2[tSize],
-				Suvs = new List<Vector2>(tSize),
-				Verticies = new Vector3[tSize],
-				Normals = new Vector3[tSize],
-				Triangles = new int[(int)(1.5f * tSize)]
-			};
+			(
+				uvs: new Vector2[tSize],
+				suvs: new List<Vector2>(tSize),
+				verticies: new Vector3[tSize],
+				normals: new Vector3[tSize],
+				triangles: new int[(int)(1.5f * tSize)]
+			);
 
 			var waterData = new MeshData
-			{
-				Uvs = new Vector2[wSize],
-				Suvs = new List<Vector2>(wSize),
-				Verticies = new Vector3[wSize],
-				Normals = new Vector3[wSize],
-				Triangles = new int[(int)(1.5f * wSize)]
-			};
+			(
+				uvs: new Vector2[wSize],
+				suvs: new List<Vector2>(wSize),
+				verticies: new Vector3[wSize],
+				normals: new Vector3[wSize],
+				triangles: new int[(int)(1.5f * wSize)]
+			);
 
 			int index = 0, triIndex = 0, waterIndex = 0, waterTriIndex = 0;
 
@@ -130,7 +130,7 @@ namespace Assets.Scripts.World
 					for (int z = 0; z < World.CHUNK_SIZE; z++)
 					{
 						localBlockCoodinates.z = z;
-
+						
 						// offset must be included
 						ref BlockData b = ref blocks[x + chunkPos.x, y + chunkPos.y, z + chunkPos.z];
 
