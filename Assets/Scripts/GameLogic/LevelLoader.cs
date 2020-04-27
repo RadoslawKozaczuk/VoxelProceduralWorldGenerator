@@ -6,9 +6,8 @@ using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using Voxels.Common;
 using Voxels.Common.DataModels;
-using Voxels.GameLogic;
 
-namespace GameLogic
+namespace Voxels.GameLogic
 {
     public class LevelLoader : MonoBehaviour
     {

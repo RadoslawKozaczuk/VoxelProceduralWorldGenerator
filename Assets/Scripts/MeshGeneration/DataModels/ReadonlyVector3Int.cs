@@ -1,4 +1,4 @@
-﻿namespace Voxels.MeshGenerator.DataModels
+﻿namespace Voxels.MeshGeneration.DataModels
 {
     internal readonly struct ReadonlyVector3Int
     {

@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
 
-namespace Voxels.MeshGenerator.DataModels
+namespace Voxels.MeshGeneration.DataModels
 {
     readonly struct MeshData
     {

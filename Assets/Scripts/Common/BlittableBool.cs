@@ -1,4 +1,4 @@
-﻿namespace Assets.Scripts
+﻿namespace Voxels.Common
 {
     /*
         Most data types have a common representation in both managed and unmanaged memory 

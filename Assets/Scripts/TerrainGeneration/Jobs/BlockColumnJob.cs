@@ -4,7 +4,7 @@ using Unity.Jobs;
 using Unity.Mathematics;
 using Voxels.Common;
 
-namespace Voxels.MapGenerator.Jobs
+namespace Voxels.TerrainGeneration.Jobs
 {
     // this isn't faster (in fact is 10 times slower) which is very surprising I think the problem may come from the fact that this needs to be copied
     // or maybe I made a mistake somewhere I am not 100% sure

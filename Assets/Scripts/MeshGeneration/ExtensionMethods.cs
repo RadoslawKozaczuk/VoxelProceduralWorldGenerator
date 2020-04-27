@@ -1,8 +1,8 @@
 ﻿using System.Runtime.CompilerServices;
 using UnityEngine;
-using Voxels.MeshGenerator.DataModels;
+using Voxels.MeshGeneration.DataModels;
 
-namespace Voxels.MeshGenerator
+namespace Voxels.MeshGeneration
 {
     public static class ExtensionMethods
     {

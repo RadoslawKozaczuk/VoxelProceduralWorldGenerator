@@ -1,13 +1,11 @@
 {
-    "name": "MapGenerator",
+    "name": "MeshGeneration",
     "references": [
-        "GUID:d8b63aba1907145bea998dd612889d6b",
-        "GUID:2665a8d13d1b3f18800f46e256720795",
         "GUID:f40cfcf4aedefb44ea3c082413dc53c7"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
-    "allowUnsafeCode": true,
+    "allowUnsafeCode": false,
     "overrideReferences": false,
     "precompiledReferences": [],
     "autoReferenced": true,

@@ -2,7 +2,7 @@
 using System.Collections;
 using UnityEngine;
 
-namespace Assets.Scripts
+namespace Voxels.Common
 {
     /// <summary>
     /// In Unity only enabled <see cref="MonoBehaviour"/>s can start a coroutine.

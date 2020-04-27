@@ -3,11 +3,12 @@ using System.Runtime.CompilerServices;
 using UnityEngine;
 using Voxels.Common;
 using Voxels.Common.DataModels;
-using Voxels.MeshGenerator.DataModels;
+using Voxels.MeshGeneration.DataModels;
+using Voxels.MeshGeneration.Interfaces;
 
-namespace Voxels.MeshGenerator
+namespace Voxels.MeshGeneration
 {
-    public class MeshGenerator
+    internal class MeshGenerator : IMeshGenerator
     {
         const float WATER_UV_CONST = 1.0f / Constants.CHUNK_SIZE;
 
@@ -49,8 +50,7 @@ namespace Voxels.MeshGenerator
                          _p7 = new Vector3(-0.5f, 0.5f, -0.5f);
         #endregion
 
-        readonly int _totalBlockNumberY;
-        int _worldSizeX, _worldSizeZ, _totalBlockNumberX, _totalBlockNumberZ;
+        readonly int _worldSizeX, _worldSizeZ, _totalBlockNumberX, _totalBlockNumberY, _totalBlockNumberZ;
 
         public MeshGenerator()
         {
@@ -79,10 +79,7 @@ namespace Voxels.MeshGenerator
                     _blockUVs[i, j].x *= UV_UNIT;
                     _blockUVs[i, j].y *= UV_UNIT;
                 }
-        }
 
-        public void Initialize()
-        {
             _worldSizeX = GlobalVariables.Settings.WorldSizeX;
             _worldSizeZ = GlobalVariables.Settings.WorldSizeZ;
             _totalBlockNumberX = _worldSizeX * Constants.CHUNK_SIZE;
@@ -93,7 +90,7 @@ namespace Voxels.MeshGenerator
         /// This method creates mesh data necessary to create a mesh.
         /// Calculating two meshes at once is faster than creating them one by one.
         /// </summary>
-        public void CalculateMeshes(Vector3Int chunkPos, out Mesh terrain, out Mesh water)
+        internal void CalculateMeshes(Vector3Int chunkPos, out Mesh terrain, out Mesh water)
         {
             BlockData[,,] blocks = GlobalVariables.Blocks;
 
@@ -170,8 +167,10 @@ namespace Voxels.MeshGenerator
             terrain = CreateMesh(terrainData);
         }
 
-        public void RecalculateFacesAfterBlockDestroy(ref BlockData[,,] blocks, int blockX, int blockY, int blockZ)
+        internal void RecalculateFacesAfterBlockDestroy(int blockX, int blockY, int blockZ)
         {
+            BlockData[,,] blocks = GlobalVariables.Blocks;
+
             /* // bitwise operators reminder
 			var test = Cubesides.Back; // initialize with one flag
 			test |= Cubesides.Front; // add another flag
@@ -206,8 +205,10 @@ namespace Voxels.MeshGenerator
                     blocks[blockX, blockY, blockZ + 1].Faces |= Cubeside.Back;
         }
 
-        public void RecalculateFacesAfterBlockBuild(ref BlockData[,,] blocks, int blockX, int blockY, int blockZ)
+        internal void RecalculateFacesAfterBlockBuild(int blockX, int blockY, int blockZ)
         {
+            BlockData[,,] blocks = GlobalVariables.Blocks;
+
             ref BlockData b = ref blocks[blockX, blockY, blockZ];
             BlockType type;
 
@@ -275,7 +276,7 @@ namespace Voxels.MeshGenerator
         /// <summary>
         /// Calculates inter block faces visibility.
         /// </summary>
-        public void CalculateFaces()
+        internal void CalculateFaces()
         {
             BlockData[,,] blocks = GlobalVariables.Blocks;
 
@@ -343,7 +344,7 @@ namespace Voxels.MeshGenerator
         /// <summary>
         /// Calculates faces visibility on the world's edges.
         /// </summary>
-        public void WorldBoundariesCheck()
+        internal void WorldBoundariesCheck()
         {
             BlockData[,,] blocks = GlobalVariables.Blocks;
 

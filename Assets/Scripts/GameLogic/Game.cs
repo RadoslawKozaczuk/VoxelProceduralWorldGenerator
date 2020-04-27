@@ -4,10 +4,9 @@ using UnityEngine.UI;
 using Voxels.Common;
 using Voxels.Common.DataModels;
 using Voxels.GameLogic.PlayerController;
-using Voxels.MapGenerator;
+using Voxels.TerrainGeneration;
 using Voxels.SaveLoad;
 using Voxels.UI;
-using static Voxels.GameLogic.Enums;
 
 namespace Voxels.GameLogic
 {

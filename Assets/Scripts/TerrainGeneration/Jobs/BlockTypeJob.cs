@@ -4,7 +4,7 @@ using Unity.Jobs;
 using Unity.Mathematics;
 using Voxels.Common;
 
-namespace Voxels.MapGenerator.Jobs
+namespace Voxels.TerrainGeneration.Jobs
 {
     [BurstCompile(CompileSynchronously = true)]
     struct BlockTypeJob : IJobParallelFor

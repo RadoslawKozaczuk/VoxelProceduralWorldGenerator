@@ -5,11 +5,12 @@ using Unity.Mathematics;
 using UnityEngine;
 using Voxels.Common;
 using Voxels.Common.DataModels;
-using Voxels.MapGenerator.Jobs;
+using Voxels.Interfaces;
+using Voxels.TerrainGeneration.Jobs;
 
-namespace Voxels.MapGenerator
+namespace Voxels.TerrainGeneration
 {
-    public class TerrainGenerator
+    public class TerrainGenerator : ITerrainGenerator
     {
         #region Constants
         // caves should be more erratic so has to be a higher number
@@ -61,7 +62,7 @@ namespace Voxels.MapGenerator
 
         int _worldSizeX, _worldSizeZ, _totalBlockNumberX, _totalBlockNumberY, _totalBlockNumberZ;
 
-        public void Initialize()
+        public TerrainGenerator()
         {
             _worldSizeX = GlobalVariables.Settings.WorldSizeX;
             _worldSizeZ = GlobalVariables.Settings.WorldSizeZ;
@@ -331,8 +332,10 @@ namespace Voxels.MapGenerator
                 CreateBlock(ref GlobalVariables.Blocks[colX, y, colZ], DetermineType(SeedValue, colX, y, colZ, height));
         }
 
-        public void AddWater(ref BlockData[,,] blocks)
+        public void AddWater()
         {
+            BlockData[,,] blocks = GlobalVariables.Blocks;
+
             // first run - turn all Air blocks at the WaterLevel and one level below into Water blocks
             for (int x = 0; x < _totalBlockNumberX; x++)
                 for (int z = 0; z < _totalBlockNumberZ; z++)
@@ -394,8 +397,10 @@ namespace Voxels.MapGenerator
         /// and therefore will never grow a tree resulting in slightly different although unnoticeable
         /// for player results.
 		/// </summary>
-		public void AddTreesParallel(TreeProbability treeProb)
+		public void AddTreesParallel()
         {
+            TreeProbability treeProb = GlobalVariables.Settings.TreeProbability;
+
             if (treeProb == TreeProbability.None)
                 return;
 

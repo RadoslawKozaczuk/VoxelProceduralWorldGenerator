@@ -1,4 +1,4 @@
-﻿using Voxels.MapGenerator.Jobs;
+﻿using Voxels.TerrainGeneration.Jobs;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -8,10 +8,11 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using Voxels.Common;
 using Voxels.Common.DataModels;
-using Voxels.MapGenerator;
+using Voxels.TerrainGeneration;
 using Voxels.SaveLoad;
 using Voxels.GameLogic.DataModels;
-using static Voxels.GameLogic.Enums;
+using Voxels.MeshGeneration;
+using Voxels.GameLogic.Controllers;
 
 namespace Voxels.GameLogic
 {
@@ -36,8 +37,6 @@ namespace Voxels.GameLogic
         [SerializeField] Material _waterTexture;
 #pragma warning restore CS0649
 
-        readonly TerrainGenerator _terrainGenerator = new TerrainGenerator();
-        readonly Voxels.MeshGenerator.MeshGenerator _meshGenerator = new Voxels.MeshGenerator.MeshGenerator();
         readonly Stopwatch _stopwatch = new Stopwatch();
 
         Scene _worldScene;
@@ -57,8 +56,7 @@ namespace Voxels.GameLogic
 		/// </summary>
 		public IEnumerator CreateWorld(bool firstRun, Action callback)
         {
-            _terrainGenerator.Initialize();
-            _meshGenerator.Initialize();
+            MainController.InitializeOnWorldSizeChange();
 
             _stopwatch.Restart();
             ResetProgressBarVariables();
@@ -75,12 +73,12 @@ namespace Voxels.GameLogic
             if (GlobalVariables.Settings.ComputingAcceleration == ComputingAcceleration.UnityJobSystem)
             {
                 ProgressDescription = "Calculating heights...";
-                var heights = _terrainGenerator.CalculateHeightsJobSystem();
+                var heights = TerrainGenerationAbstractionLayer.CalculateHeightsJobSystem();
                 AlreadyGenerated += _progressStep;
                 yield return null;
 
                 ProgressDescription = "Calculating block types...";
-                var types = _terrainGenerator.CalculateBlockTypes(heights);
+                var types = TerrainGenerationAbstractionLayer.CalculateBlockTypes(heights);
                 AlreadyGenerated += _progressStep;
                 yield return null;
 
@@ -100,42 +98,55 @@ namespace Voxels.GameLogic
             else if (GlobalVariables.Settings.ComputingAcceleration == ComputingAcceleration.PureCSParallelisation)
             {
                 ProgressDescription = "Calculating block types...";
-                _terrainGenerator.CalculateBlockTypesParallel();
+                TerrainGenerationAbstractionLayer.CalculateBlockTypesParallel();
                 AlreadyGenerated += _progressStep * 3;
                 yield return null;
             }
 
             // check one
+            bool atLeastOneNonAir = false;
             var invalidBlocks = new List<int4>();
             for (int x = 0; x < TotalBlockNumberX; x++)
                 for (int y = 0; y < TotalBlockNumberY; y++)
                     for (int z = 0; z < TotalBlockNumberZ; z++)
                     {
                         int value = (int)GlobalVariables.Blocks[x, y, z].Type;
-                        if (value > (int)BlockType.Grass)
-                            invalidBlocks.Add(new int4(x, y, z, value));
+
+                        if (value > 0)
+                            atLeastOneNonAir = true;
                     }
 
-            // check two
-            var levelOneNonBedRocks = new List<int4>();
-            for (int x = 0; x < TotalBlockNumberX; x++)
-                for (int z = 0; z < TotalBlockNumberZ; z++)
-                {
-                    int value = (int)GlobalVariables.Blocks[x, 0, z].Type;
-                    if (value != (int)BlockType.Bedrock)
-                        levelOneNonBedRocks.Add(new int4(x, 0, z, value));
-                }
+            //// check one
+            //var invalidBlocks = new List<int4>();
+            //for (int x = 0; x < TotalBlockNumberX; x++)
+            //    for (int y = 0; y < TotalBlockNumberY; y++)
+            //        for (int z = 0; z < TotalBlockNumberZ; z++)
+            //        {
+            //            int value = (int)GlobalVariables.Blocks[x, y, z].Type;
+            //            if (value > (int)BlockType.Grass)
+            //                invalidBlocks.Add(new int4(x, y, z, value));
+            //        }
+
+            //// check two
+            //var levelOneNonBedRocks = new List<int4>();
+            //for (int x = 0; x < TotalBlockNumberX; x++)
+            //    for (int z = 0; z < TotalBlockNumberZ; z++)
+            //    {
+            //        int value = (int)GlobalVariables.Blocks[x, 0, z].Type;
+            //        if (value != (int)BlockType.Bedrock)
+            //            levelOneNonBedRocks.Add(new int4(x, 0, z, value));
+            //    }
 
             if (GlobalVariables.Settings.IsWater)
             {
                 ProgressDescription = "Generating water...";
-                _terrainGenerator.AddWater(ref GlobalVariables.Blocks);
+                TerrainGenerationAbstractionLayer.AddWater();
             }
             AlreadyGenerated += _progressStep;
             yield return null;
 
             ProgressDescription = "Generating trees...";
-            _terrainGenerator.AddTreesParallel(GlobalVariables.Settings.TreeProbability);
+            TerrainGenerationAbstractionLayer.AddTreesParallel();
             AlreadyGenerated += _progressStep;
             yield return null;
 
@@ -157,12 +168,12 @@ namespace Voxels.GameLogic
             yield return null;
 
             ProgressDescription = "Calculating faces...";
-            _meshGenerator.CalculateFaces();
+            MeshGenerationAbstractionLayer.CalculateFaces();
             AlreadyGenerated += _progressStep;
             yield return null;
 
             ProgressDescription = "World boundaries check...";
-            _meshGenerator.WorldBoundariesCheck();
+            MeshGenerationAbstractionLayer.WorldBoundariesCheck();
             AlreadyGenerated += _progressStep;
             yield return null;
 
@@ -173,7 +184,7 @@ namespace Voxels.GameLogic
                     for (int y = 0; y < Constants.WORLD_SIZE_Y; y++)
                     {
                         ChunkData chunkData = GlobalVariables.Chunks[x, y, z];
-                        _meshGenerator.CalculateMeshes(chunkData.Position, out Mesh terrainMesh, out Mesh waterMesh);
+                        MeshGenerationAbstractionLayer.CalculateMeshes(chunkData.Position, out Mesh terrainMesh, out Mesh waterMesh);
 
                         if (firstRun)
                         {
@@ -211,8 +222,7 @@ namespace Voxels.GameLogic
 		/// </summary>
 		public IEnumerator LoadWorld(bool firstRun, Action callback)
         {
-            _terrainGenerator.Initialize();
-            _meshGenerator.Initialize();
+            MainController.InitializeOnWorldSizeChange();
 
             ResetProgressBarVariables();
             _stopwatch.Restart();
@@ -251,12 +261,12 @@ namespace Voxels.GameLogic
             }
 
             ProgressDescription = "Calculating faces...";
-            _meshGenerator.CalculateFaces();
+            MeshGenerationAbstractionLayer.CalculateFaces();
             AlreadyGenerated += _progressStep;
             yield return null; // give back control
 
             ProgressDescription = "World boundaries check...";
-            _meshGenerator.WorldBoundariesCheck();
+            MeshGenerationAbstractionLayer.WorldBoundariesCheck();
             Status = WorldGeneratorStatus.FacesReady;
             AlreadyGenerated += _progressStep;
             yield return null; // give back control
@@ -268,7 +278,7 @@ namespace Voxels.GameLogic
                     for (int y = 0; y < Constants.WORLD_SIZE_Y; y++)
                     {
                         ChunkData chunkData = GlobalVariables.Chunks[x, y, z];
-                        _meshGenerator.CalculateMeshes(chunkData.Position, out Mesh terrainMesh, out Mesh waterMesh);
+                        MeshGenerationAbstractionLayer.CalculateMeshes(chunkData.Position, out Mesh terrainMesh, out Mesh waterMesh);
 
                         if (firstRun)
                         {
@@ -316,7 +326,7 @@ namespace Voxels.GameLogic
             if (--b.Hp == 0)
             {
                 b.Type = BlockType.Air;
-                _meshGenerator.RecalculateFacesAfterBlockDestroy(ref GlobalVariables.Blocks, blockX, blockY, blockZ);
+                MeshGenerationAbstractionLayer.RecalculateFacesAfterBlockDestroy(blockX, blockY, blockZ);
                 chunkData.Status = ChunkStatus.NeedToBeRecreated;
                 return true;
             }
@@ -339,7 +349,7 @@ namespace Voxels.GameLogic
 
             if (b.Type != BlockType.Air) return false;
 
-            _meshGenerator.RecalculateFacesAfterBlockBuild(ref GlobalVariables.Blocks, blockX, blockY, blockZ);
+            MeshGenerationAbstractionLayer.RecalculateFacesAfterBlockBuild(blockX, blockY, blockZ);
 
             b.Type = type;
             b.Hp = LookupTables.BlockHealthMax[(int)type];
@@ -362,12 +372,12 @@ namespace Voxels.GameLogic
                             continue;
                         else if (chunkData.Status == ChunkStatus.NeedToBeRecreated)
                         {
-                            _meshGenerator.CalculateMeshes(chunkData.Position, out Mesh terrainMesh, out Mesh waterMesh);
+                            MeshGenerationAbstractionLayer.CalculateMeshes(chunkData.Position, out Mesh terrainMesh, out Mesh waterMesh);
                             SetMeshesAndCollider(ref chunkData, ref ChunkObjects[x, y, z], terrainMesh, waterMesh);
                         }
                         else if (chunkData.Status == ChunkStatus.NeedToBeRedrawn) // used only for cracks
                         {
-                            _meshGenerator.CalculateMeshes(chunkData.Position, out Mesh terrainMesh, out _);
+                            MeshGenerationAbstractionLayer.CalculateMeshes(chunkData.Position, out Mesh terrainMesh, out _);
                             SetTerrainMesh(ref chunkData, ref ChunkObjects[x, y, z], terrainMesh);
                         }
                     }
