@@ -1,7 +1,6 @@
 using System;
 using UnityEngine;
 
-
 namespace Voxels.GameLogic.PlayerController
 {
     [Serializable]
@@ -14,12 +13,11 @@ namespace Voxels.GameLogic.PlayerController
                                                             new Keyframe(2f, 0f)); // sin curve for head bob
         public float VerticaltoHorizontalRatio = 1f;
 
-        private float m_CyclePositionX;
-        private float m_CyclePositionY;
-        private float m_BobBaseInterval;
-        private Vector3 m_OriginalCameraPosition;
-        private float m_Time;
-
+        float _cyclePositionX;
+        float _cyclePositionY;
+        float m_BobBaseInterval;
+        Vector3 m_OriginalCameraPosition;
+        float _time;
 
         public void Setup(Camera camera, float bobBaseInterval)
         {
@@ -27,26 +25,22 @@ namespace Voxels.GameLogic.PlayerController
             m_OriginalCameraPosition = camera.transform.localPosition;
 
             // get the length of the curve in time
-            m_Time = Bobcurve[Bobcurve.length - 1].time;
+            _time = Bobcurve[Bobcurve.length - 1].time;
         }
-
 
         public Vector3 DoHeadBob(float speed)
         {
-            float xPos = m_OriginalCameraPosition.x + (Bobcurve.Evaluate(m_CyclePositionX)*HorizontalBobRange);
-            float yPos = m_OriginalCameraPosition.y + (Bobcurve.Evaluate(m_CyclePositionY)*VerticalBobRange);
+            float xPos = m_OriginalCameraPosition.x + (Bobcurve.Evaluate(_cyclePositionX) * HorizontalBobRange);
+            float yPos = m_OriginalCameraPosition.y + (Bobcurve.Evaluate(_cyclePositionY) * VerticalBobRange);
 
-            m_CyclePositionX += speed*Time.deltaTime/m_BobBaseInterval;
-            m_CyclePositionY += speed*Time.deltaTime/m_BobBaseInterval*VerticaltoHorizontalRatio;
+            _cyclePositionX += speed * Time.deltaTime / m_BobBaseInterval;
+            _cyclePositionY += speed * Time.deltaTime / m_BobBaseInterval * VerticaltoHorizontalRatio;
 
-            if (m_CyclePositionX > m_Time)
-            {
-                m_CyclePositionX = m_CyclePositionX - m_Time;
-            }
-            if (m_CyclePositionY > m_Time)
-            {
-                m_CyclePositionY = m_CyclePositionY - m_Time;
-            }
+            if (_cyclePositionX > _time)
+                _cyclePositionX = _cyclePositionX - _time;
+            
+            if (_cyclePositionY > _time)
+                _cyclePositionY = _cyclePositionY - _time;
 
             return new Vector3(xPos, yPos, 0f);
         }

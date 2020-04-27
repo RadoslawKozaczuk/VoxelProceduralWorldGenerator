@@ -14,7 +14,6 @@ namespace Voxels.GameLogic.PlayerController
         public float TimeToDecrease = 1f;               // the amount of time the field of view will take to return to its original size
         public AnimationCurve IncreaseCurve;
 
-
         public void Setup(Camera camera)
         {
             CheckStatus(camera);
@@ -22,28 +21,6 @@ namespace Voxels.GameLogic.PlayerController
             Camera = camera;
             originalFov = camera.fieldOfView;
         }
-
-
-        private void CheckStatus(Camera camera)
-        {
-            if (camera == null)
-            {
-                throw new Exception("FOVKick camera is null, please supply the camera to the constructor");
-            }
-
-            if (IncreaseCurve == null)
-            {
-                throw new Exception(
-                    "FOVKick Increase curve is null, please define the curve for the field of view kicks");
-            }
-        }
-
-
-        public void ChangeCamera(Camera camera)
-        {
-            Camera = camera;
-        }
-
 
         public IEnumerator FOVKickUp()
         {
@@ -56,7 +33,6 @@ namespace Voxels.GameLogic.PlayerController
             }
         }
 
-
         public IEnumerator FOVKickDown()
         {
             float t = Mathf.Abs((Camera.fieldOfView - originalFov)/FOVIncrease);
@@ -68,6 +44,15 @@ namespace Voxels.GameLogic.PlayerController
             }
             //make sure that fov returns to the original size
             Camera.fieldOfView = originalFov;
+        }
+
+        void CheckStatus(Camera camera)
+        {
+            if (camera == null)
+                throw new Exception("FOVKick camera is null, please supply the camera to the constructor");
+
+            if (IncreaseCurve == null)
+                throw new Exception("FOVKick Increase curve is null, please define the curve for the field of view kicks");
         }
     }
 }

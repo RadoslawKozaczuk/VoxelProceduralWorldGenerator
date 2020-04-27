@@ -10,15 +10,10 @@ namespace Voxels.GameLogic.PlayerController
         public float BobDuration;
         public float BobAmount;
 
-        private float m_Offset = 0f;
-
+        float m_Offset = 0f;
 
         // provides the offset that can be used
-        public float Offset()
-        {
-            return m_Offset;
-        }
-
+        public float Offset() => m_Offset;
 
         public IEnumerator DoBobCycle()
         {
@@ -26,7 +21,7 @@ namespace Voxels.GameLogic.PlayerController
             float t = 0f;
             while (t < BobDuration)
             {
-                m_Offset = Mathf.Lerp(0f, BobAmount, t/BobDuration);
+                m_Offset = Mathf.Lerp(0f, BobAmount, t / BobDuration);
                 t += Time.deltaTime;
                 yield return new WaitForFixedUpdate();
             }
@@ -35,7 +30,7 @@ namespace Voxels.GameLogic.PlayerController
             t = 0f;
             while (t < BobDuration)
             {
-                m_Offset = Mathf.Lerp(BobAmount, 0f, t/BobDuration);
+                m_Offset = Mathf.Lerp(BobAmount, 0f, t / BobDuration);
                 t += Time.deltaTime;
                 yield return new WaitForFixedUpdate();
             }

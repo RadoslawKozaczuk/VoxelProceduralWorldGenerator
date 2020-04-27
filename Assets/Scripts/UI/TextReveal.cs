@@ -33,13 +33,13 @@ namespace Voxels.UI
             int totalVisibleCharacters = _message.textInfo.characterCount;
             int counter = 0;
 
-            while(true)
+            while (true)
             {
                 int visibleCount = counter % (totalVisibleCharacters + 1);
 
                 _message.maxVisibleCharacters = visibleCount;
 
-                if(visibleCount >= totalVisibleCharacters)
+                if (visibleCount >= totalVisibleCharacters)
                     break;
 
                 counter++;

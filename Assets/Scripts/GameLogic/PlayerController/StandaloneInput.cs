@@ -13,22 +13,22 @@ namespace Voxels.GameLogic.PlayerController
 
         internal override bool GetButtonUp(string name) => Input.GetButtonUp(name);
 
-        internal override void SetButtonDown(string name) 
+        internal override void SetButtonDown(string name)
             => throw new Exception(" This is not possible to be called for standalone input. Please check your platform and code where this is called");
 
-        internal override void SetButtonUp(string name) 
+        internal override void SetButtonUp(string name)
             => throw new Exception(" This is not possible to be called for standalone input. Please check your platform and code where this is called");
 
-        internal override void SetAxisPositive(string name) 
+        internal override void SetAxisPositive(string name)
             => throw new Exception(" This is not possible to be called for standalone input. Please check your platform and code where this is called");
 
-        internal override void SetAxisNegative(string name) 
+        internal override void SetAxisNegative(string name)
             => throw new Exception(" This is not possible to be called for standalone input. Please check your platform and code where this is called");
 
-        internal override void SetAxisZero(string name) 
+        internal override void SetAxisZero(string name)
             => throw new Exception(" This is not possible to be called for standalone input. Please check your platform and code where this is called");
 
-        internal override void SetAxis(string name, float value) 
+        internal override void SetAxis(string name, float value)
             => throw new Exception(" This is not possible to be called for standalone input. Please check your platform and code where this is called");
 
         internal override Vector3 MousePosition() => Input.mousePosition;

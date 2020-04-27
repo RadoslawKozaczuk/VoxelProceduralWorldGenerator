@@ -10,7 +10,7 @@ namespace Voxels.GameLogic
         internal LerpControlledBob jumpAndLandingBob = new LerpControlledBob();
         internal RigidbodyFirstPersonController rigidbodyFirstPersonController;
         internal float StrideInterval;
-        [Range(0f, 1f)] 
+        [Range(0f, 1f)]
         internal float RunningStrideLengthen;
 
         bool _previouslyGrounded;
@@ -27,7 +27,7 @@ namespace Voxels.GameLogic
             Vector3 newCameraPosition;
             if (rigidbodyFirstPersonController.Velocity.magnitude > 0 && rigidbodyFirstPersonController.Grounded)
             {
-                Camera.transform.localPosition = motionBob.DoHeadBob(rigidbodyFirstPersonController.Velocity.magnitude*(rigidbodyFirstPersonController.Running ? RunningStrideLengthen : 1f));
+                Camera.transform.localPosition = motionBob.DoHeadBob(rigidbodyFirstPersonController.Velocity.magnitude * (rigidbodyFirstPersonController.Running ? RunningStrideLengthen : 1f));
                 newCameraPosition = Camera.transform.localPosition;
                 newCameraPosition.y = Camera.transform.localPosition.y - jumpAndLandingBob.Offset();
             }

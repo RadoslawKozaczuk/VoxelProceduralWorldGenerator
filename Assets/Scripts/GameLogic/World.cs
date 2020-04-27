@@ -15,20 +15,20 @@ using static Voxels.GameLogic.Enums;
 
 namespace Voxels.GameLogic
 {
-	[CreateAssetMenu]
-	public class World : ScriptableObject
-	{
-		const int TERRAIN_GENERATION_STEPS = 9;
+    [CreateAssetMenu]
+    public class World : ScriptableObject
+    {
+        const int TERRAIN_GENERATION_STEPS = 9;
 
-		public static GameSettings Settings;
+        public static GameSettings Settings;
 
-		public readonly int TotalBlockNumberX, TotalBlockNumberY, TotalBlockNumberZ;
+        public readonly int TotalBlockNumberX, TotalBlockNumberY, TotalBlockNumberZ;
 
-		public Vector3 PlayerLoadedRotation, PlayerLoadedPosition;
+        public Vector3 PlayerLoadedRotation, PlayerLoadedPosition;
         public float TerrainProgressSteps;
         public float MeshProgressSteps;
         public float AlreadyGenerated;
-		public string ProgressDescription;
+        public string ProgressDescription;
 
         internal WorldGeneratorStatus Status;
         internal ChunkObject[,,] ChunkObjects;
@@ -40,17 +40,17 @@ namespace Voxels.GameLogic
 
         readonly TerrainGenerator _terrainGenerator = new TerrainGenerator();
         readonly Voxels.MeshGenerator.MeshGenerator _meshGenerator = new Voxels.MeshGenerator.MeshGenerator();
-		readonly Stopwatch _stopwatch = new Stopwatch();
-		
-        Scene _worldScene;
-		int _progressStep = 1;
+        readonly Stopwatch _stopwatch = new Stopwatch();
 
-		World()
-		{
-			TotalBlockNumberX = Settings.WorldSizeX * Constants.CHUNK_SIZE;
-			TotalBlockNumberY = Constants.WORLD_SIZE_Y * Constants.CHUNK_SIZE;
-			TotalBlockNumberZ = Settings.WorldSizeZ * Constants.CHUNK_SIZE;
-		}
+        Scene _worldScene;
+        int _progressStep = 1;
+
+        World()
+        {
+            TotalBlockNumberX = Settings.WorldSizeX * Constants.CHUNK_SIZE;
+            TotalBlockNumberY = Constants.WORLD_SIZE_Y * Constants.CHUNK_SIZE;
+            TotalBlockNumberZ = Settings.WorldSizeZ * Constants.CHUNK_SIZE;
+        }
 
         /// <summary>
 		/// Generates block types with hp and hp level.
@@ -68,7 +68,7 @@ namespace Voxels.GameLogic
             ProgressDescription = "Initialization...";
             Status = WorldGeneratorStatus.NotReady;
             GlobalVariables.Blocks = new BlockData[
-                Settings.WorldSizeX * Constants.CHUNK_SIZE, 
+                Settings.WorldSizeX * Constants.CHUNK_SIZE,
                 Constants.WORLD_SIZE_Y * Constants.CHUNK_SIZE, Settings.WorldSizeZ * Constants.CHUNK_SIZE];
 
             AlreadyGenerated += _progressStep;
@@ -99,7 +99,7 @@ namespace Voxels.GameLogic
                 AlreadyGenerated += _progressStep;
                 yield return null;
             }
-            else if(Settings.ComputingAcceleration == ComputingAcceleration.PureCSParallelisation)
+            else if (Settings.ComputingAcceleration == ComputingAcceleration.PureCSParallelisation)
             {
                 ProgressDescription = "Calculating block types...";
                 _terrainGenerator.CalculateBlockTypesParallel();
@@ -109,9 +109,9 @@ namespace Voxels.GameLogic
 
             // check one
             var invalidBlocks = new List<int4>();
-            for(int x = 0; x < TotalBlockNumberX; x++)
-                for(int y = 0; y < TotalBlockNumberY; y++)
-                    for(int z = 0; z < TotalBlockNumberZ; z++)
+            for (int x = 0; x < TotalBlockNumberX; x++)
+                for (int y = 0; y < TotalBlockNumberY; y++)
+                    for (int z = 0; z < TotalBlockNumberZ; z++)
                     {
                         int value = (int)GlobalVariables.Blocks[x, y, z].Type;
                         if (value > (int)BlockType.Grass)
@@ -125,7 +125,7 @@ namespace Voxels.GameLogic
                 {
                     int value = (int)GlobalVariables.Blocks[x, 0, z].Type;
                     if (value != (int)BlockType.Bedrock)
-                       levelOneNonBedRocks.Add(new int4(x, 0, z, value));
+                        levelOneNonBedRocks.Add(new int4(x, 0, z, value));
                 }
 
             if (Settings.IsWater)
@@ -152,7 +152,7 @@ namespace Voxels.GameLogic
                 for (int z = 0; z < Settings.WorldSizeZ; z++)
                     for (int y = 0; y < Constants.WORLD_SIZE_Y; y++)
                         GlobalVariables.Chunks[x, y, z] = new ChunkData(
-                            coord: new Vector3Int(x, y, z), 
+                            coord: new Vector3Int(x, y, z),
                             position: new Vector3Int(x * Constants.CHUNK_SIZE, y * Constants.CHUNK_SIZE, z * Constants.CHUNK_SIZE));
 
             ChunkObjects = new ChunkObject[Settings.WorldSizeX, Constants.WORLD_SIZE_Y, Settings.WorldSizeZ];
@@ -236,7 +236,7 @@ namespace Voxels.GameLogic
             AlreadyGenerated += _progressStep;
             yield return null; // give back control
 
-            if(firstRun)
+            if (firstRun)
             {
                 ProgressDescription = "Chunk data initialization...";
                 // chunkData need to be initialized earlier in order to allow main loop iterate over chunks before their meshes are ready
@@ -246,7 +246,7 @@ namespace Voxels.GameLogic
                     for (int z = 0; z < Settings.WorldSizeZ; z++)
                         for (int y = 0; y < Constants.WORLD_SIZE_Y; y++)
                             GlobalVariables.Chunks[x, y, z] = new ChunkData(
-                                new Vector3Int(x, y, z), 
+                                new Vector3Int(x, y, z),
                                 new Vector3Int(x * Constants.CHUNK_SIZE, y * Constants.CHUNK_SIZE, z * Constants.CHUNK_SIZE));
 
                 ChunkObjects = new ChunkObject[Settings.WorldSizeX, Constants.WORLD_SIZE_Y, Settings.WorldSizeZ];
@@ -308,10 +308,10 @@ namespace Voxels.GameLogic
         /// Returns true if the block has been destroyed.
         /// </summary>
         public bool BlockHit(int blockX, int blockY, int blockZ, ref ChunkData chunkData)
-		{
-			ref BlockData b = ref GlobalVariables.Blocks[blockX, blockY, blockZ];
+        {
+            ref BlockData b = ref GlobalVariables.Blocks[blockX, blockY, blockZ];
 
-            if(b.Type == BlockType.Air)
+            if (b.Type == BlockType.Air)
             {
                 UnityEngine.Debug.LogError("Block of type Air was hit which should have never happened. Probably wrong block coordinates calculation.");
                 return false;
@@ -328,39 +328,39 @@ namespace Voxels.GameLogic
             byte previousHpLevel = b.HealthLevel;
             b.HealthLevel = CalculateHealthLevel(b.Hp, LookupTables.BlockHealthMax[(int)b.Type]);
 
-			if (b.HealthLevel != previousHpLevel)
+            if (b.HealthLevel != previousHpLevel)
                 chunkData.Status = ChunkStatus.NeedToBeRedrawn;
 
             return false;
-		}
+        }
 
-		/// <summary>
-		/// Returns true if a new block has been built.
-		/// </summary>
-		public bool BuildBlock(int blockX, int blockY, int blockZ, BlockType type, ChunkData chunkData)
-		{
-			ref BlockData b = ref GlobalVariables.Blocks[blockX, blockY, blockZ];
+        /// <summary>
+        /// Returns true if a new block has been built.
+        /// </summary>
+        public bool BuildBlock(int blockX, int blockY, int blockZ, BlockType type, ChunkData chunkData)
+        {
+            ref BlockData b = ref GlobalVariables.Blocks[blockX, blockY, blockZ];
 
-			if (b.Type != BlockType.Air) return false;
+            if (b.Type != BlockType.Air) return false;
 
-			_meshGenerator.RecalculateFacesAfterBlockBuild(ref GlobalVariables.Blocks, blockX, blockY, blockZ);
+            _meshGenerator.RecalculateFacesAfterBlockBuild(ref GlobalVariables.Blocks, blockX, blockY, blockZ);
 
-			b.Type = type;
-			b.Hp = LookupTables.BlockHealthMax[(int)type];
-			b.HealthLevel = 0;
+            b.Type = type;
+            b.Hp = LookupTables.BlockHealthMax[(int)type];
+            b.HealthLevel = 0;
 
-			chunkData.Status = ChunkStatus.NeedToBeRecreated;
+            chunkData.Status = ChunkStatus.NeedToBeRecreated;
 
-			return true;
-		}
+            return true;
+        }
 
-		public void RedrawChunksIfNecessary()
-		{
-			for (int x = 0; x < Settings.WorldSizeX; x++)
-				for (int z = 0; z < Settings.WorldSizeZ; z++)
-					for (int y = 0; y < Constants.WORLD_SIZE_Y; y++)
-					{
-						ref ChunkData chunkData = ref GlobalVariables.Chunks[x, y, z];
+        public void RedrawChunksIfNecessary()
+        {
+            for (int x = 0; x < Settings.WorldSizeX; x++)
+                for (int z = 0; z < Settings.WorldSizeZ; z++)
+                    for (int y = 0; y < Constants.WORLD_SIZE_Y; y++)
+                    {
+                        ref ChunkData chunkData = ref GlobalVariables.Chunks[x, y, z];
 
                         if (chunkData.Status == ChunkStatus.NotReady)
                             continue;
@@ -374,34 +374,34 @@ namespace Voxels.GameLogic
                             _meshGenerator.CalculateMeshes(ref GlobalVariables.Blocks, chunkData.Position, out Mesh terrainMesh, out _);
                             SetTerrainMesh(ref chunkData, ref ChunkObjects[x, y, z], terrainMesh);
                         }
-					}
-		}
+                    }
+        }
 
-		void ResetProgressBarVariables()
-		{
-			// Unity editor remembers the state of the asset classes so these values have to reinitialized
-			_progressStep = 1;
-			AlreadyGenerated = 0;
+        void ResetProgressBarVariables()
+        {
+            // Unity editor remembers the state of the asset classes so these values have to reinitialized
+            _progressStep = 1;
+            AlreadyGenerated = 0;
 
-			MeshProgressSteps = Settings.WorldSizeX * Constants.WORLD_SIZE_Y * Settings.WorldSizeZ;
+            MeshProgressSteps = Settings.WorldSizeX * Constants.WORLD_SIZE_Y * Settings.WorldSizeZ;
 
-			while (TERRAIN_GENERATION_STEPS * _progressStep * 2f < MeshProgressSteps)
-				_progressStep++;
+            while (TERRAIN_GENERATION_STEPS * _progressStep * 2f < MeshProgressSteps)
+                _progressStep++;
 
-			TerrainProgressSteps = TERRAIN_GENERATION_STEPS * _progressStep;
-		}
+            TerrainProgressSteps = TERRAIN_GENERATION_STEPS * _progressStep;
+        }
 
-		byte CalculateHealthLevel(int hp, int maxHp)
-		{
-			float proportion = (float)hp / maxHp; // 0.625f
+        byte CalculateHealthLevel(int hp, int maxHp)
+        {
+            float proportion = (float)hp / maxHp; // 0.625f
 
-			// TODO: this requires information from MeshGenerator which breaks the encapsulation rule
-			float step = (float)1 / 11; // _crackUVs.Length; // 0.09f
-			float value = proportion / step; // 6.94f
-			int level = Mathf.RoundToInt(value); // 7
+            // TODO: this requires information from MeshGenerator which breaks the encapsulation rule
+            float step = (float)1 / 11; // _crackUVs.Length; // 0.09f
+            float value = proportion / step; // 6.94f
+            int level = Mathf.RoundToInt(value); // 7
 
-			return (byte)(11 - level); // array is in reverse order so we subtract our value from 11
-		}
+            return (byte)(11 - level); // array is in reverse order so we subtract our value from 11
+        }
 
         void DeflattenizeOutput(ref BlockType[] types)
         {
@@ -428,12 +428,12 @@ namespace Voxels.GameLogic
                     for (int y = 0; y <= column.TerrainLevel; y++)
                     {
                         BlockType type;
-                        
+
                         unsafe
                         {
                             type = (BlockType)column.Types[y];
                         }
-                        
+
                         ref BlockData b = ref GlobalVariables.Blocks[x, y, z];
                         b.Type = type;
                         b.Hp = LookupTables.BlockHealthMax[(int)type];
@@ -460,24 +460,24 @@ namespace Voxels.GameLogic
         /// Apply terrain mesh to the given chunk.
         /// </summary>
         void SetTerrainMesh(ref ChunkData chunkData, ref ChunkObject chunkObject, Mesh terrainMesh)
-		{
+        {
             var meshFilter = chunkObject.Terrain.GetComponent<MeshFilter>();
-			meshFilter.mesh = terrainMesh;
+            meshFilter.mesh = terrainMesh;
 
-			chunkData.Status = ChunkStatus.Ready;
-		}
+            chunkData.Status = ChunkStatus.Ready;
+        }
 
         /// <summary>
         /// Creates chunk objects together with all necessary components.
         /// After that's done apply mesh and mesh collider.
         /// </summary>
 		void CreateChunkGameObjects(ref ChunkData chunkData, ref ChunkObject chunkObject, Mesh terrainMesh, Mesh waterMesh)
-		{
-			string name = chunkData.Coord.x.ToString() + chunkData.Coord.y + chunkData.Coord.z;
-			chunkObject.Terrain = new GameObject(name + "_terrain");
-			chunkObject.Terrain.transform.position = chunkData.Position;
-			chunkObject.Water = new GameObject(name + "_water");
-			chunkObject.Water.transform.position = chunkData.Position;
+        {
+            string name = chunkData.Coord.x.ToString() + chunkData.Coord.y + chunkData.Coord.z;
+            chunkObject.Terrain = new GameObject(name + "_terrain");
+            chunkObject.Terrain.transform.position = chunkData.Position;
+            chunkObject.Water = new GameObject(name + "_water");
+            chunkObject.Water.transform.position = chunkData.Position;
 
             MeshRenderer mrT = chunkObject.Terrain.gameObject.AddComponent(typeof(MeshRenderer)) as MeshRenderer;
             mrT.material = _terrainTexture;
@@ -497,5 +497,5 @@ namespace Voxels.GameLogic
             chunkObject.Terrain.gameObject.layer = 10;
             chunkObject.Water.gameObject.layer = 4;
         }
-	}
+    }
 }
