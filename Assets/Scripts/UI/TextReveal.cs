@@ -4,20 +4,23 @@ using UnityEngine;
 
 namespace Voxels.UI
 {
+    [RequireComponent(typeof(TextMeshProUGUI))]
     public class TextReveal : MonoBehaviour
     {
-        public TextMeshProUGUI Message;
+        TextMeshProUGUI _message;
+
+        void Awake() => _message = GetComponent<TextMeshProUGUI>();
 
         public void HideMessage()
         {
-            Message.text = "";
-            Message.ForceMeshUpdate(true);
+            _message.text = "";
+            _message.ForceMeshUpdate(true);
         }
 
         public void ShowNewMessage(string text)
         {
-            Message.text = text;
-            Message.ForceMeshUpdate(true);
+            _message.text = text;
+            _message.ForceMeshUpdate(true);
             StopAllCoroutines();
             StartCoroutine("Reveal");
         }
@@ -25,17 +28,16 @@ namespace Voxels.UI
         /// <summary>
         /// Reveals the text and after 5 seconds clears it up
         /// </summary>
-        /// <returns></returns>
         IEnumerator Reveal()
         {
-            int totalVisibleCharacters = Message.textInfo.characterCount;
+            int totalVisibleCharacters = _message.textInfo.characterCount;
             int counter = 0;
 
             while(true)
             {
                 int visibleCount = counter % (totalVisibleCharacters + 1);
 
-                Message.maxVisibleCharacters = visibleCount;
+                _message.maxVisibleCharacters = visibleCount;
 
                 if(visibleCount >= totalVisibleCharacters)
                     break;
@@ -47,7 +49,7 @@ namespace Voxels.UI
 
             yield return new WaitForSeconds(5f);
 
-            Message.text = "";
+            _message.text = "";
         }
     }
 }
