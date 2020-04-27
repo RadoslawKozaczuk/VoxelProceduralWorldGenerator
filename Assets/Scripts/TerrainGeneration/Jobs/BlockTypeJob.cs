@@ -28,7 +28,7 @@ namespace Voxels.TerrainGeneration.Jobs
         public void Execute(int i)
         {
             Utils.IndexDeflattenizer3D(i, TotalBlockNumberX, TotalBlockNumberY, out int x, out int y, out int z);
-            Result[i] = TerrainGenerator.DetermineType(SeedValue, x, y, z, Heights[Utils.IndexFlattenizer2D(x, z, TotalBlockNumberX)]);
+            Result[i] = TerrainGenerationAbstractionLayer.DetermineType(x, y, z, Heights[Utils.IndexFlattenizer2D(x, z, TotalBlockNumberX)]);
         }
     }
 }
