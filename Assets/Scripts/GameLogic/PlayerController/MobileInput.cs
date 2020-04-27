@@ -4,14 +4,11 @@ namespace Voxels.GameLogic.PlayerController
 {
     internal class MobileInput : VirtualInput
     {
-        private void AddButton(string name) =>
-            // we have not registered this button yet so add it, happens in the constructor
-            CrossPlatformInputManager.RegisterVirtualButton(new CrossPlatformInputManager.VirtualButton(name));
+        // we have not registered this button yet so add it, happens in the constructor
+        void AddButton(string name) => CrossPlatformInputManager.RegisterVirtualButton(new CrossPlatformInputManager.VirtualButton(name));
 
-
-        private void AddAxes(string name) =>
-            // we have not registered this button yet so add it, happens in the constructor
-            CrossPlatformInputManager.RegisterVirtualAxis(new CrossPlatformInputManager.VirtualAxis(name));
+        // we have not registered this button yet so add it, happens in the constructor
+        void AddAxes(string name) => CrossPlatformInputManager.RegisterVirtualAxis(new CrossPlatformInputManager.VirtualAxis(name));
 
         internal override float GetAxis(string name, bool raw)
         {
@@ -25,7 +22,7 @@ namespace Voxels.GameLogic.PlayerController
         {
             if (!_virtualButtons.ContainsKey(name))
                 AddButton(name);
-            
+
             _virtualButtons[name].Pressed();
         }
 
@@ -33,7 +30,7 @@ namespace Voxels.GameLogic.PlayerController
         {
             if (!_virtualButtons.ContainsKey(name))
                 AddButton(name);
-            
+
             _virtualButtons[name].Released();
         }
 
@@ -41,7 +38,7 @@ namespace Voxels.GameLogic.PlayerController
         {
             if (!_virtualAxes.ContainsKey(name))
                 AddAxes(name);
-            
+
             _virtualAxes[name].Update(1f);
         }
 
@@ -53,12 +50,11 @@ namespace Voxels.GameLogic.PlayerController
             _virtualAxes[name].Update(-1f);
         }
 
-
         internal override void SetAxisZero(string name)
         {
             if (!_virtualAxes.ContainsKey(name))
                 AddAxes(name);
-            
+
             _virtualAxes[name].Update(0f);
         }
 
@@ -66,7 +62,7 @@ namespace Voxels.GameLogic.PlayerController
         {
             if (!_virtualAxes.ContainsKey(name))
                 AddAxes(name);
-            
+
             _virtualAxes[name].Update(value);
         }
 
@@ -82,9 +78,7 @@ namespace Voxels.GameLogic.PlayerController
         internal override bool GetButtonUp(string name)
         {
             if (_virtualButtons.ContainsKey(name))
-            {
                 return _virtualButtons[name].GetButtonUp;
-            }
 
             AddButton(name);
             return _virtualButtons[name].GetButtonUp;
@@ -93,14 +87,12 @@ namespace Voxels.GameLogic.PlayerController
         internal override bool GetButton(string name)
         {
             if (_virtualButtons.ContainsKey(name))
-            {
                 return _virtualButtons[name].GetButton;
-            }
 
             AddButton(name);
             return _virtualButtons[name].GetButton;
         }
 
-        internal override Vector3 MousePosition() => virtualMousePosition;
+        internal override Vector3 MousePosition() => VirtualMousePosition;
     }
 }

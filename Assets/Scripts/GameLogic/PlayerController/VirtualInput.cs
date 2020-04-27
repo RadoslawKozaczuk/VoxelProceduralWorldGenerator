@@ -5,19 +5,14 @@ namespace Voxels.GameLogic.PlayerController
 {
     internal abstract class VirtualInput
     {
-        internal Vector3 virtualMousePosition { get; private set; }
-        
-        protected Dictionary<string, CrossPlatformInputManager.VirtualAxis> _virtualAxes =
-            new Dictionary<string, CrossPlatformInputManager.VirtualAxis>();
-            // Dictionary to store the name relating to the virtual axes
-        protected Dictionary<string, CrossPlatformInputManager.VirtualButton> _virtualButtons =
-            new Dictionary<string, CrossPlatformInputManager.VirtualButton>();
-        protected List<string> m_AlwaysUseVirtual = new List<string>();
-        // list of the axis and button names that have been flagged to always use a virtual axis or button
+        internal Vector3 VirtualMousePosition { get; private set; }
 
-        internal bool AxisExists(string name) => _virtualAxes.ContainsKey(name);
-        
-        internal bool ButtonExists(string name) => _virtualButtons.ContainsKey(name);
+        protected Dictionary<string, CrossPlatformInputManager.VirtualAxis> _virtualAxes = new Dictionary<string, CrossPlatformInputManager.VirtualAxis>();
+        // Dictionary to store the name relating to the virtual axes
+        protected Dictionary<string, CrossPlatformInputManager.VirtualButton> _virtualButtons = new Dictionary<string, CrossPlatformInputManager.VirtualButton>();
+
+        protected List<string> _alwaysUseVirtual = new List<string>();
+        // list of the axis and button names that have been flagged to always use a virtual axis or button
 
         internal void RegisterVirtualAxis(CrossPlatformInputManager.VirtualAxis axis)
         {
@@ -33,9 +28,7 @@ namespace Voxels.GameLogic.PlayerController
 
                 // if we dont want to match with the input manager setting then revert to always using virtual
                 if (!axis.MatchWithInputManager)
-                {
-                    m_AlwaysUseVirtual.Add(axis.Name);
-                }
+                    _alwaysUseVirtual.Add(axis.Name);
             }
         }
 
@@ -53,59 +46,30 @@ namespace Voxels.GameLogic.PlayerController
 
                 // if we dont want to match to the input manager then always use a virtual axis
                 if (!button.MatchWithInputManager)
-                {
-                    m_AlwaysUseVirtual.Add(button.Name);
-                }
+                    _alwaysUseVirtual.Add(button.Name);
             }
         }
-
-        internal void UnRegisterVirtualAxis(string name)
-        {
-            // if we have an axis with that name then remove it from our dictionary of registered axes
-            if (_virtualAxes.ContainsKey(name))
-            {
-                _virtualAxes.Remove(name);
-            }
-        }
-
-        internal void UnRegisterVirtualButton(string name)
-        {
-            // if we have a button with this name then remove it from our dictionary of registered buttons
-            if (_virtualButtons.ContainsKey(name))
-            {
-                _virtualButtons.Remove(name);
-            }
-        }
-
-        // returns a reference to a named virtual axis if it exists otherwise null
-        internal CrossPlatformInputManager.VirtualAxis VirtualAxisReference(string name) => _virtualAxes.ContainsKey(name) ? _virtualAxes[name] : null;
-
-        internal void SetVirtualMousePositionX(float f) => virtualMousePosition = new Vector3(f, virtualMousePosition.y, virtualMousePosition.z);
-
-        internal void SetVirtualMousePositionY(float f) => virtualMousePosition = new Vector3(virtualMousePosition.x, f, virtualMousePosition.z);
-
-        internal void SetVirtualMousePositionZ(float f) => virtualMousePosition = new Vector3(virtualMousePosition.x, virtualMousePosition.y, f);
 
         internal abstract float GetAxis(string name, bool raw);
-        
+
         internal abstract bool GetButton(string name);
-        
+
         internal abstract bool GetButtonDown(string name);
-        
+
         internal abstract bool GetButtonUp(string name);
 
         internal abstract void SetButtonDown(string name);
-        
+
         internal abstract void SetButtonUp(string name);
-        
+
         internal abstract void SetAxisPositive(string name);
-        
+
         internal abstract void SetAxisNegative(string name);
-        
+
         internal abstract void SetAxisZero(string name);
-        
+
         internal abstract void SetAxis(string name, float value);
-        
+
         internal abstract Vector3 MousePosition();
     }
 }

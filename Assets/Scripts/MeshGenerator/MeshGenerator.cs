@@ -1,9 +1,9 @@
-﻿using Voxels.Common;
-using Voxels.Common.DataModels;
-using Voxels.MeshGenerator.DataModels;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using UnityEngine;
+using Voxels.Common;
+using Voxels.Common.DataModels;
+using Voxels.MeshGenerator.DataModels;
 
 namespace Voxels.MeshGenerator
 {

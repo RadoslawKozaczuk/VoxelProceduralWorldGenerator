@@ -1,6 +1,5 @@
-﻿using Voxels.Common;
+﻿using UnityEngine;
 using Voxels.Common.DataModels;
-using UnityEngine;
 
 namespace Voxels.SaveLoad
 {

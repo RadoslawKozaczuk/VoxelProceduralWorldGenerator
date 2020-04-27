@@ -1,6 +1,6 @@
-﻿using Voxels.MeshGenerator.DataModels;
-using System.Runtime.CompilerServices;
+﻿using System.Runtime.CompilerServices;
 using UnityEngine;
+using Voxels.MeshGenerator.DataModels;
 
 namespace Voxels.MeshGenerator
 {

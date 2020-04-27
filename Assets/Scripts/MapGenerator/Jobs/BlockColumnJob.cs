@@ -1,7 +1,7 @@
-﻿using Unity.Collections;
+﻿using Unity.Burst;
+using Unity.Collections;
 using Unity.Jobs;
 using Unity.Mathematics;
-using Unity.Burst;
 using Voxels.Common;
 
 namespace Voxels.MapGenerator.Jobs
@@ -31,15 +31,15 @@ namespace Voxels.MapGenerator.Jobs
     struct BlockColumnJob : IJobParallelFor
     {
         [ReadOnly]
-        public int TotalBlockNumberX;
+        internal int TotalBlockNumberX;
         [ReadOnly]
-        public int TotalBlockNumberY;
+        internal int TotalBlockNumberY;
         [ReadOnly]
-        public int TotalBlockNumberZ;
+        internal int TotalBlockNumberZ;
         [ReadOnly]
-        public float SeedValue;
+        internal float SeedValue;
 
-        public NativeArray<BlockTypeColumn> Result;
+        internal NativeArray<BlockTypeColumn> Result;
 
         public void Execute(int i)
         {

@@ -1,15 +1,15 @@
-﻿using Voxels.Common;
-using Voxels.Common.DataModels;
-using Voxels.MapGenerator.Jobs;
-using System.Runtime.CompilerServices;
+﻿using System.Runtime.CompilerServices;
 using Unity.Collections;
 using Unity.Jobs;
 using Unity.Mathematics;
 using UnityEngine;
+using Voxels.Common;
+using Voxels.Common.DataModels;
+using Voxels.MapGenerator.Jobs;
 
 namespace Voxels.MapGenerator
 {
-    public class TerrainGenerator
+	public class TerrainGenerator
 	{
 		#region Constants
 		// caves should be more erratic so has to be a higher number

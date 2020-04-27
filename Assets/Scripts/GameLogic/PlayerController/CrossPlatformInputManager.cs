@@ -1,4 +1,3 @@
-using System;
 using UnityEngine;
 
 namespace Voxels.GameLogic.PlayerController
@@ -26,41 +25,9 @@ namespace Voxels.GameLogic.PlayerController
 #endif
 		}
 
-		internal static void SwitchActiveInputMethod(ActiveInputMethod activeInputMethod)
-		{
-			switch (activeInputMethod)
-			{
-				case ActiveInputMethod.Hardware:
-					activeInput = s_HardwareInput;
-					break;
-
-				case ActiveInputMethod.Touch:
-					activeInput = s_TouchInput;
-					break;
-			}
-		}
-
-		internal static bool AxisExists(string name) => activeInput.AxisExists(name);
-
-		internal static bool ButtonExists(string name) => activeInput.ButtonExists(name);
-
 		internal static void RegisterVirtualAxis(VirtualAxis axis) => activeInput.RegisterVirtualAxis(axis);
 
 		internal static void RegisterVirtualButton(VirtualButton button) => activeInput.RegisterVirtualButton(button);
-
-		internal static void UnRegisterVirtualAxis(string name)
-		{
-			if (name == null)
-			{
-				throw new ArgumentNullException("name");
-			}
-			activeInput.UnRegisterVirtualAxis(name);
-		}
-
-		internal static void UnRegisterVirtualButton(string name) => activeInput.UnRegisterVirtualButton(name);
-
-		// returns a reference to a named virtual axis if it exists otherwise null
-		internal static VirtualAxis VirtualAxisReference(string name) => activeInput.VirtualAxisReference(name);
 
 		// returns the platform appropriate axis for the given name
 		public static float GetAxis(string name) => GetAxis(name, false);
