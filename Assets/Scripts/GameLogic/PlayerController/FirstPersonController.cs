@@ -9,6 +9,7 @@ namespace Voxels.GameLogic.PlayerController
 	{
 		public MouseLook MouseLook;
 
+#pragma warning disable CS0649 // suppress "Field is never assigned to, and will always have its default value null"
 		[Range(0f, 1f)]
 		[SerializeField] float _runstepLenghten;
 		[SerializeField] bool _isWalking;
@@ -27,6 +28,7 @@ namespace Voxels.GameLogic.PlayerController
 		[SerializeField] AudioClip[] _footstepSounds;    // an array of footstep sounds that will be randomly selected from.
 		[SerializeField] AudioClip _jumpSound;           // the sound played when character leaves the ground.
 		[SerializeField] AudioClip _landSound;           // the sound played when character touches back on ground.
+#pragma warning restore CS0649
 
 		Camera _camera;
 		bool _jump;

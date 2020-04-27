@@ -10,17 +10,20 @@ namespace Voxels.MapGenerator.Jobs
 	struct BlockTypeJob : IJobParallelFor
 	{
 		[ReadOnly]
-		public int TotalBlockNumberX;
+		internal int TotalBlockNumberX;
 		[ReadOnly]
-		public int TotalBlockNumberY;
+		internal int TotalBlockNumberY;
 		[ReadOnly]
-		public int TotalBlockNumberZ;
+		internal int TotalBlockNumberZ;
 		[ReadOnly]
-		public NativeArray<int3> Heights;
-		[ReadOnly]
-		public float SeedValue;
+		internal NativeArray<int3> Heights;
 
-		public NativeArray<BlockType> Result;
+#pragma warning disable CS0649 // suppress "Field is never assigned to, and will always have its default value null"
+		[ReadOnly]
+		internal float SeedValue;
+#pragma warning restore CS0649
+
+		internal NativeArray<BlockType> Result;
 
 		public void Execute(int i)
 		{

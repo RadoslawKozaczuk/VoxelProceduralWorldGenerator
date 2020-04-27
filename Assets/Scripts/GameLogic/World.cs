@@ -10,6 +10,8 @@ using Voxels.Common;
 using Voxels.Common.DataModels;
 using Voxels.MapGenerator;
 using Voxels.SaveLoad;
+using Voxels.GameLogic.DataModels;
+using static Voxels.GameLogic.Enums;
 
 namespace Voxels.GameLogic
 {
@@ -22,16 +24,19 @@ namespace Voxels.GameLogic
 
 		public readonly int TotalBlockNumberX, TotalBlockNumberY, TotalBlockNumberZ;
 
-		public ChunkObject[,,] ChunkObjects;
 		public Vector3 PlayerLoadedRotation, PlayerLoadedPosition;
-        public WorldGeneratorStatus Status;
         public float TerrainProgressSteps;
         public float MeshProgressSteps;
         public float AlreadyGenerated;
 		public string ProgressDescription;
 
+        internal WorldGeneratorStatus Status;
+        internal ChunkObject[,,] ChunkObjects;
+
+#pragma warning disable CS0649 // suppress "Field is never assigned to, and will always have its default value null"
         [SerializeField] Material _terrainTexture;
         [SerializeField] Material _waterTexture;
+#pragma warning restore CS0649
 
         readonly TerrainGenerator _terrainGenerator = new TerrainGenerator();
         readonly Voxels.MeshGenerator.MeshGenerator _meshGenerator = new Voxels.MeshGenerator.MeshGenerator();

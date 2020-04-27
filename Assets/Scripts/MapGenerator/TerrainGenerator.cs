@@ -55,9 +55,11 @@ namespace Voxels.MapGenerator
 		public int WaterLevel; // inclusive
 		public float SeedValue;
 
-		int _worldSizeX, _worldSizeZ, _totalBlockNumberX, _totalBlockNumberY, _totalBlockNumberZ;
+#pragma warning disable CS0649 // suppress "Field is never assigned to, and will always have its default value null"
+		[SerializeField] ComputeShader _heightsShader;
+#pragma warning restore CS0649
 
-        [SerializeField] ComputeShader _heightsShader;
+		int _worldSizeX, _worldSizeZ, _totalBlockNumberX, _totalBlockNumberY, _totalBlockNumberZ;
 
         public void Initialize(GameSettings options)
 		{

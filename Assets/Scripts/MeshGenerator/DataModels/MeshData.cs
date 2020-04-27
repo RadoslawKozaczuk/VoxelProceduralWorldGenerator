@@ -3,15 +3,15 @@ using UnityEngine;
 
 namespace Voxels.MeshGenerator.DataModels
 {
-	public readonly struct MeshData
+	readonly struct MeshData
 	{
-		public readonly Vector2[] Uvs;
-		public readonly List<Vector2> Suvs;
-		public readonly Vector3[] Verticies;
-		public readonly Vector3[] Normals;
-		public readonly int[] Triangles;
+		internal readonly Vector2[] Uvs;
+		internal readonly List<Vector2> Suvs;
+		internal readonly Vector3[] Verticies;
+		internal readonly Vector3[] Normals;
+		internal readonly int[] Triangles;
 
-		public MeshData(Vector2[] uvs, List<Vector2> suvs, Vector3[] verticies, Vector3[] normals, int[] triangles)
+		internal MeshData(Vector2[] uvs, List<Vector2> suvs, Vector3[] verticies, Vector3[] normals, int[] triangles)
 		{
 			Uvs = uvs;
 			Suvs = suvs;

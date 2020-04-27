@@ -19,6 +19,4 @@ namespace Voxels.Common
     public enum TreeProbability { None = 0, Some = 1, Lots = 2 }
 
     public enum ComputingAcceleration { UnityJobSystem, PureCSParallelisation }
-
-    public enum WorldGeneratorStatus { NotReady, TerrainReady, FacesReady, AllReady }
 }

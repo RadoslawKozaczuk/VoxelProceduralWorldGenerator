@@ -7,15 +7,16 @@ using Voxels.GameLogic.PlayerController;
 using Voxels.MapGenerator;
 using Voxels.SaveLoad;
 using Voxels.UI;
+using static Voxels.GameLogic.Enums;
 
 namespace Voxels.GameLogic
 {
-
 	public class Game : MonoBehaviour
 	{
 		// start variables
 		public static bool StartFromLoadGame; // true - game started from load game, false - game started from new game
 
+#pragma warning disable CS0649 // suppress "Field is never assigned to, and will always have its default value null"
 		[SerializeField] Text _controlsLabel;
 		[SerializeField] Slider _progressBar;
 		[SerializeField] Text _progressText;
@@ -25,10 +26,11 @@ namespace Voxels.GameLogic
 		[SerializeField] World _world;
 		[SerializeField] GameObject _player;
 		[SerializeField] Camera _mainCamera;
+		[SerializeField] TextReveal _topMessage;
 		[SerializeField] KeyCode _saveKey = KeyCode.K;
 		[SerializeField] KeyCode _loadKey = KeyCode.L;
 		[SerializeField] Vector3 _playerStartPosition;
-		[SerializeField] TextReveal _topMessage;
+#pragma warning restore CS0649
 
 		void Start()
 		{

@@ -12,6 +12,7 @@ namespace GameLogic
 {
 	public class LevelLoader : MonoBehaviour
 	{
+#pragma warning disable CS0649 // suppress "Field is never assigned to, and will always have its default value null"
 		[SerializeField] GameObject _progressBar;
 		[SerializeField] Slider _slider;
 		[SerializeField] Text _progressText;
@@ -23,6 +24,7 @@ namespace GameLogic
 		[SerializeField] TextMeshProUGUI _waterLevelText;
 		[SerializeField] Slider _waterSlider;
 		[SerializeField] RectTransform _footer;
+#pragma warning restore CS0649
 
 		GameSettings _settings = new GameSettings()
 		{

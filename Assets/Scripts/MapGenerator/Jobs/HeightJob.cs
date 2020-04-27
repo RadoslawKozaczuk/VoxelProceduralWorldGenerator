@@ -10,11 +10,11 @@ namespace Voxels.MapGenerator.Jobs
 	struct HeightJob : IJobParallelFor
 	{
 		[ReadOnly]
-		public int TotalBlockNumberX;
+		internal int TotalBlockNumberX;
 		[ReadOnly]
-		public float SeedValue;
+		internal float SeedValue;
 
-		public NativeArray<int3> Result;
+		internal NativeArray<int3> Result;
 
 		public void Execute(int i)
 		{

@@ -7,9 +7,11 @@ namespace Voxels.GameLogic
 	{
 		const float AttackRange = 3.0f;
 
+#pragma warning disable CS0649 // suppress "Field is never assigned to, and will always have its default value null"
 		[SerializeField] Game _game;
 		[SerializeField] AudioClip _stonehitSound;
 		[SerializeField] Camera _weaponCamera;
+#pragma warning restore CS0649
 
 		AudioSource _audioSource;
 		BlockType _buildBlockType = BlockType.Stone;
