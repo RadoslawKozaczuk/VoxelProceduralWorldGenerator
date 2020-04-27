@@ -1,10 +1,8 @@
-using System;
 using UnityEngine;
-using UnityStandardAssets.CrossPlatformInput;
-using UnityStandardAssets.Utility;
+using Voxels.GameLogic.PlayerController;
 using Random = UnityEngine.Random;
 
-namespace UnityStandardAssets.Characters.FirstPerson
+namespace Voxels.GameLogic
 {
     [RequireComponent(typeof (CharacterController))]
     [RequireComponent(typeof (AudioSource))]

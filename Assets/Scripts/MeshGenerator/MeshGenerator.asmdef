@@ -1,0 +1,14 @@
+{
+    "name": "MeshGenerator",
+    "references": [
+        "GUID:f40cfcf4aedefb44ea3c082413dc53c7"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": []
+}

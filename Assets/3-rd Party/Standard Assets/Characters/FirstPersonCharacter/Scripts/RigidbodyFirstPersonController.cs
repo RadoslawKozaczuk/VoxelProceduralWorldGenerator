@@ -1,8 +1,8 @@
 using System;
 using UnityEngine;
-using UnityStandardAssets.CrossPlatformInput;
+using Voxels.GameLogic.PlayerController;
 
-namespace UnityStandardAssets.Characters.FirstPerson
+namespace Voxels.GameLogic
 {
     [RequireComponent(typeof (Rigidbody))]
     [RequireComponent(typeof (CapsuleCollider))]

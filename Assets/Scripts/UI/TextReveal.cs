@@ -2,9 +2,9 @@
 using TMPro;
 using UnityEngine;
 
-namespace Assets.Scripts
+namespace Voxels.UI
 {
-    class TextReveal : MonoBehaviour
+    public class TextReveal : MonoBehaviour
     {
         public TextMeshProUGUI Message;
 

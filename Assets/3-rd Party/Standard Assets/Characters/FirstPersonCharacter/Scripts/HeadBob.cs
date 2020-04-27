@@ -1,8 +1,7 @@
-using System;
 using UnityEngine;
-using UnityStandardAssets.Utility;
+using Voxels.GameLogic.PlayerController;
 
-namespace UnityStandardAssets.Characters.FirstPerson
+namespace Voxels.GameLogic
 {
     public class HeadBob : MonoBehaviour
     {
