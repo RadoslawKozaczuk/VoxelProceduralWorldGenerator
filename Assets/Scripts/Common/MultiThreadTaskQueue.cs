@@ -79,7 +79,7 @@ namespace Voxels.Common
         {
             // assertion
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
-            if(_isRunning)
+            if (_isRunning)
                 throw new System.Exception("RunAllInParallel method should not be called when MultiThreadTaskQueue is running.");
 #endif
 
@@ -87,7 +87,7 @@ namespace Voxels.Common
 
             int taskArraySize = Math.Min(_logicalProcessorCount, _pendingTasks.Count);
             var ongoingTasks = new Task[taskArraySize];
-            
+
             // start the first batch of tasks
             for (_index = 0; _index < taskArraySize; _index++)
             {
