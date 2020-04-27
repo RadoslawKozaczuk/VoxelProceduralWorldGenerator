@@ -64,6 +64,7 @@ namespace Assets.Scripts.World
         public void ScheduleTask<T>(Action<T> action, T arg)
             where T : struct
         {
+            // assertion
 #if UNITY_EDITOR || UNITY_DEVELOPMENT
             Assertions(action.Method, 1);
 #endif
@@ -77,16 +78,20 @@ namespace Assets.Scripts.World
 
         public void RunAllInParallel()
         {
+            // assertion
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            if(_isRunning)
+                throw new System.Exception("RunAllInParallel method should not be called when MultiThreadTaskQueue is running.");
+#endif
+
             _isRunning = true;
 
-            var ongoingTasks = new Task[_logicalProcessorCount];
+            int taskArraySize = Math.Min(_logicalProcessorCount, _pendingTasks.Count);
+            var ongoingTasks = new Task[taskArraySize];
             
-            // start first 8 (or any processors the target machine has)
-            for (_index = 0; _index < _logicalProcessorCount; _index++)
+            // start the first batch of tasks
+            for (_index = 0; _index < taskArraySize; _index++)
             {
-                if (_index == _pendingTasks.Count - 1) // less than <logicalProcessorCount> was scheduled
-                    break;
-
                 ongoingTasks[_index] = _pendingTasks[_index];
                 ongoingTasks[_index].Start();
             }
@@ -98,10 +103,10 @@ namespace Assets.Scripts.World
                 // in rare cases first 8 scheduled tasks may run completed before we reach Task.WaitAny line
                 int completedId = Task.WaitAny(ongoingTasks);
 
-                if (_index == _pendingTasks.Count - 1)
+                if (_index == _pendingTasks.Count)
                     break;
 
-                ongoingTasks[completedId] = _pendingTasks[++_index];
+                ongoingTasks[completedId] = _pendingTasks[_index++];
                 ongoingTasks[completedId].Start();
             }
             while (true);

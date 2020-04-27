@@ -46,6 +46,7 @@ public class Game : MonoBehaviour
                 _player.SetActive(true);
                 _crosshair.enabled = true;
                 _topMessage.ShowNewMessage("Game Loaded Successfully");
+				_mainCamera.gameObject.SetActive(false);
             }));
         }
         else
@@ -57,7 +58,8 @@ public class Game : MonoBehaviour
                 _player.SetActive(true);
                 _crosshair.enabled = true;
                 _topMessage.ShowNewMessage("New World Created Successfully");
-            }));
+				_mainCamera.gameObject.SetActive(false);
+			}));
         }
     }
 
