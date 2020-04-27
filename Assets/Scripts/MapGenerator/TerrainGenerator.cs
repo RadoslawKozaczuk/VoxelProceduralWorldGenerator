@@ -61,16 +61,16 @@ namespace Voxels.MapGenerator
 
         int _worldSizeX, _worldSizeZ, _totalBlockNumberX, _totalBlockNumberY, _totalBlockNumberZ;
 
-        public void Initialize(GameSettings options)
+        public void Initialize()
         {
-            _worldSizeX = options.WorldSizeX;
-            _worldSizeZ = options.WorldSizeZ;
+            _worldSizeX = GlobalVariables.Settings.WorldSizeX;
+            _worldSizeZ = GlobalVariables.Settings.WorldSizeZ;
             _totalBlockNumberX = _worldSizeX * Constants.CHUNK_SIZE;
             _totalBlockNumberY = Constants.WORLD_SIZE_Y * Constants.CHUNK_SIZE;
             _totalBlockNumberZ = _worldSizeZ * Constants.CHUNK_SIZE;
 
-            WaterLevel = options.WaterLevel;
-            SeedValue = options.SeedValue;
+            WaterLevel = GlobalVariables.Settings.WaterLevel;
+            SeedValue = GlobalVariables.Settings.SeedValue;
         }
 
         public static int GenerateBedrockHeight(float SeedValue, float x, float z) =>

@@ -20,8 +20,6 @@ namespace Voxels.GameLogic
     {
         const int TERRAIN_GENERATION_STEPS = 9;
 
-        public static GameSettings Settings;
-
         public readonly int TotalBlockNumberX, TotalBlockNumberY, TotalBlockNumberZ;
 
         public Vector3 PlayerLoadedRotation, PlayerLoadedPosition;
@@ -47,9 +45,9 @@ namespace Voxels.GameLogic
 
         World()
         {
-            TotalBlockNumberX = Settings.WorldSizeX * Constants.CHUNK_SIZE;
+            TotalBlockNumberX = GlobalVariables.Settings.WorldSizeX * Constants.CHUNK_SIZE;
             TotalBlockNumberY = Constants.WORLD_SIZE_Y * Constants.CHUNK_SIZE;
-            TotalBlockNumberZ = Settings.WorldSizeZ * Constants.CHUNK_SIZE;
+            TotalBlockNumberZ = GlobalVariables.Settings.WorldSizeZ * Constants.CHUNK_SIZE;
         }
 
         /// <summary>
@@ -59,8 +57,8 @@ namespace Voxels.GameLogic
 		/// </summary>
 		public IEnumerator CreateWorld(bool firstRun, Action callback)
         {
-            _terrainGenerator.Initialize(Settings);
-            _meshGenerator.Initialize(Settings);
+            _terrainGenerator.Initialize();
+            _meshGenerator.Initialize();
 
             _stopwatch.Restart();
             ResetProgressBarVariables();
@@ -68,13 +66,13 @@ namespace Voxels.GameLogic
             ProgressDescription = "Initialization...";
             Status = WorldGeneratorStatus.NotReady;
             GlobalVariables.Blocks = new BlockData[
-                Settings.WorldSizeX * Constants.CHUNK_SIZE,
-                Constants.WORLD_SIZE_Y * Constants.CHUNK_SIZE, Settings.WorldSizeZ * Constants.CHUNK_SIZE];
+                GlobalVariables.Settings.WorldSizeX * Constants.CHUNK_SIZE,
+                Constants.WORLD_SIZE_Y * Constants.CHUNK_SIZE, GlobalVariables.Settings.WorldSizeZ * Constants.CHUNK_SIZE];
 
             AlreadyGenerated += _progressStep;
             yield return null;
 
-            if (Settings.ComputingAcceleration == ComputingAcceleration.UnityJobSystem)
+            if (GlobalVariables.Settings.ComputingAcceleration == ComputingAcceleration.UnityJobSystem)
             {
                 ProgressDescription = "Calculating heights...";
                 var heights = _terrainGenerator.CalculateHeightsJobSystem();
@@ -99,7 +97,7 @@ namespace Voxels.GameLogic
                 AlreadyGenerated += _progressStep;
                 yield return null;
             }
-            else if (Settings.ComputingAcceleration == ComputingAcceleration.PureCSParallelisation)
+            else if (GlobalVariables.Settings.ComputingAcceleration == ComputingAcceleration.PureCSParallelisation)
             {
                 ProgressDescription = "Calculating block types...";
                 _terrainGenerator.CalculateBlockTypesParallel();
@@ -128,7 +126,7 @@ namespace Voxels.GameLogic
                         levelOneNonBedRocks.Add(new int4(x, 0, z, value));
                 }
 
-            if (Settings.IsWater)
+            if (GlobalVariables.Settings.IsWater)
             {
                 ProgressDescription = "Generating water...";
                 _terrainGenerator.AddWater(ref GlobalVariables.Blocks);
@@ -137,7 +135,7 @@ namespace Voxels.GameLogic
             yield return null;
 
             ProgressDescription = "Generating trees...";
-            _terrainGenerator.AddTreesParallel(Settings.TreeProbability);
+            _terrainGenerator.AddTreesParallel(GlobalVariables.Settings.TreeProbability);
             AlreadyGenerated += _progressStep;
             yield return null;
 
@@ -147,35 +145,35 @@ namespace Voxels.GameLogic
 
             // chunkData need to be initialized earlier in order to allow main loop iterate over chunks before their meshes are ready
             // thanks to this we can display chunk as soon as they become ready 
-            GlobalVariables.Chunks = new ChunkData[Settings.WorldSizeX, Constants.WORLD_SIZE_Y, Settings.WorldSizeZ];
-            for (int x = 0; x < Settings.WorldSizeX; x++)
-                for (int z = 0; z < Settings.WorldSizeZ; z++)
+            GlobalVariables.Chunks = new ChunkData[GlobalVariables.Settings.WorldSizeX, Constants.WORLD_SIZE_Y, GlobalVariables.Settings.WorldSizeZ];
+            for (int x = 0; x < GlobalVariables.Settings.WorldSizeX; x++)
+                for (int z = 0; z < GlobalVariables.Settings.WorldSizeZ; z++)
                     for (int y = 0; y < Constants.WORLD_SIZE_Y; y++)
                         GlobalVariables.Chunks[x, y, z] = new ChunkData(
                             coord: new Vector3Int(x, y, z),
                             position: new Vector3Int(x * Constants.CHUNK_SIZE, y * Constants.CHUNK_SIZE, z * Constants.CHUNK_SIZE));
 
-            ChunkObjects = new ChunkObject[Settings.WorldSizeX, Constants.WORLD_SIZE_Y, Settings.WorldSizeZ];
+            ChunkObjects = new ChunkObject[GlobalVariables.Settings.WorldSizeX, Constants.WORLD_SIZE_Y, GlobalVariables.Settings.WorldSizeZ];
             yield return null;
 
             ProgressDescription = "Calculating faces...";
-            _meshGenerator.CalculateFaces(ref GlobalVariables.Blocks);
+            _meshGenerator.CalculateFaces();
             AlreadyGenerated += _progressStep;
             yield return null;
 
             ProgressDescription = "World boundaries check...";
-            _meshGenerator.WorldBoundariesCheck(ref GlobalVariables.Blocks);
+            _meshGenerator.WorldBoundariesCheck();
             AlreadyGenerated += _progressStep;
             yield return null;
 
             ProgressDescription = "Creating chunks...";
             // create chunk objects one by one 
-            for (int x = 0; x < Settings.WorldSizeX; x++)
-                for (int z = 0; z < Settings.WorldSizeZ; z++)
+            for (int x = 0; x < GlobalVariables.Settings.WorldSizeX; x++)
+                for (int z = 0; z < GlobalVariables.Settings.WorldSizeZ; z++)
                     for (int y = 0; y < Constants.WORLD_SIZE_Y; y++)
                     {
                         ChunkData chunkData = GlobalVariables.Chunks[x, y, z];
-                        _meshGenerator.CalculateMeshes(ref GlobalVariables.Blocks, chunkData.Position, out Mesh terrainMesh, out Mesh waterMesh);
+                        _meshGenerator.CalculateMeshes(chunkData.Position, out Mesh terrainMesh, out Mesh waterMesh);
 
                         if (firstRun)
                         {
@@ -213,17 +211,15 @@ namespace Voxels.GameLogic
 		/// </summary>
 		public IEnumerator LoadWorld(bool firstRun, Action callback)
         {
+            _terrainGenerator.Initialize();
+            _meshGenerator.Initialize();
+
             ResetProgressBarVariables();
             _stopwatch.Restart();
 
             ProgressDescription = "Loading data...";
             Status = WorldGeneratorStatus.NotReady;
-            var storage = new PersistentStorage(Constants.CHUNK_SIZE);
-            SaveGameData save = storage.LoadGame();
-            Settings.WorldSizeX = save.WorldSizeX;
-            Settings.WorldSizeZ = save.WorldSizeZ;
-            PlayerLoadedPosition = save.PlayerPosition;
-            PlayerLoadedRotation = save.PlayerRotation;
+            SaveLoadController.LoadGame(out PlayerLoadedPosition, out PlayerLoadedRotation);
             AlreadyGenerated += _progressStep;
             yield return null; // give back control
 
@@ -231,7 +227,7 @@ namespace Voxels.GameLogic
             if (firstRun)
                 _worldScene = SceneManager.CreateScene(name);
 
-            GlobalVariables.Blocks = save.Blocks;
+            //GlobalVariables.Blocks = save.Blocks;
             Status = WorldGeneratorStatus.TerrainReady;
             AlreadyGenerated += _progressStep;
             yield return null; // give back control
@@ -241,38 +237,38 @@ namespace Voxels.GameLogic
                 ProgressDescription = "Chunk data initialization...";
                 // chunkData need to be initialized earlier in order to allow main loop iterate over chunks before their meshes are ready
                 // thanks to this we can display chunk as soon as they become ready 
-                GlobalVariables.Chunks = new ChunkData[Settings.WorldSizeX, Constants.WORLD_SIZE_Y, Settings.WorldSizeZ];
-                for (int x = 0; x < Settings.WorldSizeX; x++)
-                    for (int z = 0; z < Settings.WorldSizeZ; z++)
+                GlobalVariables.Chunks = new ChunkData[GlobalVariables.Settings.WorldSizeX, Constants.WORLD_SIZE_Y, GlobalVariables.Settings.WorldSizeZ];
+                for (int x = 0; x < GlobalVariables.Settings.WorldSizeX; x++)
+                    for (int z = 0; z < GlobalVariables.Settings.WorldSizeZ; z++)
                         for (int y = 0; y < Constants.WORLD_SIZE_Y; y++)
                             GlobalVariables.Chunks[x, y, z] = new ChunkData(
                                 new Vector3Int(x, y, z),
                                 new Vector3Int(x * Constants.CHUNK_SIZE, y * Constants.CHUNK_SIZE, z * Constants.CHUNK_SIZE));
 
-                ChunkObjects = new ChunkObject[Settings.WorldSizeX, Constants.WORLD_SIZE_Y, Settings.WorldSizeZ];
+                ChunkObjects = new ChunkObject[GlobalVariables.Settings.WorldSizeX, Constants.WORLD_SIZE_Y, GlobalVariables.Settings.WorldSizeZ];
                 AlreadyGenerated += _progressStep;
                 yield return null; // give back control
             }
 
             ProgressDescription = "Calculating faces...";
-            _meshGenerator.CalculateFaces(ref GlobalVariables.Blocks);
+            _meshGenerator.CalculateFaces();
             AlreadyGenerated += _progressStep;
             yield return null; // give back control
 
             ProgressDescription = "World boundaries check...";
-            _meshGenerator.WorldBoundariesCheck(ref GlobalVariables.Blocks);
+            _meshGenerator.WorldBoundariesCheck();
             Status = WorldGeneratorStatus.FacesReady;
             AlreadyGenerated += _progressStep;
             yield return null; // give back control
 
             ProgressDescription = "Creating chunks...";
             // create chunk objects one by one 
-            for (int x = 0; x < Settings.WorldSizeX; x++)
-                for (int z = 0; z < Settings.WorldSizeZ; z++)
+            for (int x = 0; x < GlobalVariables.Settings.WorldSizeX; x++)
+                for (int z = 0; z < GlobalVariables.Settings.WorldSizeZ; z++)
                     for (int y = 0; y < Constants.WORLD_SIZE_Y; y++)
                     {
                         ChunkData chunkData = GlobalVariables.Chunks[x, y, z];
-                        _meshGenerator.CalculateMeshes(ref GlobalVariables.Blocks, chunkData.Position, out Mesh terrainMesh, out Mesh waterMesh);
+                        _meshGenerator.CalculateMeshes(chunkData.Position, out Mesh terrainMesh, out Mesh waterMesh);
 
                         if (firstRun)
                         {
@@ -356,8 +352,8 @@ namespace Voxels.GameLogic
 
         public void RedrawChunksIfNecessary()
         {
-            for (int x = 0; x < Settings.WorldSizeX; x++)
-                for (int z = 0; z < Settings.WorldSizeZ; z++)
+            for (int x = 0; x < GlobalVariables.Settings.WorldSizeX; x++)
+                for (int z = 0; z < GlobalVariables.Settings.WorldSizeZ; z++)
                     for (int y = 0; y < Constants.WORLD_SIZE_Y; y++)
                     {
                         ref ChunkData chunkData = ref GlobalVariables.Chunks[x, y, z];
@@ -366,12 +362,12 @@ namespace Voxels.GameLogic
                             continue;
                         else if (chunkData.Status == ChunkStatus.NeedToBeRecreated)
                         {
-                            _meshGenerator.CalculateMeshes(ref GlobalVariables.Blocks, chunkData.Position, out Mesh terrainMesh, out Mesh waterMesh);
+                            _meshGenerator.CalculateMeshes(chunkData.Position, out Mesh terrainMesh, out Mesh waterMesh);
                             SetMeshesAndCollider(ref chunkData, ref ChunkObjects[x, y, z], terrainMesh, waterMesh);
                         }
                         else if (chunkData.Status == ChunkStatus.NeedToBeRedrawn) // used only for cracks
                         {
-                            _meshGenerator.CalculateMeshes(ref GlobalVariables.Blocks, chunkData.Position, out Mesh terrainMesh, out _);
+                            _meshGenerator.CalculateMeshes(chunkData.Position, out Mesh terrainMesh, out _);
                             SetTerrainMesh(ref chunkData, ref ChunkObjects[x, y, z], terrainMesh);
                         }
                     }
@@ -383,7 +379,7 @@ namespace Voxels.GameLogic
             _progressStep = 1;
             AlreadyGenerated = 0;
 
-            MeshProgressSteps = Settings.WorldSizeX * Constants.WORLD_SIZE_Y * Settings.WorldSizeZ;
+            MeshProgressSteps = GlobalVariables.Settings.WorldSizeX * Constants.WORLD_SIZE_Y * GlobalVariables.Settings.WorldSizeZ;
 
             while (TERRAIN_GENERATION_STEPS * _progressStep * 2f < MeshProgressSteps)
                 _progressStep++;

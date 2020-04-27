@@ -121,7 +121,6 @@ namespace Voxels.GameLogic
             if (Input.GetKeyDown(_saveKey))
             {
                 _topMessage.HideMessage();
-                var storage = new PersistentStorage(Constants.CHUNK_SIZE);
                 var t = _player.transform;
 
                 var playerRotation = new Vector3(
@@ -129,7 +128,7 @@ namespace Voxels.GameLogic
                     t.rotation.eulerAngles.y,
                     0);
 
-                storage.SaveGame(t.position, playerRotation);
+                SaveLoadController.SaveGame(t.position, playerRotation);
                 _topMessage.ShowNewMessage("Game Saved Successfully");
                 Debug.Log("Game Saved");
             }
@@ -168,7 +167,7 @@ namespace Voxels.GameLogic
         void CheckNeighboringChunks(int blockX, int blockY, int blockZ, int chunkX, int chunkY, int chunkZ)
         {
             // right check
-            if (blockX == Constants.CHUNK_SIZE - 1 && chunkX + 1 < World.Settings.WorldSizeX)
+            if (blockX == Constants.CHUNK_SIZE - 1 && chunkX + 1 < GlobalVariables.Settings.WorldSizeX)
                 GlobalVariables.Chunks[chunkX + 1, chunkY, chunkZ].Status = ChunkStatus.NeedToBeRecreated;
 
             // left check
@@ -184,7 +183,7 @@ namespace Voxels.GameLogic
                 GlobalVariables.Chunks[chunkX, chunkY - 1, chunkZ].Status = ChunkStatus.NeedToBeRecreated;
 
             // front check
-            if (blockZ == Constants.CHUNK_SIZE - 1 && chunkZ + 1 < World.Settings.WorldSizeZ)
+            if (blockZ == Constants.CHUNK_SIZE - 1 && chunkZ + 1 < GlobalVariables.Settings.WorldSizeZ)
                 GlobalVariables.Chunks[chunkX, chunkY, chunkZ + 1].Status = ChunkStatus.NeedToBeRecreated;
 
             // back check
@@ -196,8 +195,8 @@ namespace Voxels.GameLogic
         {
             var playerPos = position ?? _playerStartPosition;
             var maxY = Math.Max(
-                TerrainGenerator.GenerateDirtHeight(World.Settings.SeedValue, playerPos.x, playerPos.z),
-                TerrainGenerator.GenerateStoneHeight(World.Settings.SeedValue, playerPos.x, playerPos.z));
+                TerrainGenerator.GenerateDirtHeight(GlobalVariables.Settings.SeedValue, playerPos.x, playerPos.z),
+                TerrainGenerator.GenerateStoneHeight(GlobalVariables.Settings.SeedValue, playerPos.x, playerPos.z));
 
             _player.transform.position = new Vector3(playerPos.x, maxY + 2, playerPos.z);
 

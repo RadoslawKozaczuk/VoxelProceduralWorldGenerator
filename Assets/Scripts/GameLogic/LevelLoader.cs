@@ -118,18 +118,18 @@ namespace GameLogic
                 * Constants.CHUNK_SIZE * Constants.CHUNK_SIZE * Constants.CHUNK_SIZE;
             int numberOfCubesInChunk = Constants.CHUNK_SIZE * Constants.CHUNK_SIZE * Constants.CHUNK_SIZE;
 
-            var nfi = (NumberFormatInfo)CultureInfo.InvariantCulture.NumberFormat.Clone();
-            nfi.NumberGroupSeparator = " ";
+            var numberFormatInfo = (NumberFormatInfo)CultureInfo.InvariantCulture.NumberFormat.Clone();
+            numberFormatInfo.NumberGroupSeparator = " ";
 
             _worldSizeDescription.text = $@"World's size is measured in chunks. 
 Height is always equal to 4.
-Each chunk is made of {Constants.CHUNK_SIZE}^3 = { numberOfCubesInChunk.ToString("#,0", nfi) } cubes.
-Total number of cubes is: <b>{ totalNumberOfCubes.ToString("#,0", nfi) }</b>";
+Each chunk is made of {Constants.CHUNK_SIZE}^3 = { numberOfCubesInChunk.ToString("#,0", numberFormatInfo) } cubes.
+Total number of cubes is: <b>{ totalNumberOfCubes.ToString("#,0", numberFormatInfo) }</b>";
         }
 
         IEnumerator LoadLevelAsync(int sceneIndex)
         {
-            World.Settings = _settings;
+            GlobalVariables.Settings = _settings;
             _footer.gameObject.SetActive(true);
             _progressBar.SetActive(true);
             _description.text = "Level loading...";

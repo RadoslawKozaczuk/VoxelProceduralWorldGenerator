@@ -81,10 +81,10 @@ namespace Voxels.MeshGenerator
                 }
         }
 
-        public void Initialize(GameSettings options)
+        public void Initialize()
         {
-            _worldSizeX = options.WorldSizeX;
-            _worldSizeZ = options.WorldSizeZ;
+            _worldSizeX = GlobalVariables.Settings.WorldSizeX;
+            _worldSizeZ = GlobalVariables.Settings.WorldSizeZ;
             _totalBlockNumberX = _worldSizeX * Constants.CHUNK_SIZE;
             _totalBlockNumberZ = _worldSizeZ * Constants.CHUNK_SIZE;
         }
@@ -93,9 +93,11 @@ namespace Voxels.MeshGenerator
         /// This method creates mesh data necessary to create a mesh.
         /// Calculating two meshes at once is faster than creating them one by one.
         /// </summary>
-        public void CalculateMeshes(ref BlockData[,,] blocks, Vector3Int chunkPos, out Mesh terrain, out Mesh water)
+        public void CalculateMeshes(Vector3Int chunkPos, out Mesh terrain, out Mesh water)
         {
-            CalculateMeshesSize(ref blocks, chunkPos, out int tSize, out int wSize);
+            BlockData[,,] blocks = GlobalVariables.Blocks;
+
+            CalculateMeshesSize(chunkPos, out int tSize, out int wSize);
 
             var terrainData = new MeshData
             (
@@ -273,8 +275,10 @@ namespace Voxels.MeshGenerator
         /// <summary>
         /// Calculates inter block faces visibility.
         /// </summary>
-        public void CalculateFaces(ref BlockData[,,] blocks)
+        public void CalculateFaces()
         {
+            BlockData[,,] blocks = GlobalVariables.Blocks;
+
             for (int x = 0; x < _totalBlockNumberX; x++)
                 for (int y = 0; y < _totalBlockNumberY; y++)
                     for (int z = 0; z < _totalBlockNumberZ; z++)
@@ -339,8 +343,10 @@ namespace Voxels.MeshGenerator
         /// <summary>
         /// Calculates faces visibility on the world's edges.
         /// </summary>
-        public void WorldBoundariesCheck(ref BlockData[,,] blocks)
+        public void WorldBoundariesCheck()
         {
+            BlockData[,,] blocks = GlobalVariables.Blocks;
+
             ref BlockData b = ref blocks[0, 0, 0]; // compiler requires initialization
 
             // right world boundaries check
@@ -414,8 +420,10 @@ namespace Voxels.MeshGenerator
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        void CalculateMeshesSize(ref BlockData[,,] blocks, Vector3Int chunkPos, out int tSize, out int wSize)
+        void CalculateMeshesSize(Vector3Int chunkPos, out int tSize, out int wSize)
         {
+            BlockData[,,] blocks = GlobalVariables.Blocks;
+
             tSize = 0;
             wSize = 0;
 
