@@ -36,8 +36,8 @@ namespace Voxels.GameLogic.PlayerController
             float xPos = m_OriginalCameraPosition.x + (Bobcurve.Evaluate(m_CyclePositionX)*HorizontalBobRange);
             float yPos = m_OriginalCameraPosition.y + (Bobcurve.Evaluate(m_CyclePositionY)*VerticalBobRange);
 
-            m_CyclePositionX += (speed*Time.deltaTime)/m_BobBaseInterval;
-            m_CyclePositionY += ((speed*Time.deltaTime)/m_BobBaseInterval)*VerticaltoHorizontalRatio;
+            m_CyclePositionX += speed*Time.deltaTime/m_BobBaseInterval;
+            m_CyclePositionY += speed*Time.deltaTime/m_BobBaseInterval*VerticaltoHorizontalRatio;
 
             if (m_CyclePositionX > m_Time)
             {

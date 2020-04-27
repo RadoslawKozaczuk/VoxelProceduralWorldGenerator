@@ -1,4 +1,4 @@
-﻿namespace Voxels.Common
+﻿namespace Voxels.Common.DataModels
 {
 	public struct BlockData
 	{

@@ -1,8 +1,8 @@
-﻿using Voxels.Common;
-using Unity.Burst;
+﻿using Unity.Burst;
 using Unity.Collections;
 using Unity.Jobs;
 using Unity.Mathematics;
+using Voxels.Common;
 
 namespace Voxels.MapGenerator.Jobs
 {

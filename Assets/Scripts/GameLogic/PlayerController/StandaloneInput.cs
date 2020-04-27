@@ -3,77 +3,34 @@ using UnityEngine;
 
 namespace Voxels.GameLogic.PlayerController
 {
-    public class StandaloneInput : VirtualInput
+    internal class StandaloneInput : VirtualInput
     {
-        public override float GetAxis(string name, bool raw)
-        {
-            return raw ? Input.GetAxisRaw(name) : Input.GetAxis(name);
-        }
+        internal override float GetAxis(string name, bool raw) => raw ? Input.GetAxisRaw(name) : Input.GetAxis(name);
 
+        internal override bool GetButton(string name) => Input.GetButton(name);
 
-        public override bool GetButton(string name)
-        {
-            return Input.GetButton(name);
-        }
+        internal override bool GetButtonDown(string name) => Input.GetButtonDown(name);
 
+        internal override bool GetButtonUp(string name) => Input.GetButtonUp(name);
 
-        public override bool GetButtonDown(string name)
-        {
-            return Input.GetButtonDown(name);
-        }
+        internal override void SetButtonDown(string name) 
+            => throw new Exception(" This is not possible to be called for standalone input. Please check your platform and code where this is called");
 
+        internal override void SetButtonUp(string name) 
+            => throw new Exception(" This is not possible to be called for standalone input. Please check your platform and code where this is called");
 
-        public override bool GetButtonUp(string name)
-        {
-            return Input.GetButtonUp(name);
-        }
+        internal override void SetAxisPositive(string name) 
+            => throw new Exception(" This is not possible to be called for standalone input. Please check your platform and code where this is called");
 
+        internal override void SetAxisNegative(string name) 
+            => throw new Exception(" This is not possible to be called for standalone input. Please check your platform and code where this is called");
 
-        public override void SetButtonDown(string name)
-        {
-            throw new Exception(
-                " This is not possible to be called for standalone input. Please check your platform and code where this is called");
-        }
+        internal override void SetAxisZero(string name) 
+            => throw new Exception(" This is not possible to be called for standalone input. Please check your platform and code where this is called");
 
+        internal override void SetAxis(string name, float value) 
+            => throw new Exception(" This is not possible to be called for standalone input. Please check your platform and code where this is called");
 
-        public override void SetButtonUp(string name)
-        {
-            throw new Exception(
-                " This is not possible to be called for standalone input. Please check your platform and code where this is called");
-        }
-
-
-        public override void SetAxisPositive(string name)
-        {
-            throw new Exception(
-                " This is not possible to be called for standalone input. Please check your platform and code where this is called");
-        }
-
-
-        public override void SetAxisNegative(string name)
-        {
-            throw new Exception(
-                " This is not possible to be called for standalone input. Please check your platform and code where this is called");
-        }
-
-
-        public override void SetAxisZero(string name)
-        {
-            throw new Exception(
-                " This is not possible to be called for standalone input. Please check your platform and code where this is called");
-        }
-
-
-        public override void SetAxis(string name, float value)
-        {
-            throw new Exception(
-                " This is not possible to be called for standalone input. Please check your platform and code where this is called");
-        }
-
-
-        public override Vector3 MousePosition()
-        {
-            return Input.mousePosition;
-        }
+        internal override Vector3 MousePosition() => Input.mousePosition;
     }
 }

@@ -1,133 +1,106 @@
-using System;
 using UnityEngine;
 
 namespace Voxels.GameLogic.PlayerController
 {
-    public class MobileInput : VirtualInput
+    internal class MobileInput : VirtualInput
     {
-        private void AddButton(string name)
-        {
+        private void AddButton(string name) =>
             // we have not registered this button yet so add it, happens in the constructor
             CrossPlatformInputManager.RegisterVirtualButton(new CrossPlatformInputManager.VirtualButton(name));
-        }
 
 
-        private void AddAxes(string name)
-        {
+        private void AddAxes(string name) =>
             // we have not registered this button yet so add it, happens in the constructor
             CrossPlatformInputManager.RegisterVirtualAxis(new CrossPlatformInputManager.VirtualAxis(name));
-        }
 
-
-        public override float GetAxis(string name, bool raw)
+        internal override float GetAxis(string name, bool raw)
         {
-            if (!m_VirtualAxes.ContainsKey(name))
-            {
+            if (!_virtualAxes.ContainsKey(name))
                 AddAxes(name);
-            }
-            return m_VirtualAxes[name].GetValue;
+
+            return _virtualAxes[name].GetValue;
         }
 
-
-        public override void SetButtonDown(string name)
+        internal override void SetButtonDown(string name)
         {
-            if (!m_VirtualButtons.ContainsKey(name))
-            {
+            if (!_virtualButtons.ContainsKey(name))
                 AddButton(name);
-            }
-            m_VirtualButtons[name].Pressed();
+            
+            _virtualButtons[name].Pressed();
         }
 
-
-        public override void SetButtonUp(string name)
+        internal override void SetButtonUp(string name)
         {
-            if (!m_VirtualButtons.ContainsKey(name))
-            {
+            if (!_virtualButtons.ContainsKey(name))
                 AddButton(name);
-            }
-            m_VirtualButtons[name].Released();
+            
+            _virtualButtons[name].Released();
         }
 
-
-        public override void SetAxisPositive(string name)
+        internal override void SetAxisPositive(string name)
         {
-            if (!m_VirtualAxes.ContainsKey(name))
-            {
+            if (!_virtualAxes.ContainsKey(name))
                 AddAxes(name);
-            }
-            m_VirtualAxes[name].Update(1f);
+            
+            _virtualAxes[name].Update(1f);
         }
 
-
-        public override void SetAxisNegative(string name)
+        internal override void SetAxisNegative(string name)
         {
-            if (!m_VirtualAxes.ContainsKey(name))
-            {
+            if (!_virtualAxes.ContainsKey(name))
                 AddAxes(name);
-            }
-            m_VirtualAxes[name].Update(-1f);
+
+            _virtualAxes[name].Update(-1f);
         }
 
 
-        public override void SetAxisZero(string name)
+        internal override void SetAxisZero(string name)
         {
-            if (!m_VirtualAxes.ContainsKey(name))
-            {
+            if (!_virtualAxes.ContainsKey(name))
                 AddAxes(name);
-            }
-            m_VirtualAxes[name].Update(0f);
+            
+            _virtualAxes[name].Update(0f);
         }
 
-
-        public override void SetAxis(string name, float value)
+        internal override void SetAxis(string name, float value)
         {
-            if (!m_VirtualAxes.ContainsKey(name))
-            {
+            if (!_virtualAxes.ContainsKey(name))
                 AddAxes(name);
-            }
-            m_VirtualAxes[name].Update(value);
+            
+            _virtualAxes[name].Update(value);
         }
 
-
-        public override bool GetButtonDown(string name)
+        internal override bool GetButtonDown(string name)
         {
-            if (m_VirtualButtons.ContainsKey(name))
+            if (_virtualButtons.ContainsKey(name))
+                return _virtualButtons[name].GetButtonDown;
+
+            AddButton(name);
+            return _virtualButtons[name].GetButtonDown;
+        }
+
+        internal override bool GetButtonUp(string name)
+        {
+            if (_virtualButtons.ContainsKey(name))
             {
-                return m_VirtualButtons[name].GetButtonDown;
+                return _virtualButtons[name].GetButtonUp;
             }
 
             AddButton(name);
-            return m_VirtualButtons[name].GetButtonDown;
+            return _virtualButtons[name].GetButtonUp;
         }
 
-
-        public override bool GetButtonUp(string name)
+        internal override bool GetButton(string name)
         {
-            if (m_VirtualButtons.ContainsKey(name))
+            if (_virtualButtons.ContainsKey(name))
             {
-                return m_VirtualButtons[name].GetButtonUp;
+                return _virtualButtons[name].GetButton;
             }
 
             AddButton(name);
-            return m_VirtualButtons[name].GetButtonUp;
+            return _virtualButtons[name].GetButton;
         }
 
-
-        public override bool GetButton(string name)
-        {
-            if (m_VirtualButtons.ContainsKey(name))
-            {
-                return m_VirtualButtons[name].GetButton;
-            }
-
-            AddButton(name);
-            return m_VirtualButtons[name].GetButton;
-        }
-
-
-        public override Vector3 MousePosition()
-        {
-            return virtualMousePosition;
-        }
+        internal override Vector3 MousePosition() => virtualMousePosition;
     }
 }
