@@ -10,9 +10,9 @@ namespace Voxels.Common
     /// </summary>
     public class StaticCoroutine : MonoBehaviour
     {
-        static public StaticCoroutine instance;
+        public static StaticCoroutine Instance;
 
-        void Awake() => instance = this;
+        void Awake() => Instance = this;
 
         IEnumerator Perform(IEnumerator coroutine, Action onComplete = null)
         {
@@ -21,7 +21,7 @@ namespace Voxels.Common
             onComplete();
         }
 
-        static public void DoCoroutine(IEnumerator coroutine, Action onComplete = null)
-            => instance.StartCoroutine(instance.Perform(coroutine, onComplete));
+        public static void DoCoroutine(IEnumerator coroutine, Action onComplete = null)
+            => Instance.StartCoroutine(Instance.Perform(coroutine, onComplete));
     }
 }

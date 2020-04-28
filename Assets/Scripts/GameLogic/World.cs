@@ -1,18 +1,16 @@
-﻿using Voxels.TerrainGeneration.Jobs;
-using System;
+﻿using System;
 using System.Collections;
-using System.Collections.Generic;
 using System.Diagnostics;
-using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using Voxels.Common;
 using Voxels.Common.DataModels;
-using Voxels.TerrainGeneration;
-using Voxels.SaveLoad;
+using Voxels.GameLogic.Controllers;
 using Voxels.GameLogic.DataModels;
 using Voxels.MeshGeneration;
-using Voxels.GameLogic.Controllers;
+using Voxels.SaveLoad;
+using Voxels.TerrainGeneration;
+using Voxels.TerrainGeneration.Jobs;
 
 namespace Voxels.GameLogic
 {
@@ -102,40 +100,6 @@ namespace Voxels.GameLogic
                 AlreadyGenerated += _progressStep * 3;
                 yield return null;
             }
-
-            // check one
-            bool atLeastOneNonAir = false;
-            var invalidBlocks = new List<int4>();
-            for (int x = 0; x < TotalBlockNumberX; x++)
-                for (int y = 0; y < TotalBlockNumberY; y++)
-                    for (int z = 0; z < TotalBlockNumberZ; z++)
-                    {
-                        int value = (int)GlobalVariables.Blocks[x, y, z].Type;
-
-                        if (value > 0)
-                            atLeastOneNonAir = true;
-                    }
-
-            //// check one
-            //var invalidBlocks = new List<int4>();
-            //for (int x = 0; x < TotalBlockNumberX; x++)
-            //    for (int y = 0; y < TotalBlockNumberY; y++)
-            //        for (int z = 0; z < TotalBlockNumberZ; z++)
-            //        {
-            //            int value = (int)GlobalVariables.Blocks[x, y, z].Type;
-            //            if (value > (int)BlockType.Grass)
-            //                invalidBlocks.Add(new int4(x, y, z, value));
-            //        }
-
-            //// check two
-            //var levelOneNonBedRocks = new List<int4>();
-            //for (int x = 0; x < TotalBlockNumberX; x++)
-            //    for (int z = 0; z < TotalBlockNumberZ; z++)
-            //    {
-            //        int value = (int)GlobalVariables.Blocks[x, 0, z].Type;
-            //        if (value != (int)BlockType.Bedrock)
-            //            levelOneNonBedRocks.Add(new int4(x, 0, z, value));
-            //    }
 
             if (GlobalVariables.Settings.IsWater)
             {
@@ -343,7 +307,7 @@ namespace Voxels.GameLogic
         /// <summary>
         /// Returns true if a new block has been built.
         /// </summary>
-        public bool BuildBlock(int blockX, int blockY, int blockZ, BlockType type, ChunkData chunkData)
+        public bool BuildBlock(int blockX, int blockY, int blockZ, BlockType type, ref ChunkData chunkData)
         {
             ref BlockData b = ref GlobalVariables.Blocks[blockX, blockY, blockZ];
 

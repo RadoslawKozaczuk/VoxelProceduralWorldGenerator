@@ -346,7 +346,7 @@ namespace Voxels.TerrainGeneration
                             blocks[x, _waterLevel - 1, z].Type = BlockType.Water;
                     }
 
-            PropagateWaterHorizontally(ref blocks, _waterLevel - 1);
+            PropagateWaterHorizontally(_waterLevel - 1);
 
             int currentY = _waterLevel - 1;
 
@@ -354,11 +354,11 @@ namespace Voxels.TerrainGeneration
             while (waterAdded)
             {
                 waterAdded = currentY > 1
-                    ? AddWaterBelow(ref blocks, currentY)
+                    ? AddWaterBelow(currentY)
                     : false;
 
                 if (waterAdded)
-                    PropagateWaterHorizontally(ref blocks, --currentY);
+                    PropagateWaterHorizontally(--currentY);
             }
         }
 
@@ -366,10 +366,12 @@ namespace Voxels.TerrainGeneration
         /// Adds trees to the <see cref="GlobalVariables.Blocks"/>.
         /// If treeProb parameter is set to TreeProbability.None then no trees will be added.
         /// </summary>
-        public static void AddTrees(ref BlockData[,,] blocks, TreeProbability treeProb)
+        public static void AddTrees(TreeProbability treeProb)
         {
             if (treeProb == TreeProbability.None)
                 return;
+
+            BlockData[,,] blocks = GlobalVariables.Blocks;
 
             float woodbaseProbability = treeProb == TreeProbability.Some
                 ? WoodbaseSomeProbability
@@ -386,7 +388,7 @@ namespace Voxels.TerrainGeneration
 
                         if (IsThereEnoughSpaceForTree(in blocks, x, y, z))
                             if (FractalFunc(GlobalVariables.Settings.SeedValue, x, y, z, WoodbaseSmooth, WoodbaseOctaves) < woodbaseProbability)
-                                BuildTree(ref blocks, x, y, z);
+                                BuildTree(x, y, z);
                     }
         }
 
@@ -431,14 +433,14 @@ namespace Voxels.TerrainGeneration
 
                         if (IsThereEnoughSpaceForTree(in GlobalVariables.Blocks, x, y, z))
                             if (FractalFunc(GlobalVariables.Settings.SeedValue, x, y, z, WoodbaseSmooth, WoodbaseOctaves) < woodbaseProbability)
-                                BuildTree(ref GlobalVariables.Blocks, x, y, z);
+                                BuildTree(x, y, z);
                     }
         }
 
         /// <summary>
         /// Spread the water horizontally.
         /// All air blocks that have a horizontal access to any water blocks will be turned into water blocks.
-        static void PropagateWaterHorizontally(ref BlockData[,,] blocks, int currentY)
+        static void PropagateWaterHorizontally(int currentY)
         {
             /*
 				This algorithm works in two steps:
@@ -446,6 +448,8 @@ namespace Voxels.TerrainGeneration
 				Step 2 - scan each block in the layer individually and if the block is air then check if any of its neighbors is water,
 				    if so convert it to water. If any block has been converted during the process repeat the whole step 2 again.
 			*/
+
+            BlockData[,,] blocks = GlobalVariables.Blocks;
 
             // === Step 1 ===
             bool foundWater = false;
@@ -548,13 +552,15 @@ namespace Voxels.TerrainGeneration
         /// Returns true if at least on block was changed.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool AddWaterBelow(ref BlockData[,,] blocks, int currentY)
+        static bool AddWaterBelow(int currentY)
         {
             // assertion 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             if (currentY < 1)
                 throw new System.ArgumentException("Y value cannot be lower than 1.", "currentY");
 #endif
+
+            BlockData[,,] blocks = GlobalVariables.Blocks;
 
             bool waterAdded = false;
             for (int x = 0; x < _totalBlockNumberX; x++)
@@ -591,8 +597,10 @@ namespace Voxels.TerrainGeneration
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static void BuildTree(ref BlockData[,,] blocks, int x, int y, int z)
+        static void BuildTree(int x, int y, int z)
         {
+            BlockData[,,] blocks = GlobalVariables.Blocks;
+
             CreateBlock(ref blocks[x, y, z], BlockType.Woodbase);
             CreateBlock(ref blocks[x, y + 1, z], BlockType.Wood);
             CreateBlock(ref blocks[x, y + 2, z], BlockType.Wood);

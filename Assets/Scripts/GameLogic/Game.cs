@@ -96,10 +96,10 @@ namespace Voxels.GameLogic
             FindChunkAndBlock(hitBlock, out int chunkX, out int chunkY, out int chunkZ, out int blockX, out int blockY, out int blockZ);
 
             // inform chunk
-            ref ChunkData c = ref GlobalVariables.Chunks[chunkX, chunkY, chunkZ];
+            ref ChunkData chunk = ref GlobalVariables.Chunks[chunkX, chunkY, chunkZ];
 
-            // was block destroyed
-            if (_world.BlockHit(blockX, blockY, blockZ, ref c))
+            // a block has been destroyed
+            if (_world.BlockHit(blockX, blockY, blockZ, ref chunk))
                 CheckNeighboringChunks(blockX, blockY, blockZ, chunkX, chunkY, chunkZ);
         }
 
@@ -108,10 +108,10 @@ namespace Voxels.GameLogic
             FindChunkAndBlock(hitBlock, out int chunkX, out int chunkY, out int chunkZ, out int blockX, out int blockY, out int blockZ);
 
             // inform chunk
-            var c = GlobalVariables.Chunks[chunkX, chunkY, chunkZ];
+            ref ChunkData chunk = ref GlobalVariables.Chunks[chunkX, chunkY, chunkZ];
 
-            // was block built
-            if (_world.BuildBlock(blockX, blockY, blockZ, type, c))
+            // a block has been built
+            if (_world.BuildBlock(blockX, blockY, blockZ, type, ref chunk))
                 CheckNeighboringChunks(blockX, blockY, blockZ, chunkX, chunkY, chunkZ);
         }
 
@@ -120,7 +120,7 @@ namespace Voxels.GameLogic
             if (Input.GetKeyDown(_saveKey))
             {
                 _topMessage.HideMessage();
-                var t = _player.transform;
+                Transform t = _player.transform;
 
                 var playerRotation = new Vector3(
                     t.GetChild(0).gameObject.transform.eulerAngles.x,
@@ -136,9 +136,11 @@ namespace Voxels.GameLogic
                 _topMessage.HideMessage();
                 _player.SetActive(false);
                 _crosshair.enabled = false;
+                _mainCamera.gameObject.SetActive(true);
 
                 StartCoroutine(_world.LoadWorld(false, () =>
                 {
+                    _mainCamera.gameObject.SetActive(false);
                     CreatePlayer(_world.PlayerLoadedPosition, _world.PlayerLoadedRotation);
                     _player.SetActive(true);
                     _crosshair.enabled = true;
@@ -192,8 +194,8 @@ namespace Voxels.GameLogic
 
         void CreatePlayer(Vector3? position = null, Vector3? rotation = null)
         {
-            var playerPos = position ?? _playerStartPosition;
-            var maxY = Math.Max(
+            Vector3 playerPos = position ?? _playerStartPosition;
+            int maxY = Math.Max(
                 TerrainGenerationAbstractionLayer.GenerateDirtHeight(GlobalVariables.Settings.SeedValue, playerPos.x, playerPos.z),
                 TerrainGenerationAbstractionLayer.GenerateStoneHeight(GlobalVariables.Settings.SeedValue, playerPos.x, playerPos.z));
 

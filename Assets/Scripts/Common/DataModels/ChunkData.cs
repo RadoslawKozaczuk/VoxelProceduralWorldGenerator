@@ -4,6 +4,9 @@ namespace Voxels.Common.DataModels
 {
     public struct ChunkData
     {
+        /// <summary>
+        /// This is chunk ID, for example <1, 0 , 1>.
+        /// </summary>
         public readonly Vector3Int Coord;
         public Vector3Int Position;
         public ChunkStatus Status;

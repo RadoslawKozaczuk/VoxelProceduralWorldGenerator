@@ -11,7 +11,7 @@ namespace Voxels.GameLogic.PlayerController
         public AnimationCurve Bobcurve = new AnimationCurve(new Keyframe(0f, 0f), new Keyframe(0.5f, 1f),
                                                             new Keyframe(1f, 0f), new Keyframe(1.5f, -1f),
                                                             new Keyframe(2f, 0f)); // sin curve for head bob
-        public float VerticaltoHorizontalRatio = 1f;
+        float _verticaltoHorizontalRatio = 1f;
 
         float _cyclePositionX;
         float _cyclePositionY;
@@ -34,7 +34,7 @@ namespace Voxels.GameLogic.PlayerController
             float yPos = m_OriginalCameraPosition.y + (Bobcurve.Evaluate(_cyclePositionY) * VerticalBobRange);
 
             _cyclePositionX += speed * Time.deltaTime / m_BobBaseInterval;
-            _cyclePositionY += speed * Time.deltaTime / m_BobBaseInterval * VerticaltoHorizontalRatio;
+            _cyclePositionY += speed * Time.deltaTime / m_BobBaseInterval * _verticaltoHorizontalRatio;
 
             if (_cyclePositionX > _time)
                 _cyclePositionX = _cyclePositionX - _time;

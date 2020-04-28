@@ -12,8 +12,10 @@ namespace Voxels.GameLogic.Controllers
     [DisallowMultipleComponent]
     public class MainController : MonoBehaviour
     {
+#pragma warning disable CS0649 // suppress "Field is never assigned to, and will always have its default value null"
         [SerializeField] TerrainGenerationAbstractionLayer _terrainGenerationAbstractionLayer;
         [SerializeField] MeshGenerationAbstractionLayer _meshGenerationAbstractionLayer;
+#pragma warning restore CS0649
 
         static readonly List<INeedInitializeOnWorldSizeChange> _list = new List<INeedInitializeOnWorldSizeChange>();
 

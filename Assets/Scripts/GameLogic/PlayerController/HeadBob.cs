@@ -6,8 +6,8 @@ namespace Voxels.GameLogic
     internal class HeadBob : MonoBehaviour
     {
         internal Camera Camera;
-        internal CurveControlledBob motionBob = new CurveControlledBob();
-        internal LerpControlledBob jumpAndLandingBob = new LerpControlledBob();
+        internal CurveControlledBob MotionBob = new CurveControlledBob();
+        internal LerpControlledBob JumpAndLandingBob = new LerpControlledBob();
         internal RigidbodyFirstPersonController rigidbodyFirstPersonController;
         internal float StrideInterval;
         [Range(0f, 1f)]
@@ -18,7 +18,7 @@ namespace Voxels.GameLogic
 
         void Start()
         {
-            motionBob.Setup(Camera, StrideInterval);
+            MotionBob.Setup(Camera, StrideInterval);
             _originalCameraPosition = Camera.transform.localPosition;
         }
 
@@ -27,20 +27,20 @@ namespace Voxels.GameLogic
             Vector3 newCameraPosition;
             if (rigidbodyFirstPersonController.Velocity.magnitude > 0 && rigidbodyFirstPersonController.Grounded)
             {
-                Camera.transform.localPosition = motionBob.DoHeadBob(rigidbodyFirstPersonController.Velocity.magnitude * (rigidbodyFirstPersonController.Running ? RunningStrideLengthen : 1f));
+                Camera.transform.localPosition = MotionBob.DoHeadBob(rigidbodyFirstPersonController.Velocity.magnitude * (rigidbodyFirstPersonController.Running ? RunningStrideLengthen : 1f));
                 newCameraPosition = Camera.transform.localPosition;
-                newCameraPosition.y = Camera.transform.localPosition.y - jumpAndLandingBob.Offset();
+                newCameraPosition.y = Camera.transform.localPosition.y - JumpAndLandingBob.Offset();
             }
             else
             {
                 newCameraPosition = Camera.transform.localPosition;
-                newCameraPosition.y = _originalCameraPosition.y - jumpAndLandingBob.Offset();
+                newCameraPosition.y = _originalCameraPosition.y - JumpAndLandingBob.Offset();
             }
 
             Camera.transform.localPosition = newCameraPosition;
 
             if (!_previouslyGrounded && rigidbodyFirstPersonController.Grounded)
-                StartCoroutine(jumpAndLandingBob.DoBobCycle());
+                StartCoroutine(JumpAndLandingBob.DoBobCycle());
 
             _previouslyGrounded = rigidbodyFirstPersonController.Grounded;
         }

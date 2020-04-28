@@ -69,7 +69,6 @@ MonoBehaviour:
   _gravityMultiplier: 2
   _useFovKick: 1
   _fovKick:
-    _camera: {fileID: 0}
     originalFov: 0
     FOVIncrease: 3
     TimeToIncrease: 1
@@ -153,7 +152,6 @@ MonoBehaviour:
       m_PreInfinity: 2
       m_PostInfinity: 2
       m_RotationOrder: 4
-    VerticaltoHorizontalRatio: 2
   _jumpBob:
     BobDuration: 0.2
     BobAmount: 0.1
@@ -366,6 +364,7 @@ MeshRenderer:
   m_MotionVectors: 1
   m_LightProbeUsage: 1
   m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 2
   m_RenderingLayerMask: 4294967295
   m_RendererPriority: 0
   m_Materials:
@@ -561,7 +560,7 @@ Camera:
   m_Depth: 1
   m_CullingMask:
     serializedVersion: 2
-    m_Bits: 1552
+    m_Bits: 512
   m_RenderingPath: -1
   m_TargetTexture: {fileID: 0}
   m_TargetDisplay: 0

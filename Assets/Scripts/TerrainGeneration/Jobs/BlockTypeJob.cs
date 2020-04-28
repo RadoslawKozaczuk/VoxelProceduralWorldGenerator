@@ -9,6 +9,7 @@ namespace Voxels.TerrainGeneration.Jobs
     [BurstCompile(CompileSynchronously = true)]
     struct BlockTypeJob : IJobParallelFor
     {
+        // input
         [ReadOnly]
         internal int TotalBlockNumberX;
         [ReadOnly]
@@ -17,12 +18,10 @@ namespace Voxels.TerrainGeneration.Jobs
         internal int TotalBlockNumberZ;
         [ReadOnly]
         internal NativeArray<int3> Heights;
-
-#pragma warning disable CS0649 // suppress "Field is never assigned to, and will always have its default value null"
         [ReadOnly]
         internal int Seed;
-#pragma warning restore CS0649
 
+        // output
         internal NativeArray<BlockType> Result;
 
         public void Execute(int i)

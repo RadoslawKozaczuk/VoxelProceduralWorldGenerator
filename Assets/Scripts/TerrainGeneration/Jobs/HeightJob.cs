@@ -9,11 +9,13 @@ namespace Voxels.TerrainGeneration.Jobs
     [BurstCompile(CompileSynchronously = true)]
     struct HeightJob : IJobParallelFor
     {
+        // input
         [ReadOnly]
         internal int TotalBlockNumberX;
         [ReadOnly]
         internal int Seed;
 
+        // output
         internal NativeArray<int3> Result;
 
         public void Execute(int i)

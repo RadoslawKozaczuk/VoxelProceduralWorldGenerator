@@ -6,7 +6,7 @@ namespace Voxels.Common
     public class GlobalVariables : MonoBehaviour
     {
         public static BlockData[,,] Blocks;
-        public static GameSettings Settings;
         public static ChunkData[,,] Chunks;
+        public static GameSettings Settings;
     }
 }

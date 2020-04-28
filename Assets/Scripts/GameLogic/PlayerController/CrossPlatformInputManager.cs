@@ -10,32 +10,32 @@ namespace Voxels.GameLogic.PlayerController
             Touch
         }
 
-        static VirtualInput activeInput;
-        static VirtualInput s_TouchInput;
-        static VirtualInput s_HardwareInput;
+        static VirtualInput _activeInput;
+        static VirtualInput _touchInput;
+        static VirtualInput _hardwareInput;
 
         static CrossPlatformInputManager()
         {
-            s_TouchInput = new MobileInput();
-            s_HardwareInput = new StandaloneInput();
+            _touchInput = new MobileInput();
+            _hardwareInput = new StandaloneInput();
 #if MOBILE_INPUT
-            activeInput = s_TouchInput;
+            _activeInput = _touchInput;
 #else
-            activeInput = s_HardwareInput;
+            _activeInput = _hardwareInput;
 #endif
         }
 
-        internal static void RegisterVirtualAxis(VirtualAxis axis) => activeInput.RegisterVirtualAxis(axis);
+        internal static void RegisterVirtualAxis(VirtualAxis axis) => _activeInput.RegisterVirtualAxis(axis);
 
-        internal static void RegisterVirtualButton(VirtualButton button) => activeInput.RegisterVirtualButton(button);
+        internal static void RegisterVirtualButton(VirtualButton button) => _activeInput.RegisterVirtualButton(button);
 
         // returns the platform appropriate axis for the given name
         public static float GetAxis(string name) => GetAxis(name, false);
 
         // private function handles both types of axis (raw and not raw)
-        public static float GetAxis(string name, bool raw) => activeInput.GetAxis(name, raw);
+        public static float GetAxis(string name, bool raw) => _activeInput.GetAxis(name, raw);
 
-        public static bool GetButtonDown(string name) => activeInput.GetButtonDown(name);
+        public static bool GetButtonDown(string name) => _activeInput.GetButtonDown(name);
 
         // virtual axis and button classes - applies to mobile input
         // Can be mapped to touch joysticks, tilt, gyro, etc, depending on desired implementation.
