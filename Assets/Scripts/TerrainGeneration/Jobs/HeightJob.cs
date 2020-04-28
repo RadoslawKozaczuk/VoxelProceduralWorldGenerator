@@ -12,8 +12,10 @@ namespace Voxels.TerrainGeneration.Jobs
         // input
         [ReadOnly]
         internal int TotalBlockNumberX;
+#pragma warning disable CS0649 // suppress "Field is never assigned to, and will always have its default value null"
         [ReadOnly]
         internal int Seed;
+#pragma warning restore CS0649
 
         // output
         internal NativeArray<int3> Result;

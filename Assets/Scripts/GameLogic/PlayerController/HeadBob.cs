@@ -5,13 +5,16 @@ namespace Voxels.GameLogic
 {
     internal class HeadBob : MonoBehaviour
     {
+#pragma warning disable CS0649 // suppress "Field is never assigned to, and will always have its default value null"
         internal Camera Camera;
-        internal CurveControlledBob MotionBob = new CurveControlledBob();
-        internal LerpControlledBob JumpAndLandingBob = new LerpControlledBob();
-        internal RigidbodyFirstPersonController rigidbodyFirstPersonController;
+        internal RigidbodyFirstPersonController RigidbodyFirstPersonController;
         internal float StrideInterval;
         [Range(0f, 1f)]
         internal float RunningStrideLengthen;
+#pragma warning restore CS0649
+
+        internal CurveControlledBob MotionBob = new CurveControlledBob();
+        internal LerpControlledBob JumpAndLandingBob = new LerpControlledBob();
 
         bool _previouslyGrounded;
         Vector3 _originalCameraPosition;
@@ -25,9 +28,9 @@ namespace Voxels.GameLogic
         void Update()
         {
             Vector3 newCameraPosition;
-            if (rigidbodyFirstPersonController.Velocity.magnitude > 0 && rigidbodyFirstPersonController.Grounded)
+            if (RigidbodyFirstPersonController.Velocity.magnitude > 0 && RigidbodyFirstPersonController.Grounded)
             {
-                Camera.transform.localPosition = MotionBob.DoHeadBob(rigidbodyFirstPersonController.Velocity.magnitude * (rigidbodyFirstPersonController.Running ? RunningStrideLengthen : 1f));
+                Camera.transform.localPosition = MotionBob.DoHeadBob(RigidbodyFirstPersonController.Velocity.magnitude * (RigidbodyFirstPersonController.Running ? RunningStrideLengthen : 1f));
                 newCameraPosition = Camera.transform.localPosition;
                 newCameraPosition.y = Camera.transform.localPosition.y - JumpAndLandingBob.Offset();
             }
@@ -39,10 +42,10 @@ namespace Voxels.GameLogic
 
             Camera.transform.localPosition = newCameraPosition;
 
-            if (!_previouslyGrounded && rigidbodyFirstPersonController.Grounded)
+            if (!_previouslyGrounded && RigidbodyFirstPersonController.Grounded)
                 StartCoroutine(JumpAndLandingBob.DoBobCycle());
 
-            _previouslyGrounded = rigidbodyFirstPersonController.Grounded;
+            _previouslyGrounded = RigidbodyFirstPersonController.Grounded;
         }
     }
 }

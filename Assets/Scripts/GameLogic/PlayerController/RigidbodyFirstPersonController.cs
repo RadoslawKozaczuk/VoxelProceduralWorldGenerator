@@ -25,22 +25,20 @@ namespace Voxels.GameLogic.PlayerController
             internal void UpdateDesiredTargetSpeed(Vector2 input)
             {
                 if (input == Vector2.zero) return;
+
+                //strafe
                 if (input.x > 0 || input.x < 0)
-                {
-                    //strafe
                     CurrentTargetSpeed = StrafeSpeed;
-                }
+
+                //backwards
                 if (input.y < 0)
-                {
-                    //backwards
                     CurrentTargetSpeed = BackwardSpeed;
-                }
+
+                //forwards
+                //handled last as if strafing and moving forward at the same time forwards speed should take precedence
                 if (input.y > 0)
-                {
-                    //forwards
-                    //handled last as if strafing and moving forward at the same time forwards speed should take precedence
                     CurrentTargetSpeed = ForwardSpeed;
-                }
+
 #if !MOBILE_INPUT
                 if (Input.GetKey(RunKey))
                 {
@@ -62,21 +60,26 @@ namespace Voxels.GameLogic.PlayerController
         [Serializable]
         internal class AdvancedSettings
         {
-            internal float groundCheckDistance = 0.01f; // distance for checking if the controller is grounded ( 0.01f seems to work best for this )
-            internal float stickToGroundHelperDistance = 0.5f; // stops the character
-            internal float slowDownRate = 20f; // rate at which the controller comes to a stop when there is no input
-            internal bool airControl; // can the user control the direction that is being moved in the air
+            internal float GroundCheckDistance = 0.01f; // distance for checking if the controller is grounded ( 0.01f seems to work best for this )
+            internal float StickToGroundHelperDistance = 0.5f; // stops the character
+            internal float SlowDownRate = 20f; // rate at which the controller comes to a stop when there is no input
+#pragma warning disable CS0649 // suppress "Field is never assigned to, and will always have its default value null"
+            internal bool AirControl; // can the user control the direction that is being moved in the air
             [Tooltip("set it to 0.1 or more if you get stuck in wall")]
-            internal float shellOffset; //reduce the radius by that ratio to avoid getting stuck in wall (a value of 0.1f is nice)
+            internal float ShellOffset; //reduce the radius by that ratio to avoid getting stuck in wall (a value of 0.1f is nice)
+#pragma warning restore CS0649
         }
 
-        internal Camera cam;
-        internal MovementSettings movementSettings = new MovementSettings();
-        internal MouseLook mouseLook = new MouseLook();
-        internal AdvancedSettings advancedSettings = new AdvancedSettings();
+#pragma warning disable CS0649 // suppress "Field is never assigned to, and will always have its default value null"
+        internal Camera Camera;
+#pragma warning restore CS0649
+
+        internal MovementSettings MovementSetting = new MovementSettings();
+        internal MouseLook MouseLook = new MouseLook();
+        internal AdvancedSettings AdvancedSetting = new AdvancedSettings();
 
         Rigidbody _rigidBody;
-        CapsuleCollider m_Capsule;
+        CapsuleCollider _capsule;
         Vector3 _groundContactNormal;
         bool _jump, _previouslyGrounded;
 
@@ -91,21 +94,19 @@ namespace Voxels.GameLogic.PlayerController
             get
             {
 #if !MOBILE_INPUT
-                return movementSettings.Running;
+                return MovementSetting.Running;
 #else
 	            return false;
 #endif
             }
         }
 
-
         void Start()
         {
             _rigidBody = GetComponent<Rigidbody>();
-            m_Capsule = GetComponent<CapsuleCollider>();
-            mouseLook.Init(transform, cam.transform);
+            _capsule = GetComponent<CapsuleCollider>();
+            MouseLook.Init(transform, Camera.transform);
         }
-
 
         void Update()
         {
@@ -120,16 +121,16 @@ namespace Voxels.GameLogic.PlayerController
             GroundCheck();
             Vector2 input = GetInput();
 
-            if ((Mathf.Abs(input.x) > float.Epsilon || Mathf.Abs(input.y) > float.Epsilon) && (advancedSettings.airControl || Grounded))
+            if ((Mathf.Abs(input.x) > float.Epsilon || Mathf.Abs(input.y) > float.Epsilon) && (AdvancedSetting.AirControl || Grounded))
             {
                 // always move along the camera forward as it is the direction that it being aimed at
-                Vector3 desiredMove = cam.transform.forward * input.y + cam.transform.right * input.x;
+                Vector3 desiredMove = Camera.transform.forward * input.y + Camera.transform.right * input.x;
                 desiredMove = Vector3.ProjectOnPlane(desiredMove, _groundContactNormal).normalized;
-                desiredMove.x *= movementSettings.CurrentTargetSpeed;
-                desiredMove.z *= movementSettings.CurrentTargetSpeed;
-                desiredMove.y *= movementSettings.CurrentTargetSpeed;
+                desiredMove.x *= MovementSetting.CurrentTargetSpeed;
+                desiredMove.z *= MovementSetting.CurrentTargetSpeed;
+                desiredMove.y *= MovementSetting.CurrentTargetSpeed;
 
-                if (_rigidBody.velocity.sqrMagnitude < (movementSettings.CurrentTargetSpeed * movementSettings.CurrentTargetSpeed))
+                if (_rigidBody.velocity.sqrMagnitude < (MovementSetting.CurrentTargetSpeed * MovementSetting.CurrentTargetSpeed))
                     _rigidBody.AddForce(desiredMove * SlopeMultiplier(), ForceMode.Impulse);
             }
 
@@ -141,7 +142,7 @@ namespace Voxels.GameLogic.PlayerController
                 {
                     _rigidBody.drag = 0f;
                     _rigidBody.velocity = new Vector3(_rigidBody.velocity.x, 0f, _rigidBody.velocity.z);
-                    _rigidBody.AddForce(new Vector3(0f, movementSettings.JumpForce, 0f), ForceMode.Impulse);
+                    _rigidBody.AddForce(new Vector3(0f, MovementSetting.JumpForce, 0f), ForceMode.Impulse);
                     Jumping = true;
                 }
 
@@ -157,21 +158,20 @@ namespace Voxels.GameLogic.PlayerController
             _jump = false;
         }
 
-
         float SlopeMultiplier()
         {
             float angle = Vector3.Angle(_groundContactNormal, Vector3.up);
-            return movementSettings.SlopeCurveModifier.Evaluate(angle);
+            return MovementSetting.SlopeCurveModifier.Evaluate(angle);
         }
 
         void StickToGroundHelper()
         {
             if (Physics.SphereCast(
                 origin: transform.position,
-                radius: m_Capsule.radius * (1.0f - advancedSettings.shellOffset),
+                radius: _capsule.radius * (1.0f - AdvancedSetting.ShellOffset),
                 direction: Vector3.down,
                 hitInfo: out RaycastHit hitInfo,
-                maxDistance: (m_Capsule.height / 2f) - m_Capsule.radius + advancedSettings.stickToGroundHelperDistance,
+                maxDistance: (_capsule.height / 2f) - _capsule.radius + AdvancedSetting.StickToGroundHelperDistance,
                 layerMask: Physics.AllLayers,
                 queryTriggerInteraction: QueryTriggerInteraction.Ignore))
             {
@@ -188,7 +188,7 @@ namespace Voxels.GameLogic.PlayerController
                 y = CrossPlatformInputManager.GetAxis("Vertical")
             };
 
-            movementSettings.UpdateDesiredTargetSpeed(input);
+            MovementSetting.UpdateDesiredTargetSpeed(input);
             return input;
         }
 
@@ -200,9 +200,9 @@ namespace Voxels.GameLogic.PlayerController
             // get the rotation before it's changed
             float oldYRotation = transform.eulerAngles.y;
 
-            mouseLook.LookRotation(transform, cam.transform);
+            MouseLook.LookRotation(transform, Camera.transform);
 
-            if (Grounded || advancedSettings.airControl)
+            if (Grounded || AdvancedSetting.AirControl)
             {
                 // Rotate the rigidbody velocity to match the new direction that the character is looking
                 Quaternion velRotation = Quaternion.AngleAxis(transform.eulerAngles.y - oldYRotation, Vector3.up);
@@ -216,10 +216,10 @@ namespace Voxels.GameLogic.PlayerController
             _previouslyGrounded = Grounded;
             if (Physics.SphereCast(
                 origin: transform.position,
-                radius: m_Capsule.radius * (1.0f - advancedSettings.shellOffset),
+                radius: _capsule.radius * (1.0f - AdvancedSetting.ShellOffset),
                 direction: Vector3.down,
                 hitInfo: out RaycastHit hitInfo,
-                maxDistance: (m_Capsule.height / 2f) - m_Capsule.radius + advancedSettings.groundCheckDistance,
+                maxDistance: (_capsule.height / 2f) - _capsule.radius + AdvancedSetting.GroundCheckDistance,
                 layerMask: Physics.AllLayers,
                 queryTriggerInteraction: QueryTriggerInteraction.Ignore))
             {

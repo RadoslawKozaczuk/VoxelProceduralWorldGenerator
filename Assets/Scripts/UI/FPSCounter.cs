@@ -9,8 +9,10 @@ namespace Voxels.UI
         [Serializable]
         struct FPSColor
         {
+#pragma warning disable CS0649 // suppress "Field is never assigned to, and will always have its default value null"
             public Color Color;
             public int MinimumFPS;
+#pragma warning restore CS0649
         }
 
         // strings are pre-prepared to avoid countless string concatenation and memory pollution
@@ -35,7 +37,10 @@ namespace Voxels.UI
         public int AverageFPS { get; private set; }
         public int LowestFPS { get; private set; }
 
+#pragma warning disable CS0649 // suppress "Field is never assigned to, and will always have its default value null"
         [SerializeField] FPSColor[] _coloring;
+#pragma warning restore CS0649
+
         int[] _fpsBuffer; // we store all values from the last second
         int _fpsBufferIndex; // index of the currently stored value
 
