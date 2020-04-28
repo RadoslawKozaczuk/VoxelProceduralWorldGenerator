@@ -15,14 +15,14 @@ namespace Voxels.GameLogic.PlayerController
 
         float _cyclePositionX;
         float _cyclePositionY;
-        float m_BobBaseInterval;
-        Vector3 m_OriginalCameraPosition;
+        float _bobBaseInterval;
+        Vector3 _originalCameraPosition;
         float _time;
 
         public void Setup(Camera camera, float bobBaseInterval)
         {
-            m_BobBaseInterval = bobBaseInterval;
-            m_OriginalCameraPosition = camera.transform.localPosition;
+            _bobBaseInterval = bobBaseInterval;
+            _originalCameraPosition = camera.transform.localPosition;
 
             // get the length of the curve in time
             _time = Bobcurve[Bobcurve.length - 1].time;
@@ -30,11 +30,11 @@ namespace Voxels.GameLogic.PlayerController
 
         public Vector3 DoHeadBob(float speed)
         {
-            float xPos = m_OriginalCameraPosition.x + (Bobcurve.Evaluate(_cyclePositionX) * HorizontalBobRange);
-            float yPos = m_OriginalCameraPosition.y + (Bobcurve.Evaluate(_cyclePositionY) * VerticalBobRange);
+            float xPos = _originalCameraPosition.x + (Bobcurve.Evaluate(_cyclePositionX) * HorizontalBobRange);
+            float yPos = _originalCameraPosition.y + (Bobcurve.Evaluate(_cyclePositionY) * VerticalBobRange);
 
-            _cyclePositionX += speed * Time.deltaTime / m_BobBaseInterval;
-            _cyclePositionY += speed * Time.deltaTime / m_BobBaseInterval * _verticaltoHorizontalRatio;
+            _cyclePositionX += speed * Time.deltaTime / _bobBaseInterval;
+            _cyclePositionY += speed * Time.deltaTime / _bobBaseInterval * _verticaltoHorizontalRatio;
 
             if (_cyclePositionX > _time)
                 _cyclePositionX = _cyclePositionX - _time;

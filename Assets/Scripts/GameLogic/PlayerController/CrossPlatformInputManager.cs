@@ -4,12 +4,6 @@ namespace Voxels.GameLogic.PlayerController
 {
     public static class CrossPlatformInputManager
     {
-        internal enum ActiveInputMethod
-        {
-            Hardware,
-            Touch
-        }
-
         static VirtualInput _activeInput;
         static VirtualInput _touchInput;
         static VirtualInput _hardwareInput;
@@ -74,7 +68,7 @@ namespace Voxels.GameLogic.PlayerController
 
             internal VirtualButton(string name, bool matchToInputSettings)
             {
-                this.Name = name;
+                Name = name;
                 MatchWithInputManager = matchToInputSettings;
             }
 

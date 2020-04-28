@@ -26,7 +26,7 @@ namespace Voxels.GameLogic.PlayerController
                 // add any new axes
                 _virtualAxes.Add(axis.Name, axis);
 
-                // if we dont want to match with the input manager setting then revert to always using virtual
+                // if we don't want to match with the input manager setting then revert to always using virtual
                 if (!axis.MatchWithInputManager)
                     _alwaysUseVirtual.Add(axis.Name);
             }
@@ -34,7 +34,7 @@ namespace Voxels.GameLogic.PlayerController
 
         internal void RegisterVirtualButton(CrossPlatformInputManager.VirtualButton button)
         {
-            // check if already have a buttin with that name and log an error if we do
+            // check if already have a button with that name and log an error if we do
             if (_virtualButtons.ContainsKey(button.Name))
             {
                 Debug.LogError("There is already a virtual button named " + button.Name + " registered.");
@@ -44,7 +44,7 @@ namespace Voxels.GameLogic.PlayerController
                 // add any new buttons
                 _virtualButtons.Add(button.Name, button);
 
-                // if we dont want to match to the input manager then always use a virtual axis
+                // if we don't want to match to the input manager then always use a virtual axis
                 if (!button.MatchWithInputManager)
                     _alwaysUseVirtual.Add(button.Name);
             }

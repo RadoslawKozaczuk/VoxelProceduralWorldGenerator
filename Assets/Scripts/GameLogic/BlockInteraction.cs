@@ -21,14 +21,10 @@ namespace Voxels.GameLogic
         void Update()
         {
             if (Input.GetMouseButtonDown(0))
-            {
                 HitBlock();
-            }
 
             if (Input.GetMouseButtonDown(1))
-            {
                 BuildBlock();
-            }
         }
 
         void HitBlock()

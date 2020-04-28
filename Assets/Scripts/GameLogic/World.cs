@@ -201,7 +201,6 @@ namespace Voxels.GameLogic
             if (firstRun)
                 _worldScene = SceneManager.CreateScene(name);
 
-            //GlobalVariables.Blocks = save.Blocks;
             Status = WorldGeneratorStatus.TerrainReady;
             AlreadyGenerated += _progressStep;
             yield return null; // give back control
@@ -379,7 +378,7 @@ namespace Voxels.GameLogic
                 for (int y = 0; y < TotalBlockNumberY; y++)
                     for (int z = 0; z < TotalBlockNumberZ; z++)
                     {
-                        var type = types[Utils.IndexFlattenizer3D(x, y, z, TotalBlockNumberX, TotalBlockNumberY)];
+                        BlockType type = types[Utils.IndexFlattenizer3D(x, y, z, TotalBlockNumberX, TotalBlockNumberY)];
 
                         ref BlockData b = ref GlobalVariables.Blocks[x, y, z];
                         b.Type = type;
