@@ -19,27 +19,31 @@ namespace Voxels.TerrainGeneration
         [SerializeField] ComputeShader _heightsShader;
 #pragma warning restore CS0649
 
-        static TerrainGenerator _terrainGenerator;
+        // Loading from a non-readonly static field is not supported by burst, everything need to be static
+        //readonly static TerrainGenerator _terrainGenerator = new TerrainGenerator();
 
-        public void InitializeOnWorldSizeChange() => _terrainGenerator = new TerrainGenerator(_heightsShader);
+        public void InitializeOnWorldSizeChange() => TerrainGenerator.Initialize(_heightsShader);
 
-        public static int3[] CalculateHeightsJobSystem() => _terrainGenerator.CalculateHeightsJobSystem();
+        public static int3[] CalculateHeightsJobSystem() => TerrainGenerator.CalculateHeightsJobSystem();
 
-        public static BlockType[] CalculateBlockTypes(int3[] heights) => _terrainGenerator.CalculateBlockTypes(heights);
+        public static BlockType[] CalculateBlockTypes(int3[] heights) => TerrainGenerator.CalculateBlockTypes(heights);
 
-        public static void CalculateBlockTypesParallel() => _terrainGenerator.CalculateBlockTypesParallel();
+        public static void CalculateBlockTypesParallel() => TerrainGenerator.CalculateBlockTypesParallel();
 
-        public static void AddWater() => _terrainGenerator.AddWater();
+        public static void AddWater() => TerrainGenerator.AddWater();
 
-        public static void AddTreesParallel() => _terrainGenerator.AddTreesParallel();
+        public static void AddTreesParallel() => TerrainGenerator.AddTreesParallel();
 
-        public static int GenerateBedrockHeight(float x, float z) => _terrainGenerator.GenerateBedrockHeight(x, z);
+        // The managed function is not supported by burst, everything need to be static
+        //public static int GenerateBedrockHeight(float x, float z) => _terrainGenerator.GenerateBedrockHeight(x, z);
 
-        public static int GenerateStoneHeight(float x, float z) => _terrainGenerator.GenerateStoneHeight(x, z);
+        public static int GenerateBedrockHeight(int seed, float x, float z) => TerrainGenerator.GenerateBedrockHeight(seed, x, z);
 
-        public static int GenerateDirtHeight(float x, float z) => _terrainGenerator.GenerateDirtHeight(x, z);
+        public static int GenerateStoneHeight(int seed, float x, float z) => TerrainGenerator.GenerateStoneHeight(seed, x, z);
 
-        public static BlockType DetermineType(int worldX, int worldY, int worldZ, int3 heights) 
-            => _terrainGenerator.DetermineType(worldX, worldY, worldZ, heights);
+        public static int GenerateDirtHeight(int seed, float x, float z) => TerrainGenerator.GenerateDirtHeight(seed, x, z);
+
+        public static BlockType DetermineType(int seed, int worldX, int worldY, int worldZ, int3 heights) 
+            => TerrainGenerator.DetermineType(seed, worldX, worldY, worldZ, heights);
     }
 }

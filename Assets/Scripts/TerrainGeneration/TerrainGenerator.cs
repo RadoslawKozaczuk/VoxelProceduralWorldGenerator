@@ -5,12 +5,11 @@ using Unity.Mathematics;
 using UnityEngine;
 using Voxels.Common;
 using Voxels.Common.DataModels;
-using Voxels.Interfaces;
 using Voxels.TerrainGeneration.Jobs;
 
 namespace Voxels.TerrainGeneration
 {
-    public class TerrainGenerator : ITerrainGenerator
+    public static class TerrainGenerator
     {
         #region Constants
         // caves should be more erratic so has to be a higher number
@@ -53,16 +52,15 @@ namespace Voxels.TerrainGeneration
         const float PersistenceBedrock = 0.5f;
         #endregion
 
-        readonly ComputeShader _heightsShader;
+        static ComputeShader _heightsShader;
 
         /// <summary>
         /// Water level inclusive.
         /// </summary>
-        readonly int _waterLevel;
-        readonly int _seedValue;
-        readonly int _worldSizeX, _worldSizeZ, _totalBlockNumberX, _totalBlockNumberY, _totalBlockNumberZ;
+        static int _waterLevel;
+        static int _worldSizeX, _worldSizeZ, _totalBlockNumberX, _totalBlockNumberY, _totalBlockNumberZ;
 
-        public TerrainGenerator(ComputeShader heightsShader)
+        public static void Initialize(ComputeShader heightsShader)
         {
             _worldSizeX = GlobalVariables.Settings.WorldSizeX;
             _worldSizeZ = GlobalVariables.Settings.WorldSizeZ;
@@ -71,37 +69,36 @@ namespace Voxels.TerrainGeneration
             _totalBlockNumberZ = _worldSizeZ * Constants.CHUNK_SIZE;
 
             _waterLevel = GlobalVariables.Settings.WaterLevel;
-            _seedValue = GlobalVariables.Settings.SeedValue;
 
             _heightsShader = heightsShader;
         }
 
-        public int GenerateBedrockHeight(float x, float z) =>
+        public static int GenerateBedrockHeight(int seed, float x, float z) =>
             (int)Map(0, MaxHeightBedrock, 0, 1,
-                FractalBrownianMotion(x * SmoothBedrock, z * SmoothBedrock, OctavesBedrock, PersistenceBedrock));
+                FractalBrownianMotion(seed, x * SmoothBedrock, z * SmoothBedrock, OctavesBedrock, PersistenceBedrock));
 
-        public int GenerateStoneHeight(float x, float z) =>
+        public static int GenerateStoneHeight(int seed, float x, float z) =>
             (int)Map(0, MaxHeightStone, 0, 1,
-                FractalBrownianMotion(x * SmoothStone, z * SmoothStone, OctavesStone, PersistenceStone));
+                FractalBrownianMotion(seed, x * SmoothStone, z * SmoothStone, OctavesStone, PersistenceStone));
 
-        public int GenerateDirtHeight(float x, float z) =>
+        public static int GenerateDirtHeight(int seed, float x, float z) =>
             (int)Map(0, MaxHeight, 0, 1,
-                FractalBrownianMotion(x * Smooth, z * Smooth, Octaves, Persistence));
+                FractalBrownianMotion(seed, x * Smooth, z * Smooth, Octaves, Persistence));
 
-        public float Map(float newMin, float newMax, float oldMin, float oldMax, float value) =>
+        public static float Map(float newMin, float newMax, float oldMin, float oldMax, float value) =>
             Mathf.Lerp(newMin, newMax, Mathf.InverseLerp(oldMin, oldMax, value));
 
         /// <summary>
         /// Heights are inclusive.
         /// First height is bedrock, second is stone, and the third is dirt.
         /// </summary>
-		public BlockType DetermineType(int worldX, int worldY, int worldZ, int3 heights)
+		public static BlockType DetermineType(int seed, int worldX, int worldY, int worldZ, int3 heights)
         {
             if (worldY == 0)
                 return BlockType.Bedrock;
 
             // check if this suppose to be a cave
-            if (FractalFunc(worldX, worldY, worldZ, CaveSmooth, CaveOctaves) < CaveProbability)
+            if (FractalFunc(seed, worldX, worldY, worldZ, CaveSmooth, CaveOctaves) < CaveProbability)
                 return BlockType.Air;
 
             // bedrock
@@ -112,11 +109,11 @@ namespace Voxels.TerrainGeneration
             if (worldY <= heights.y)
             {
                 if (worldY < DiamondMaxHeight
-                    && FractalFunc(worldX, worldY, worldZ, DiamondSmooth, DiamondOctaves) < DiamondProbability)
+                    && FractalFunc(seed, worldX, worldY, worldZ, DiamondSmooth, DiamondOctaves) < DiamondProbability)
                     return BlockType.Diamond;
 
                 if (worldY < RedstoneMaxHeight
-                    && FractalFunc(worldX, worldY, worldZ, RedstoneSmooth, RedstoneOctaves) < RedstoneProbability)
+                    && FractalFunc(seed, worldX, worldY, worldZ, RedstoneSmooth, RedstoneOctaves) < RedstoneProbability)
                     return BlockType.Redstone;
 
                 return BlockType.Stone;
@@ -135,13 +132,13 @@ namespace Voxels.TerrainGeneration
         // good noise generator
         // persistence - if < 1 each function is less powerful than the previous one, for > 1 each is more important
         // octaves - number of functions that we sum up
-        float FractalBrownianMotion(float x, float z, int oct, float pers)
+        static float FractalBrownianMotion(int seed, float x, float z, int oct, float pers)
         {
             float total = 0, frequency = 1, amplitude = 1, maxValue = 0;
 
             for (int i = 0; i < oct; i++)
             {
-                total += Mathf.PerlinNoise((x + _seedValue) * frequency, (z + _seedValue) * frequency) * amplitude;
+                total += Mathf.PerlinNoise((x + seed) * frequency, (z + seed) * frequency) * amplitude;
                 maxValue += amplitude;
                 amplitude *= pers;
                 frequency *= 2;
@@ -151,16 +148,16 @@ namespace Voxels.TerrainGeneration
         }
 
         // FractalBrownianMotion3D
-        float FractalFunc(float x, float y, int z, float smooth, int octaves)
+        static float FractalFunc(int seed, float x, float y, int z, float smooth, int octaves)
         {
             // this is obviously more computational heavy
-            float xy = FractalBrownianMotion(x * smooth, y * smooth, octaves, 0.5f);
-            float yz = FractalBrownianMotion(y * smooth, z * smooth, octaves, 0.5f);
-            float xz = FractalBrownianMotion(x * smooth, z * smooth, octaves, 0.5f);
+            float xy = FractalBrownianMotion(seed, x * smooth, y * smooth, octaves, 0.5f);
+            float yz = FractalBrownianMotion(seed, y * smooth, z * smooth, octaves, 0.5f);
+            float xz = FractalBrownianMotion(seed, x * smooth, z * smooth, octaves, 0.5f);
 
-            float yx = FractalBrownianMotion(y * smooth, x * smooth, octaves, 0.5f);
-            float zy = FractalBrownianMotion(z * smooth, y * smooth, octaves, 0.5f);
-            float zx = FractalBrownianMotion(z * smooth, x * smooth, octaves, 0.5f);
+            float yx = FractalBrownianMotion(seed, y * smooth, x * smooth, octaves, 0.5f);
+            float zy = FractalBrownianMotion(seed, z * smooth, y * smooth, octaves, 0.5f);
+            float zx = FractalBrownianMotion(seed, z * smooth, x * smooth, octaves, 0.5f);
 
             return (xy + yz + xz + yx + zy + zx) / 6.0f;
         }
@@ -171,7 +168,7 @@ namespace Voxels.TerrainGeneration
         /// One for Bedrock, Stone and Dirt. Heights determines up to where certain types appear.
         /// x is Bedrock, y is Stone and z is Dirt.
         /// </summary>
-        public int3[] CalculateHeightsJobSystem()
+        public static int3[] CalculateHeightsJobSystem()
         {
             // output data
             var heights = new int3[_totalBlockNumberX * _totalBlockNumberZ];
@@ -203,7 +200,7 @@ namespace Voxels.TerrainGeneration
         /// One for Bedrock, Stone and Dirt. Heights determines up to where certain types appear.
         /// x is Bedrock, y is Stone and z is Dirt.
         /// </summary>
-        public int3[] CalculateHeightsGPU()
+        public static int3[] CalculateHeightsGPU()
         {
             var inputData = new int3[_totalBlockNumberX * _totalBlockNumberZ];
 
@@ -238,7 +235,7 @@ namespace Voxels.TerrainGeneration
             return output;
         }
 
-        public BlockType[] CalculateBlockTypes(int3[] heights)
+        public static BlockType[] CalculateBlockTypes(int3[] heights)
         {
             var inputSize = _totalBlockNumberX * _totalBlockNumberY * _totalBlockNumberZ;
 
@@ -268,7 +265,7 @@ namespace Voxels.TerrainGeneration
             return types;
         }
 
-        public BlockTypeColumn[] CalculateBlockColumn()
+        public static BlockTypeColumn[] CalculateBlockColumn()
         {
             int inputSize = _totalBlockNumberX * _totalBlockNumberY * _totalBlockNumberZ;
 
@@ -299,25 +296,25 @@ namespace Voxels.TerrainGeneration
             return outputArray;
         }
 
-        public void CalculateBlockTypesParallel()
+        public static void CalculateBlockTypesParallel()
         {
             var queue = new MultiThreadTaskQueue();
 
             int x, z;
             for (x = 0; x < _totalBlockNumberX; x++)
                 for (z = 0; z < _totalBlockNumberZ; z++)
-                    queue.ScheduleTask(CalculateBlockTypesForColumnParallel, x, z);
+                    queue.ScheduleTask(CalculateBlockTypesForColumnParallel, GlobalVariables.Settings.SeedValue, x, z);
 
             queue.RunAllInParallel();
         }
 
-        void CalculateBlockTypesForColumnParallel(int colX, int colZ)
+        static void CalculateBlockTypesForColumnParallel(int seed, int colX, int colZ)
         {
             int3 height = new int3()
             {
-                x = GenerateBedrockHeight(colX, colZ),
-                y = GenerateStoneHeight(colX, colZ),
-                z = GenerateDirtHeight(colX, colZ)
+                x = GenerateBedrockHeight(seed, colX, colZ),
+                y = GenerateStoneHeight(seed, colX, colZ),
+                z = GenerateDirtHeight(seed, colX, colZ)
             };
 
             // omit everything about the maximum height as it is air anyway
@@ -329,13 +326,13 @@ namespace Voxels.TerrainGeneration
 
             // height is inclusive
             for (int y = 0; y <= max; y++)
-                CreateBlock(ref GlobalVariables.Blocks[colX, y, colZ], DetermineType(colX, y, colZ, height));
+                CreateBlock(ref GlobalVariables.Blocks[colX, y, colZ], DetermineType(seed, colX, y, colZ, height));
         }
 
         /// <summary>
         /// Adds water to the <see cref="GlobalVariables.Blocks"/>.
         /// </summary>
-        public void AddWater()
+        public static void AddWater()
         {
             BlockData[,,] blocks = GlobalVariables.Blocks;
 
@@ -369,7 +366,7 @@ namespace Voxels.TerrainGeneration
         /// Adds trees to the <see cref="GlobalVariables.Blocks"/>.
         /// If treeProb parameter is set to TreeProbability.None then no trees will be added.
         /// </summary>
-        public void AddTrees(ref BlockData[,,] blocks, TreeProbability treeProb)
+        public static void AddTrees(ref BlockData[,,] blocks, TreeProbability treeProb)
         {
             if (treeProb == TreeProbability.None)
                 return;
@@ -388,7 +385,7 @@ namespace Voxels.TerrainGeneration
                             continue;
 
                         if (IsThereEnoughSpaceForTree(in blocks, x, y, z))
-                            if (FractalFunc(x, y, z, WoodbaseSmooth, WoodbaseOctaves) < woodbaseProbability)
+                            if (FractalFunc(GlobalVariables.Settings.SeedValue, x, y, z, WoodbaseSmooth, WoodbaseOctaves) < woodbaseProbability)
                                 BuildTree(ref blocks, x, y, z);
                     }
         }
@@ -400,7 +397,7 @@ namespace Voxels.TerrainGeneration
         /// and therefore will never grow a tree resulting in slightly different although unnoticeable
         /// for player results.
 		/// </summary>
-		public void AddTreesParallel()
+		public static void AddTreesParallel()
         {
             TreeProbability treeProb = GlobalVariables.Settings.TreeProbability;
 
@@ -421,7 +418,7 @@ namespace Voxels.TerrainGeneration
             queue.RunAllInParallel(); // this is synchronous
         }
 
-        void AddTreesInChunkParallel(float woodbaseProbability, int chunkColumnX, int chunkColumnZ)
+        static void AddTreesInChunkParallel(float woodbaseProbability, int chunkColumnX, int chunkColumnZ)
         {
             for (int x = 1 + chunkColumnX * Constants.CHUNK_SIZE; x < chunkColumnX * Constants.CHUNK_SIZE + Constants.CHUNK_SIZE - 1; x++)
                 // this 20 is hard coded as for now but generally it would be nice if
@@ -433,7 +430,7 @@ namespace Voxels.TerrainGeneration
                             continue;
 
                         if (IsThereEnoughSpaceForTree(in GlobalVariables.Blocks, x, y, z))
-                            if (FractalFunc(x, y, z, WoodbaseSmooth, WoodbaseOctaves) < woodbaseProbability)
+                            if (FractalFunc(GlobalVariables.Settings.SeedValue, x, y, z, WoodbaseSmooth, WoodbaseOctaves) < woodbaseProbability)
                                 BuildTree(ref GlobalVariables.Blocks, x, y, z);
                     }
         }
@@ -441,7 +438,7 @@ namespace Voxels.TerrainGeneration
         /// <summary>
         /// Spread the water horizontally.
         /// All air blocks that have a horizontal access to any water blocks will be turned into water blocks.
-        void PropagateWaterHorizontally(ref BlockData[,,] blocks, int currentY)
+        static void PropagateWaterHorizontally(ref BlockData[,,] blocks, int currentY)
         {
             /*
 				This algorithm works in two steps:
@@ -551,7 +548,7 @@ namespace Voxels.TerrainGeneration
         /// Returns true if at least on block was changed.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        bool AddWaterBelow(ref BlockData[,,] blocks, int currentY)
+        static bool AddWaterBelow(ref BlockData[,,] blocks, int currentY)
         {
             // assertion 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
@@ -575,7 +572,7 @@ namespace Voxels.TerrainGeneration
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        bool IsThereEnoughSpaceForTree(in BlockData[,,] blocks, int x, int y, int z)
+        static bool IsThereEnoughSpaceForTree(in BlockData[,,] blocks, int x, int y, int z)
         {
             for (int i = 2; i < TreeHeight; i++)
             {
@@ -594,7 +591,7 @@ namespace Voxels.TerrainGeneration
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        void BuildTree(ref BlockData[,,] blocks, int x, int y, int z)
+        static void BuildTree(ref BlockData[,,] blocks, int x, int y, int z)
         {
             CreateBlock(ref blocks[x, y, z], BlockType.Woodbase);
             CreateBlock(ref blocks[x, y + 1, z], BlockType.Wood);
@@ -610,7 +607,7 @@ namespace Voxels.TerrainGeneration
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        void CreateBlock(ref BlockData block, BlockType type)
+        static void CreateBlock(ref BlockData block, BlockType type)
         {
             block.Type = type;
             block.Hp = LookupTables.BlockHealthMax[(int)type];

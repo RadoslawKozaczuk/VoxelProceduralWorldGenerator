@@ -11,6 +11,8 @@ namespace Voxels.TerrainGeneration.Jobs
     {
         [ReadOnly]
         internal int TotalBlockNumberX;
+        [ReadOnly]
+        internal int Seed;
 
         internal NativeArray<int3> Result;
 
@@ -20,9 +22,9 @@ namespace Voxels.TerrainGeneration.Jobs
 
             Result[i] = new int3()
             {
-                x = TerrainGenerationAbstractionLayer.GenerateBedrockHeight(x, z),
-                y = TerrainGenerationAbstractionLayer.GenerateStoneHeight(x, z),
-                z = TerrainGenerationAbstractionLayer.GenerateDirtHeight(x, z)
+                x = TerrainGenerationAbstractionLayer.GenerateBedrockHeight(Seed, x, z),
+                y = TerrainGenerationAbstractionLayer.GenerateStoneHeight(Seed, x, z),
+                z = TerrainGenerationAbstractionLayer.GenerateDirtHeight(Seed, x, z)
             };
         }
     }

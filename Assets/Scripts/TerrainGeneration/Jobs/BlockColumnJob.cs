@@ -36,6 +36,8 @@ namespace Voxels.TerrainGeneration.Jobs
         internal int TotalBlockNumberY;
         [ReadOnly]
         internal int TotalBlockNumberZ;
+        [ReadOnly]
+        internal int Seed;
 
         internal NativeArray<BlockTypeColumn> Result;
 
@@ -45,9 +47,9 @@ namespace Voxels.TerrainGeneration.Jobs
 
             int3 heights = new int3()
             {
-                x = TerrainGenerationAbstractionLayer.GenerateBedrockHeight(x, z),
-                y = TerrainGenerationAbstractionLayer.GenerateStoneHeight(x, z),
-                z = TerrainGenerationAbstractionLayer.GenerateDirtHeight(x, z)
+                x = TerrainGenerationAbstractionLayer.GenerateBedrockHeight(Seed, x, z),
+                y = TerrainGenerationAbstractionLayer.GenerateStoneHeight(Seed, x, z),
+                z = TerrainGenerationAbstractionLayer.GenerateDirtHeight(Seed, x, z)
             };
 
             int max = heights.x; // max could be passed to the loop below but it requires air to be default type
@@ -62,7 +64,7 @@ namespace Voxels.TerrainGeneration.Jobs
             {
                 // heights are inclusive
                 for (int y = 0; y <= max; y++)
-                    blockTypes.Types[y] = (byte)TerrainGenerationAbstractionLayer.DetermineType(x, y, z, heights);
+                    blockTypes.Types[y] = (byte)TerrainGenerationAbstractionLayer.DetermineType(Seed, x, y, z, heights);
             }
 
             Result[i] = blockTypes;
