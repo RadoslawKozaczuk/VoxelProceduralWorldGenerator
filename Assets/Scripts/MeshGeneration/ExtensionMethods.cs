@@ -1,6 +1,6 @@
 ﻿using System.Runtime.CompilerServices;
 using UnityEngine;
-using Voxels.MeshGeneration.DataModels;
+using Voxels.Common.DataModels;
 
 namespace Voxels.MeshGeneration
 {

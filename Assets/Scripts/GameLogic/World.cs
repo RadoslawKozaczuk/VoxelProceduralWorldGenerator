@@ -125,8 +125,8 @@ namespace Voxels.GameLogic
                 for (int z = 0; z < GlobalVariables.Settings.WorldSizeZ; z++)
                     for (int y = 0; y < Constants.WORLD_SIZE_Y; y++)
                         GlobalVariables.Chunks[x, y, z] = new ChunkData(
-                            coord: new Vector3Int(x, y, z),
-                            position: new Vector3Int(x * Constants.CHUNK_SIZE, y * Constants.CHUNK_SIZE, z * Constants.CHUNK_SIZE));
+                            coord: new ReadonlyVector3Int(x, y, z),
+                            position: new ReadonlyVector3Int(x * Constants.CHUNK_SIZE, y * Constants.CHUNK_SIZE, z * Constants.CHUNK_SIZE));
 
             ChunkObjects = new ChunkObject[GlobalVariables.Settings.WorldSizeX, Constants.WORLD_SIZE_Y, GlobalVariables.Settings.WorldSizeZ];
             yield return null;
@@ -148,7 +148,7 @@ namespace Voxels.GameLogic
                     for (int y = 0; y < Constants.WORLD_SIZE_Y; y++)
                     {
                         ChunkData chunkData = GlobalVariables.Chunks[x, y, z];
-                        MeshGenerationAbstractionLayer.CalculateMeshes(chunkData.Position, out Mesh terrainMesh, out Mesh waterMesh);
+                        MeshGenerationAbstractionLayer.CalculateMeshes(in chunkData.Position, out Mesh terrainMesh, out Mesh waterMesh);
 
                         if (firstRun)
                         {
@@ -216,8 +216,8 @@ namespace Voxels.GameLogic
                     for (int z = 0; z < GlobalVariables.Settings.WorldSizeZ; z++)
                         for (int y = 0; y < Constants.WORLD_SIZE_Y; y++)
                             GlobalVariables.Chunks[x, y, z] = new ChunkData(
-                                new Vector3Int(x, y, z),
-                                new Vector3Int(x * Constants.CHUNK_SIZE, y * Constants.CHUNK_SIZE, z * Constants.CHUNK_SIZE));
+                                new ReadonlyVector3Int(x, y, z),
+                                new ReadonlyVector3Int(x * Constants.CHUNK_SIZE, y * Constants.CHUNK_SIZE, z * Constants.CHUNK_SIZE));
 
                 ChunkObjects = new ChunkObject[GlobalVariables.Settings.WorldSizeX, Constants.WORLD_SIZE_Y, GlobalVariables.Settings.WorldSizeZ];
                 AlreadyGenerated += _progressStep;
@@ -242,7 +242,7 @@ namespace Voxels.GameLogic
                     for (int y = 0; y < Constants.WORLD_SIZE_Y; y++)
                     {
                         ChunkData chunkData = GlobalVariables.Chunks[x, y, z];
-                        MeshGenerationAbstractionLayer.CalculateMeshes(chunkData.Position, out Mesh terrainMesh, out Mesh waterMesh);
+                        MeshGenerationAbstractionLayer.CalculateMeshes(in chunkData.Position, out Mesh terrainMesh, out Mesh waterMesh);
 
                         if (firstRun)
                         {
@@ -336,12 +336,12 @@ namespace Voxels.GameLogic
                             continue;
                         else if (chunkData.Status == ChunkStatus.NeedToBeRecreated)
                         {
-                            MeshGenerationAbstractionLayer.CalculateMeshes(chunkData.Position, out Mesh terrainMesh, out Mesh waterMesh);
+                            MeshGenerationAbstractionLayer.CalculateMeshes(in chunkData.Position, out Mesh terrainMesh, out Mesh waterMesh);
                             SetMeshesAndCollider(ref chunkData, ref ChunkObjects[x, y, z], terrainMesh, waterMesh);
                         }
                         else if (chunkData.Status == ChunkStatus.NeedToBeRedrawn) // used only for cracks
                         {
-                            MeshGenerationAbstractionLayer.CalculateMeshes(chunkData.Position, out Mesh terrainMesh, out _);
+                            MeshGenerationAbstractionLayer.CalculateMeshes(in chunkData.Position, out Mesh terrainMesh, out _);
                             SetTerrainMesh(ref chunkData, ref ChunkObjects[x, y, z], terrainMesh);
                         }
                     }
@@ -443,11 +443,11 @@ namespace Voxels.GameLogic
         /// </summary>
 		void CreateChunkGameObjects(ref ChunkData chunkData, ref ChunkObject chunkObject, Mesh terrainMesh, Mesh waterMesh)
         {
-            string name = chunkData.Coord.x.ToString() + chunkData.Coord.y + chunkData.Coord.z;
+            string name = chunkData.Coord.X.ToString() + chunkData.Coord.Y + chunkData.Coord.Z;
             chunkObject.Terrain = new GameObject(name + "_terrain");
-            chunkObject.Terrain.transform.position = chunkData.Position;
+            chunkObject.Terrain.transform.position = new Vector3(chunkData.Position.X, chunkData.Position.Y, chunkData.Position.Z);
             chunkObject.Water = new GameObject(name + "_water");
-            chunkObject.Water.transform.position = chunkData.Position;
+            chunkObject.Water.transform.position = new Vector3(chunkData.Position.X, chunkData.Position.Y, chunkData.Position.Z);
 
             MeshRenderer mrT = chunkObject.Terrain.gameObject.AddComponent(typeof(MeshRenderer)) as MeshRenderer;
             mrT.material = _terrainTexture;

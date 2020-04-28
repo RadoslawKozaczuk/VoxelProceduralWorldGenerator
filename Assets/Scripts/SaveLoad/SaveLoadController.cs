@@ -92,7 +92,7 @@ namespace Voxels.SaveLoad
         }
 
         #region Reading Methods
-        static ChunkData ReadChunk() => new ChunkData(ReadVector3Int(), ReadVector3Int()) { Status = ChunkStatus.NeedToBeRedrawn };
+        static ChunkData ReadChunk() => new ChunkData(ReadReadonlyVector3Int(), ReadReadonlyVector3Int()) { Status = ChunkStatus.NeedToBeRedrawn };
 
         static BlockData ReadBlock() => new BlockData
         {
@@ -102,13 +102,7 @@ namespace Voxels.SaveLoad
             HealthLevel = _reader.ReadByte()
         };
 
-        static Quaternion ReadQuaternion() => new Quaternion
-        {
-            x = _reader.ReadSingle(),
-            y = _reader.ReadSingle(),
-            z = _reader.ReadSingle(),
-            w = _reader.ReadSingle()
-        };
+        static Quaternion ReadQuaternion() => new Quaternion(_reader.ReadSingle(), _reader.ReadSingle(), _reader.ReadSingle(), _reader.ReadSingle());
 
         static Vector3[] ReadArrayVector3(int size)
         {
@@ -118,19 +112,11 @@ namespace Voxels.SaveLoad
             return array;
         }
 
-        static Vector3 ReadVector3() => new Vector3
-        {
-            x = _reader.ReadSingle(),
-            y = _reader.ReadSingle(),
-            z = _reader.ReadSingle()
-        };
+        static Vector3 ReadVector3() => new Vector3(_reader.ReadSingle(), _reader.ReadSingle(), _reader.ReadSingle());
 
-        static Vector3Int ReadVector3Int() => new Vector3Int
-        {
-            x = _reader.ReadInt32(),
-            y = _reader.ReadInt32(),
-            z = _reader.ReadInt32()
-        };
+        static Vector3Int ReadVector3Int() => new Vector3Int(_reader.ReadInt32(), _reader.ReadInt32(), _reader.ReadInt32());
+
+        static ReadonlyVector3Int ReadReadonlyVector3Int() => new ReadonlyVector3Int(_reader.ReadInt32(), _reader.ReadInt32(), _reader.ReadInt32());
 
         static List<Vector2> ReadListVector2(int size)
         {
@@ -148,11 +134,7 @@ namespace Voxels.SaveLoad
             return array;
         }
 
-        static Vector2 ReadVector2() => new Vector2
-        {
-            x = _reader.ReadSingle(),
-            y = _reader.ReadSingle()
-        };
+        static Vector2 ReadVector2() => new Vector2(_reader.ReadSingle(), _reader.ReadSingle());
 
         static int[] ReadArrayInt32(int size)
         {
@@ -212,6 +194,13 @@ namespace Voxels.SaveLoad
             _writer.Write(value.x);
             _writer.Write(value.y);
             _writer.Write(value.z);
+        }
+
+        static void Write(ReadonlyVector3Int value)
+        {
+            _writer.Write(value.X);
+            _writer.Write(value.Y);
+            _writer.Write(value.Z);
         }
 
         static void Write(List<Vector2> list)

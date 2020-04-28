@@ -7,18 +7,18 @@ namespace Voxels.Common.DataModels
         /// <summary>
         /// This is chunk ID, for example <1, 0 , 1>.
         /// </summary>
-        public readonly Vector3Int Coord;
-        public Vector3Int Position;
+        public readonly ReadonlyVector3Int Coord;
+        public readonly ReadonlyVector3Int Position;
         public ChunkStatus Status;
 
-        public ChunkData(Vector3Int coord, Vector3Int position, ChunkStatus status)
+        public ChunkData(ReadonlyVector3Int coord, ReadonlyVector3Int position, ChunkStatus status)
         {
             Coord = coord;
             Position = position;
             Status = status;
         }
 
-        public ChunkData(Vector3Int coord, Vector3Int position)
+        public ChunkData(ReadonlyVector3Int coord, ReadonlyVector3Int position)
         {
             Coord = coord;
             Position = position;

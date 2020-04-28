@@ -90,11 +90,11 @@ namespace Voxels.MeshGeneration
         /// This method creates mesh data necessary to create a mesh.
         /// Calculating two meshes at once is faster than creating them one by one.
         /// </summary>
-        internal void CalculateMeshes(Vector3Int chunkPos, out Mesh terrain, out Mesh water)
+        internal void CalculateMeshes(in ReadonlyVector3Int chunkPos, out Mesh terrain, out Mesh water)
         {
             BlockData[,,] blocks = GlobalVariables.Blocks;
 
-            CalculateMeshesSize(chunkPos, out int tSize, out int wSize);
+            CalculateMeshesSize(in chunkPos, out int tSize, out int wSize);
 
             var terrainData = new MeshData
             (
@@ -126,7 +126,7 @@ namespace Voxels.MeshGeneration
                         for (int z = 0; z < Constants.CHUNK_SIZE; z++)
                         {
                             // offset must be included
-                            ref BlockData b = ref blocks[x + chunkPos.x, y + chunkPos.y, z + chunkPos.z];
+                            ref BlockData b = ref blocks[x + chunkPos.X, y + chunkPos.Y, z + chunkPos.Z];
 
                             if (b.Faces == 0 || b.Type == BlockType.Air)
                                 continue;
@@ -149,7 +149,7 @@ namespace Voxels.MeshGeneration
                         for (int z = 0; z < Constants.CHUNK_SIZE; z++)
                         {
                             // offset must be included
-                            ref BlockData b = ref blocks[x + chunkPos.x, y + chunkPos.y, z + chunkPos.z];
+                            ref BlockData b = ref blocks[x + chunkPos.X, y + chunkPos.Y, z + chunkPos.Z];
 
                             if (b.Faces == 0 || b.Type == BlockType.Air)
                                 continue;
@@ -421,7 +421,7 @@ namespace Voxels.MeshGeneration
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        void CalculateMeshesSize(Vector3Int chunkPos, out int tSize, out int wSize)
+        void CalculateMeshesSize(in ReadonlyVector3Int chunkPos, out int tSize, out int wSize)
         {
             BlockData[,,] blocks = GlobalVariables.Blocks;
 
@@ -431,9 +431,9 @@ namespace Voxels.MeshGeneration
             ref BlockData b = ref blocks[0, 0, 0]; // assign anything
 
             // caching - this will make this function at least 2x faster
-            int cachedX = chunkPos.x;
-            int cachedY = chunkPos.y;
-            int cachedZ = chunkPos.z;
+            int cachedX = chunkPos.X;
+            int cachedY = chunkPos.Y;
+            int cachedZ = chunkPos.Z;
 
             // offset needs to be calculated
             int x, y, z;

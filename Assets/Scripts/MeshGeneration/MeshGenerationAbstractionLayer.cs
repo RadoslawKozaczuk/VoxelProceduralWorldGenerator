@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using Voxels.Common.DataModels;
 using Voxels.Common.Interfaces;
 
 namespace Voxels.MeshGeneration
@@ -21,7 +22,7 @@ namespace Voxels.MeshGeneration
 
         public static void WorldBoundariesCheck() => _meshGenerator.WorldBoundariesCheck();
 
-        public static void CalculateMeshes(Vector3Int chunkPos, out Mesh terrain, out Mesh water)
+        public static void CalculateMeshes(in ReadonlyVector3Int chunkPos, out Mesh terrain, out Mesh water)
             => _meshGenerator.CalculateMeshes(chunkPos, out terrain, out water);
 
         public static void RecalculateFacesAfterBlockDestroy(int blockX, int blockY, int blockZ)
