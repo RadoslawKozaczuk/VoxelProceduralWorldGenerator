@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System.Runtime.CompilerServices;
+using UnityEngine;
 using Voxels.Common.DataModels;
 using Voxels.Common.Interfaces;
 
@@ -22,12 +23,15 @@ namespace Voxels.MeshGeneration
 
         public static void WorldBoundariesCheck() => _meshGenerator.WorldBoundariesCheck();
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void CalculateMeshes(in ReadonlyVector3Int chunkPos, out Mesh terrain, out Mesh water)
             => _meshGenerator.CalculateMeshes(chunkPos, out terrain, out water);
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void RecalculateFacesAfterBlockDestroy(int blockX, int blockY, int blockZ)
             => _meshGenerator.RecalculateFacesAfterBlockDestroy(blockX, blockY, blockZ);
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void RecalculateFacesAfterBlockBuild(int blockX, int blockY, int blockZ)
             => _meshGenerator.RecalculateFacesAfterBlockBuild(blockX, blockY, blockZ);
     }

@@ -1,8 +1,8 @@
 ﻿using Unity.Burst;
 using Unity.Collections;
 using Unity.Jobs;
-using Unity.Mathematics;
 using Voxels.Common;
+using Voxels.Common.DataModels;
 
 namespace Voxels.TerrainGeneration.Jobs
 {
@@ -18,18 +18,12 @@ namespace Voxels.TerrainGeneration.Jobs
 #pragma warning restore CS0649
 
         // output
-        internal NativeArray<int3> Result;
+        internal NativeArray<ReadonlyVector3Int> Result;
 
         public void Execute(int i)
         {
             Utils.IndexDeflattenizer2D(i, TotalBlockNumberX, out int x, out int z);
-
-            Result[i] = new int3()
-            {
-                x = TerrainGenerationAbstractionLayer.GenerateBedrockHeight(Seed, x, z),
-                y = TerrainGenerationAbstractionLayer.GenerateStoneHeight(Seed, x, z),
-                z = TerrainGenerationAbstractionLayer.GenerateDirtHeight(Seed, x, z)
-            };
+            Result[i] = TerrainGenerator.CalculateHeights(Seed, x, z);
         }
     }
 }

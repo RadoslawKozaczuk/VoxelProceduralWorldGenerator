@@ -3,6 +3,7 @@ using Unity.Collections;
 using Unity.Jobs;
 using Unity.Mathematics;
 using Voxels.Common;
+using Voxels.Common.DataModels;
 
 namespace Voxels.TerrainGeneration.Jobs
 {
@@ -47,18 +48,13 @@ namespace Voxels.TerrainGeneration.Jobs
         {
             Utils.IndexDeflattenizer2D(i, TotalBlockNumberX, out int x, out int z);
 
-            int3 heights = new int3()
-            {
-                x = TerrainGenerationAbstractionLayer.GenerateBedrockHeight(Seed, x, z),
-                y = TerrainGenerationAbstractionLayer.GenerateStoneHeight(Seed, x, z),
-                z = TerrainGenerationAbstractionLayer.GenerateDirtHeight(Seed, x, z)
-            };
+            ReadonlyVector3Int heights = TerrainGenerator.CalculateHeights(Seed, x, z);
 
-            int max = heights.x; // max could be passed to the loop below but it requires air to be default type
-            if (heights.y > max)
-                max = heights.y;
-            if (heights.z > max)
-                max = heights.z;
+            int max = heights.X; // max could be passed to the loop below but it requires air to be default type
+            if (heights.Y > max)
+                max = heights.Y;
+            if (heights.Z > max)
+                max = heights.Z;
 
             var blockTypes = new BlockTypeColumn(max);
 
@@ -66,7 +62,7 @@ namespace Voxels.TerrainGeneration.Jobs
             {
                 // heights are inclusive
                 for (int y = 0; y <= max; y++)
-                    blockTypes.Types[y] = (byte)TerrainGenerationAbstractionLayer.DetermineType(Seed, x, y, z, heights);
+                    blockTypes.Types[y] = (byte)TerrainGenerationAbstractionLayer.DetermineType(Seed, x, y, z, in heights);
             }
 
             Result[i] = blockTypes;

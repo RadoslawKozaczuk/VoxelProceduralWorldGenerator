@@ -41,7 +41,7 @@ namespace Voxels.GameLogic
         void Start()
         {
             _settings.TreeProbability = TreeProbability.Some;
-            _settings.ComputingAcceleration = ComputingAcceleration.PureCSParallelisation;
+            _settings.ComputingAcceleration = ComputingAccelerationMethod.UnityJobSystem;
             SetWorldSizeDescription();
         }
 

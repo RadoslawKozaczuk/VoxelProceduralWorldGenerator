@@ -11,8 +11,12 @@ namespace Voxels.Common
     {
         readonly int _logicalProcessorCount = Environment.ProcessorCount;
         readonly List<Task> _pendingTasks = new List<Task>();
-        bool _isRunning = false; // this queue is very simplistic and adding new tasks is impossible when the queue is executing tasks
+
         int _index = 0; // current task index
+
+#if UNITY_EDITOR || UNITY_DEVELOPMENT
+        bool _isRunning = false; // this queue is very simplistic and adding new tasks is impossible when the queue is executing tasks
+#endif
 
         /// <summary>
         /// Adds the given action to the queue. Tasks are not executed until RunAllInParallel method is called.
@@ -81,9 +85,9 @@ namespace Voxels.Common
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             if (_isRunning)
                 throw new System.Exception("RunAllInParallel method should not be called when MultiThreadTaskQueue is running.");
-#endif
 
             _isRunning = true;
+#endif
 
             int taskArraySize = Math.Min(_logicalProcessorCount, _pendingTasks.Count);
             var ongoingTasks = new Task[taskArraySize];
@@ -114,7 +118,10 @@ namespace Voxels.Common
 
             _pendingTasks.Clear();
             _index = 0;
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
             _isRunning = false;
+#endif
         }
 
 #if UNITY_EDITOR || UNITY_DEVELOPMENT

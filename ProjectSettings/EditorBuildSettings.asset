@@ -9,6 +9,6 @@ EditorBuildSettings:
     path: Assets/Scenes/Main Menu.unity
     guid: ebdaf9e236ded494898f3aa33d92d677
   - enabled: 1
-    path: Assets/Scenes/Voxels.unity
+    path: Assets/Scenes/Game.unity
     guid: 226d502971ec147419a049ee84aa0398
   m_configObjects: {}

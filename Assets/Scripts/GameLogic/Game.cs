@@ -195,9 +195,10 @@ namespace Voxels.GameLogic
         void CreatePlayer(Vector3? position = null, Vector3? rotation = null)
         {
             Vector3 playerPos = position ?? _playerStartPosition;
-            int maxY = Math.Max(
-                TerrainGenerationAbstractionLayer.GenerateDirtHeight(GlobalVariables.Settings.SeedValue, playerPos.x, playerPos.z),
-                TerrainGenerationAbstractionLayer.GenerateStoneHeight(GlobalVariables.Settings.SeedValue, playerPos.x, playerPos.z));
+            ReadonlyVector3Int heights = TerrainGenerationAbstractionLayer.CalculateHeights(
+                GlobalVariables.Settings.SeedValue, (int)playerPos.x, (int)playerPos.z);
+
+            int maxY = Math.Max(heights.Y, heights.Z); // y = stone, z = dirt
 
             _player.transform.position = new Vector3(playerPos.x, maxY + 2, playerPos.z);
 

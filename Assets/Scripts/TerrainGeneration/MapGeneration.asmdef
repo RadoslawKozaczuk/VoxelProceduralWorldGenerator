@@ -3,6 +3,7 @@
     "references": [
         "GUID:d8b63aba1907145bea998dd612889d6b",
         "GUID:2665a8d13d1b3f18800f46e256720795",
+        "GUID:734d92eba21c94caba915361bd5ac177",
         "GUID:f40cfcf4aedefb44ea3c082413dc53c7"
     ],
     "includePlatforms": [],
@@ -12,5 +13,6 @@
     "precompiledReferences": [],
     "autoReferenced": true,
     "defineConstraints": [],
-    "versionDefines": []
+    "versionDefines": [],
+    "noEngineReferences": false
 }

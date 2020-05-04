@@ -108,7 +108,7 @@ namespace Voxels.SaveLoad
         {
             var array = new Vector3[size];
             for (int i = 0; i < size; i++)
-                array[i] = ReadVector2();
+                array[i] = ReadVector3();
             return array;
         }
 

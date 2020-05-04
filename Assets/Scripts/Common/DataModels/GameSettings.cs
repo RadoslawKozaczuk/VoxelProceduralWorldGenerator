@@ -3,8 +3,20 @@
     public struct GameSettings
     {
         public TreeProbability TreeProbability;
-        public int WorldSizeX, WorldSizeZ, SeedValue, WaterLevel;
+
+        /// <summary>
+        /// Width of the world measured in chunks.
+        /// </summary>
+        public int WorldSizeX;
+
+        /// <summary>
+        /// Depth of the world measured in chunks.
+        /// </summary>
+        public int WorldSizeZ;
+        
+        public int SeedValue, WaterLevel;
         public bool IsWater;
-        public ComputingAcceleration ComputingAcceleration;
+
+        public ComputingAccelerationMethod ComputingAcceleration;
     }
 }

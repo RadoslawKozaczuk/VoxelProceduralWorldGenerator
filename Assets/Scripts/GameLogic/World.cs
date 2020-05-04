@@ -17,7 +17,7 @@ namespace Voxels.GameLogic
     [CreateAssetMenu]
     public class World : ScriptableObject
     {
-        const int TERRAIN_GENERATION_STEPS = 9;
+        const int TERRAIN_GENERATION_STEPS = 7;
 
         public readonly int TotalBlockNumberX, TotalBlockNumberY, TotalBlockNumberZ;
 
@@ -66,40 +66,12 @@ namespace Voxels.GameLogic
                 Constants.WORLD_SIZE_Y * Constants.CHUNK_SIZE, GlobalVariables.Settings.WorldSizeZ * Constants.CHUNK_SIZE];
 
             AlreadyGenerated += _progressStep;
-            yield return null;
+            yield return null; // return control
 
-            if (GlobalVariables.Settings.ComputingAcceleration == ComputingAcceleration.UnityJobSystem)
-            {
-                ProgressDescription = "Calculating heights...";
-                var heights = TerrainGenerationAbstractionLayer.CalculateHeightsJobSystem();
-                AlreadyGenerated += _progressStep;
-                yield return null;
-
-                ProgressDescription = "Calculating block types...";
-                var types = TerrainGenerationAbstractionLayer.CalculateBlockTypes(heights);
-                AlreadyGenerated += _progressStep;
-                yield return null;
-
-                // new way of calculating unfortunately slower
-                // it uses job system but calculates entire columns 
-                // this approach needs static array allocation
-                //ProgressDescription = "Calculating block types...";
-                //BlockTypeColumn[] types = _terrainGenerator.CalculateBlockColumn();
-                //AlreadyGenerated += _progressStep;
-                //yield return null;
-
-                ProgressDescription = "Job output deflattenization...";
-                DeflattenizeOutput(ref types);
-                AlreadyGenerated += _progressStep;
-                yield return null;
-            }
-            else if (GlobalVariables.Settings.ComputingAcceleration == ComputingAcceleration.PureCSParallelisation)
-            {
-                ProgressDescription = "Calculating block types...";
-                TerrainGenerationAbstractionLayer.CalculateBlockTypesParallel();
-                AlreadyGenerated += _progressStep * 3;
-                yield return null;
-            }
+            ProgressDescription = "Calculating block types...";
+            TerrainGenerationAbstractionLayer.CalculateBlockTypes();
+            AlreadyGenerated += _progressStep;
+            yield return null; // return control to update the UI
 
             if (GlobalVariables.Settings.IsWater)
             {
@@ -107,12 +79,12 @@ namespace Voxels.GameLogic
                 TerrainGenerationAbstractionLayer.AddWater();
             }
             AlreadyGenerated += _progressStep;
-            yield return null;
+            yield return null; // return control
 
             ProgressDescription = "Generating trees...";
             TerrainGenerationAbstractionLayer.AddTreesParallel();
             AlreadyGenerated += _progressStep;
-            yield return null;
+            yield return null; // return control
 
             ProgressDescription = "Chunk data initialization...";
             if (firstRun)
@@ -129,17 +101,17 @@ namespace Voxels.GameLogic
                             position: new ReadonlyVector3Int(x * Constants.CHUNK_SIZE, y * Constants.CHUNK_SIZE, z * Constants.CHUNK_SIZE));
 
             ChunkObjects = new ChunkObject[GlobalVariables.Settings.WorldSizeX, Constants.WORLD_SIZE_Y, GlobalVariables.Settings.WorldSizeZ];
-            yield return null;
+            yield return null; // return control
 
             ProgressDescription = "Calculating faces...";
             MeshGenerationAbstractionLayer.CalculateFaces();
             AlreadyGenerated += _progressStep;
-            yield return null;
+            yield return null; // return control
 
             ProgressDescription = "World boundaries check...";
             MeshGenerationAbstractionLayer.WorldBoundariesCheck();
             AlreadyGenerated += _progressStep;
-            yield return null;
+            yield return null; // return control
 
             ProgressDescription = "Creating chunks...";
             // create chunk objects one by one 
@@ -166,7 +138,7 @@ namespace Voxels.GameLogic
                         GlobalVariables.Chunks[x, y, z].Status = ChunkStatus.NeedToBeRedrawn;
                         AlreadyGenerated++;
 
-                        yield return null; // give back control
+                        yield return null; // return control
                     }
 
             Status = WorldGeneratorStatus.AllReady;
@@ -195,7 +167,7 @@ namespace Voxels.GameLogic
             Status = WorldGeneratorStatus.NotReady;
             SaveLoadController.LoadGame(out PlayerLoadedPosition, out PlayerLoadedRotation);
             AlreadyGenerated += _progressStep;
-            yield return null; // give back control
+            yield return null; // return control
 
             ProgressDescription = "Creating game objects...";
             if (firstRun)
@@ -203,7 +175,7 @@ namespace Voxels.GameLogic
 
             Status = WorldGeneratorStatus.TerrainReady;
             AlreadyGenerated += _progressStep;
-            yield return null; // give back control
+            yield return null; // return control
 
             if (firstRun)
             {
@@ -220,19 +192,19 @@ namespace Voxels.GameLogic
 
                 ChunkObjects = new ChunkObject[GlobalVariables.Settings.WorldSizeX, Constants.WORLD_SIZE_Y, GlobalVariables.Settings.WorldSizeZ];
                 AlreadyGenerated += _progressStep;
-                yield return null; // give back control
+                yield return null; // return control
             }
 
             ProgressDescription = "Calculating faces...";
             MeshGenerationAbstractionLayer.CalculateFaces();
             AlreadyGenerated += _progressStep;
-            yield return null; // give back control
+            yield return null; // return control
 
             ProgressDescription = "World boundaries check...";
             MeshGenerationAbstractionLayer.WorldBoundariesCheck();
             Status = WorldGeneratorStatus.FacesReady;
             AlreadyGenerated += _progressStep;
-            yield return null; // give back control
+            yield return null; // return control
 
             ProgressDescription = "Creating chunks...";
             // create chunk objects one by one 
@@ -259,7 +231,7 @@ namespace Voxels.GameLogic
                         GlobalVariables.Chunks[x, y, z].Status = ChunkStatus.NeedToBeRedrawn;
                         AlreadyGenerated++;
 
-                        yield return null; // give back control
+                        yield return null; // return control
                     }
 
             Status = WorldGeneratorStatus.AllReady;
@@ -372,42 +344,28 @@ namespace Voxels.GameLogic
             return (byte)(11 - level); // array is in reverse order so we subtract our value from 11
         }
 
-        void DeflattenizeOutput(ref BlockType[] types)
-        {
-            for (int x = 0; x < TotalBlockNumberX; x++)
-                for (int y = 0; y < TotalBlockNumberY; y++)
-                    for (int z = 0; z < TotalBlockNumberZ; z++)
-                    {
-                        BlockType type = types[Utils.IndexFlattenizer3D(x, y, z, TotalBlockNumberX, TotalBlockNumberY)];
-
-                        ref BlockData b = ref GlobalVariables.Blocks[x, y, z];
-                        b.Type = type;
-                        b.Hp = LookupTables.BlockHealthMax[(int)type];
-                    }
-        }
-
         void DeflattenizeOutput(ref BlockTypeColumn[] columns)
         {
-            for (int x = 0; x < TotalBlockNumberX; x++)
-                for (int z = 0; z < TotalBlockNumberZ; z++)
-                {
-                    BlockTypeColumn column = columns[Utils.IndexFlattenizer2D(x, z, TotalBlockNumberX)];
+            //for (int x = 0; x < TotalBlockNumberX; x++)
+            //    for (int z = 0; z < TotalBlockNumberZ; z++)
+            //    {
+            //        BlockTypeColumn column = columns[Utils.IndexFlattenizer2D(x, z, TotalBlockNumberX)];
 
-                    // heights are inclusive
-                    for (int y = 0; y <= column.TerrainLevel; y++)
-                    {
-                        BlockType type;
+            //        // heights are inclusive
+            //        for (int y = 0; y <= column.TerrainLevel; y++)
+            //        {
+            //            BlockType type;
 
-                        unsafe
-                        {
-                            type = (BlockType)column.Types[y];
-                        }
+            //            unsafe
+            //            {
+            //                type = (BlockType)column.Types[y];
+            //            }
 
-                        ref BlockData b = ref GlobalVariables.Blocks[x, y, z];
-                        b.Type = type;
-                        b.Hp = LookupTables.BlockHealthMax[(int)type];
-                    }
-                }
+            //            ref BlockData b = ref GlobalVariables.Blocks[x, y, z];
+            //            b.Type = type;
+            //            b.Hp = LookupTables.BlockHealthMax[(int)type];
+            //        }
+            //    }
         }
 
         /// <summary>

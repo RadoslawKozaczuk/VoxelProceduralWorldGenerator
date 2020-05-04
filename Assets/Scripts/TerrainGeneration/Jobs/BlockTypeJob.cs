@@ -1,8 +1,8 @@
 ﻿using Unity.Burst;
 using Unity.Collections;
 using Unity.Jobs;
-using Unity.Mathematics;
 using Voxels.Common;
+using Voxels.Common.DataModels;
 
 namespace Voxels.TerrainGeneration.Jobs
 {
@@ -17,7 +17,7 @@ namespace Voxels.TerrainGeneration.Jobs
         [ReadOnly]
         internal int TotalBlockNumberZ;
         [ReadOnly]
-        internal NativeArray<int3> Heights;
+        internal NativeArray<ReadonlyVector3Int> Heights;
 #pragma warning disable CS0649 // suppress "Field is never assigned to, and will always have its default value null"
         [ReadOnly]
         internal int Seed;
