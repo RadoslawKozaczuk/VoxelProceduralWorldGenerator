@@ -382,16 +382,9 @@ namespace Voxels.TerrainGeneration
             => Mathf.Lerp(newMin, newMax, Mathf.InverseLerp(oldMin, oldMax, value));
 
         /// <summary>
-        /// good noise generator 
         /// persistence - if < 1 each function is less powerful than the previous one, for > 1 each is more important
         /// octaves - number of functions that we sum up
         /// </summary>
-        /// <param name="seed"></param>
-        /// <param name="x"></param>
-        /// <param name="z"></param>
-        /// <param name="octaves"></param>
-        /// <param name="persistence"></param>
-        /// <returns></returns>
         static float FractalBrownianMotion(int seed, float x, float z, int octaves, float persistence)
         {
             float total = 0, frequency = 1, amplitude = 1, maxValue = 0;

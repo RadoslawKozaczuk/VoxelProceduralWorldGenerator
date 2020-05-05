@@ -12,7 +12,7 @@ namespace Voxels.Common
         readonly int _logicalProcessorCount = Environment.ProcessorCount;
         readonly List<Task> _pendingTasks = new List<Task>();
 
-        int _index = 0; // current task index
+        int _index; // current task index
 
 #if UNITY_EDITOR || UNITY_DEVELOPMENT
         bool _isRunning = false; // this queue is very simplistic and adding new tasks is impossible when the queue is executing tasks
@@ -27,6 +27,7 @@ namespace Voxels.Common
             where T2 : struct
             where T3 : struct
         {
+            // assertions
 #if UNITY_EDITOR || UNITY_DEVELOPMENT
             Assertions(action.Method, 3);
 #endif
@@ -48,6 +49,7 @@ namespace Voxels.Common
             where T1 : struct
             where T2 : struct
         {
+            // assertions
 #if UNITY_EDITOR || UNITY_DEVELOPMENT
             Assertions(action.Method, 2);
 #endif
@@ -67,7 +69,7 @@ namespace Voxels.Common
         public void ScheduleTask<T>(Action<T> action, T arg)
             where T : struct
         {
-            // assertion
+            // assertions
 #if UNITY_EDITOR || UNITY_DEVELOPMENT
             Assertions(action.Method, 1);
 #endif
