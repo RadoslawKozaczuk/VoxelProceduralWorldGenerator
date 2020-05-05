@@ -44,5 +44,9 @@ namespace Voxels.Common
         /// TODO: description
         /// </summary>
         ComputeShader,
+        /// <summary>
+        /// Utilizes Entity Component System
+        /// </summary>
+        ECS
     }
 }

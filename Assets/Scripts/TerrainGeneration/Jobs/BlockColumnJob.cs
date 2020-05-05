@@ -1,7 +1,6 @@
 ﻿using Unity.Burst;
 using Unity.Collections;
 using Unity.Jobs;
-using Unity.Mathematics;
 using Voxels.Common;
 using Voxels.Common.DataModels;
 
@@ -62,7 +61,7 @@ namespace Voxels.TerrainGeneration.Jobs
             {
                 // heights are inclusive
                 for (int y = 0; y <= max; y++)
-                    blockTypes.Types[y] = (byte)TerrainGenerationAbstractionLayer.DetermineType(Seed, x, y, z, in heights);
+                    blockTypes.Types[y] = (byte)TerrainGenerator.DetermineType(Seed, x, y, z, in heights);
             }
 
             Result[i] = blockTypes;

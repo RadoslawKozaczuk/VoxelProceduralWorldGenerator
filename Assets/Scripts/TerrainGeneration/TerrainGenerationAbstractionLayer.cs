@@ -1,9 +1,12 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
+using Unity.Entities;
+using Unity.Mathematics;
 using UnityEngine;
 using Voxels.Common;
 using Voxels.Common.DataModels;
 using Voxels.Common.Interfaces;
+using Voxels.TerrainGeneration.ECS.Components;
 
 namespace Voxels.TerrainGeneration
 {
@@ -64,6 +67,12 @@ namespace Voxels.TerrainGeneration
 
                     break;
                 }
+                case ComputingAccelerationMethod.ECS:
+                {
+                    // ECS changes the BlockCalculationCompleted flag in a different way by throwing an event
+                    CalculateBlockTypes_ECS();
+                    break;
+                }
             }
         }
 
@@ -78,10 +87,6 @@ namespace Voxels.TerrainGeneration
 
         // The managed function is not supported by burst, everything need to be static
         //public static int GenerateBedrockHeight(float x, float z) => _terrainGenerator.GenerateBedrockHeight(x, z);
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static BlockType DetermineType(int seed, int worldX, int worldY, int worldZ, in ReadonlyVector3Int heights)
-            => TerrainGenerator.DetermineType(seed, worldX, worldY, worldZ, in heights);
 
         static void CalculateBlockTypes_PureCSParallel()
         {
@@ -106,6 +111,28 @@ namespace Voxels.TerrainGeneration
                         ref BlockData b = ref GlobalVariables.Blocks[x, y, z];
                         b.Type = type;
                         b.Hp = LookupTables.BlockHealthMax[(int)type];
+                    }
+        }
+
+        static void CalculateBlockTypes_ECS()
+        {
+            // we need entity manager in order to create entities
+            EntityManager entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
+
+            // create an entity archetype (a blueprint), that will later be used in instantiation and querying
+            EntityArchetype entityArchetype = entityManager.CreateArchetype(
+                typeof(BlockTypesComponent),
+                typeof(WorldConstants),
+                typeof(CoordinatesComponent));
+
+            // we pass shorts to coordinate component to make it smaller
+            for (int x = 0; x < GlobalVariables.Settings.WorldSizeX * Constants.CHUNK_SIZE; x++)
+                for (int y = 0; y < Constants.WORLD_SIZE_Y * Constants.CHUNK_SIZE; y++)
+                    for (int z = 0; z < GlobalVariables.Settings.WorldSizeZ * Constants.CHUNK_SIZE; z++)
+                    {
+                        Entity entity = entityManager.CreateEntity(entityArchetype);
+                        entityManager.SetComponentData(entity, new CoordinatesComponent(new int3(x, y, z)));
+                        entityManager.SetComponentData(entity, new WorldConstants(GlobalVariables.Settings.SeedValue));
                     }
         }
     }

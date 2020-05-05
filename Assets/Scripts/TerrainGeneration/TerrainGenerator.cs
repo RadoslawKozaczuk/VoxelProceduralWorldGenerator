@@ -9,7 +9,7 @@ using Voxels.TerrainGeneration.Jobs;
 
 namespace Voxels.TerrainGeneration
 {
-    public static class TerrainGenerator
+    internal static partial class TerrainGenerator
     {
         #region Constants
         // caves should be more erratic so has to be a higher number
@@ -65,6 +65,7 @@ namespace Voxels.TerrainGeneration
         static int _waterLevel;
         static int _worldSizeX, _worldSizeZ;
 
+        #region Internal Methods
         internal static void Initialize(ComputeShader heightsShader)
         {
             _worldSizeX = GlobalVariables.Settings.WorldSizeX;
@@ -78,6 +79,9 @@ namespace Voxels.TerrainGeneration
             _heightsShader = heightsShader;
         }
 
+        /// <summary>
+        /// First value is <see cref="BlockType.Bedrock"/>, second is <see cref="BlockType.Stone"/> and third is <see cref="BlockType.Dirt"/>.
+        /// </summary>
         internal static ReadonlyVector3Int CalculateHeights(int seed, int x, int z)
             => new ReadonlyVector3Int(
                 (int)Map(0, MAX_HEIGHT_BEDROCK, 0, 1, 
@@ -87,21 +91,6 @@ namespace Voxels.TerrainGeneration
                 (int)Map(0, MAX_HEIGHT_DIRT, 0, 1,
                     FractalBrownianMotion(seed, x * SMOOTH_DIRT, z * SMOOTH_DIRT, OCTAVES_DIRT, PERSISTENCE_DIRT)));
 
-        //internal static int GenerateBedrockHeight(int seed, int x, int z) =>
-        //    (int)Map(0, MAX_HEIGHT_BEDROCK, 0, 1,
-        //        FractalBrownianMotion(seed, x * SMOOTH_BEDROCK, z * SMOOTH_BEDROCK, OCTAVES_BEDROCK, PERSISTENCE_BEDROCK));
-
-        //internal static int GenerateStoneHeight(int seed, int x, int z) =>
-        //    (int)Map(0, MAX_HEIGHT_STONE, 0, 1,
-        //        FractalBrownianMotion(seed, x * SMOOTH_STONE, z * SMOOTH_STONE, OCTAVES_STONE, PERSISTENCE_STONE));
-
-        //internal static int GenerateDirtHeight(int seed, int x, int z) =>
-        //    (int)Map(0, MAX_HEIGHT_DIRT, 0, 1,
-        //        FractalBrownianMotion(seed, x * SMOOTH_DIRT, z * SMOOTH_DIRT, OCTAVES_DIRT, PERSISTENCE_DIRT));
-
-        static float Map(float newMin, float newMax, float oldMin, float oldMax, float value) 
-            => Mathf.Lerp(newMin, newMax, Mathf.InverseLerp(oldMin, oldMax, value));
-
         /// <summary>
         /// Heights are inclusive.
         /// First height is bedrock, second is stone, and the third is dirt.
@@ -110,6 +99,10 @@ namespace Voxels.TerrainGeneration
         {
             if (worldY == 0)
                 return BlockType.Bedrock;
+
+            // air
+            if (worldY > heights.X && worldY > heights.Y && worldY > heights.Z)
+                return BlockType.Air;
 
             // check if this suppose to be a cave
             if (FractalFunc(seed, worldX, worldY, worldZ, CAVE_SMOOTH, CAVE_OCTAVES) < CAVE_PROBABILITY)
@@ -141,39 +134,6 @@ namespace Voxels.TerrainGeneration
                 return BlockType.Dirt;
 
             return BlockType.Air;
-        }
-
-        // good noise generator
-        // persistence - if < 1 each function is less powerful than the previous one, for > 1 each is more important
-        // octaves - number of functions that we sum up
-        static float FractalBrownianMotion(int seed, float x, float z, int oct, float pers)
-        {
-            float total = 0, frequency = 1, amplitude = 1, maxValue = 0;
-
-            for (int i = 0; i < oct; i++)
-            {
-                total += Mathf.PerlinNoise((x + seed) * frequency, (z + seed) * frequency) * amplitude;
-                maxValue += amplitude;
-                amplitude *= pers;
-                frequency *= 2;
-            }
-
-            return total / maxValue;
-        }
-
-        // FractalBrownianMotion3D
-        static float FractalFunc(int seed, float x, float y, int z, float smooth, int octaves)
-        {
-            // this is obviously more computational heavy
-            float xy = FractalBrownianMotion(seed, x * smooth, y * smooth, octaves, 0.5f);
-            float yz = FractalBrownianMotion(seed, y * smooth, z * smooth, octaves, 0.5f);
-            float xz = FractalBrownianMotion(seed, x * smooth, z * smooth, octaves, 0.5f);
-
-            float yx = FractalBrownianMotion(seed, y * smooth, x * smooth, octaves, 0.5f);
-            float zy = FractalBrownianMotion(seed, z * smooth, y * smooth, octaves, 0.5f);
-            float zx = FractalBrownianMotion(seed, z * smooth, x * smooth, octaves, 0.5f);
-
-            return (xy + yz + xz + yx + zy + zx) / 6.0f;
         }
 
         /// <summary>
@@ -214,7 +174,7 @@ namespace Voxels.TerrainGeneration
         /// One for Bedrock, Stone and Dirt. Heights determines up to where certain types appear.
         /// x is Bedrock, y is Stone and z is Dirt.
         /// </summary>
-        public static int3[] CalculateHeightsGPU()
+        internal static int3[] CalculateHeightsGPU()
         {
             var inputData = new int3[TotalBlockNumberX * TotalBlockNumberZ];
 
@@ -249,7 +209,7 @@ namespace Voxels.TerrainGeneration
             return output;
         }
 
-        public static BlockType[] CalculateBlockTypes(ReadonlyVector3Int[] heights)
+        internal static BlockType[] CalculateBlockTypes(ReadonlyVector3Int[] heights)
         {
             var inputSize = TotalBlockNumberX * TotalBlockNumberY * TotalBlockNumberZ;
 
@@ -279,7 +239,7 @@ namespace Voxels.TerrainGeneration
             return types;
         }
 
-        public static BlockTypeColumn[] CalculateBlockColumn()
+        internal static BlockTypeColumn[] CalculateBlockColumn()
         {
             int inputSize = TotalBlockNumberX * TotalBlockNumberY * TotalBlockNumberZ;
 
@@ -363,30 +323,21 @@ namespace Voxels.TerrainGeneration
         /// Adds trees to the <see cref="GlobalVariables.Blocks"/>.
         /// If treeProb parameter is set to TreeProbability.None then no trees will be added.
         /// </summary>
-        internal static void AddTrees(TreeProbability treeProb)
+        internal static void AddTrees()
         {
+            TreeProbability treeProb = GlobalVariables.Settings.TreeProbability;
+
             if (treeProb == TreeProbability.None)
                 return;
-
-            BlockData[,,] blocks = GlobalVariables.Blocks;
 
             float woodbaseProbability = treeProb == TreeProbability.Some
                 ? WOODBASE_SOME_PROBABILITY
                 : WOODBASE_HIGH_PROBABILITY;
 
+            // x = 1 and TotalBlockNumberX - 1 because tree needs extra space so it can not be spawned on the edge of the map
             for (int x = 1; x < TotalBlockNumberX - 1; x++)
-                // this 20 is hard coded as for now but generally it would be nice if
-                // this loop could know in advance where the lowest grass is
-                for (int y = 20; y < TotalBlockNumberY - TREE_HEIGHT - 1; y++)
-                    for (int z = 1; z < TotalBlockNumberZ - 1; z++)
-                    {
-                        if (blocks[x, y, z].Type != BlockType.Grass)
-                            continue;
-
-                        if (IsThereEnoughSpaceForTree(in blocks, x, y, z))
-                            if (FractalFunc(GlobalVariables.Settings.SeedValue, x, y, z, WOODBASE_SMOOTH, WOODBASE_OCTAVES) < woodbaseProbability)
-                                BuildTree(x, y, z);
-                    }
+                for (int z = 1; z < TotalBlockNumberZ - 1; z++)
+                    AddTreesInColumn(woodbaseProbability, x, z);
         }
 
         /// <summary>
@@ -410,28 +361,92 @@ namespace Voxels.TerrainGeneration
             var queue = new MultiThreadTaskQueue();
 
             // schedule one task per chunk
-            for (int i = 0; i < GlobalVariables.Settings.WorldSizeX; i++)
-                for (int j = 0; j < GlobalVariables.Settings.WorldSizeZ; j++)
-                    queue.ScheduleTask(AddTreesInChunkParallel, woodbaseProbability, i, j);
+            for (int chunkX = 0; chunkX < GlobalVariables.Settings.WorldSizeX; chunkX++)
+                for (int chunkZ = 0; chunkZ < GlobalVariables.Settings.WorldSizeZ; chunkZ++)
+                    queue.ScheduleTask(AddTreesInChunkParallel, woodbaseProbability, chunkX, chunkZ);
 
             queue.RunAllInParallel(); // this is synchronous
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static void CreateBlock(ref BlockData block, BlockType type)
+        {
+            block.Type = type;
+            block.Hp = LookupTables.BlockHealthMax[(int)type];
+        }
+        #endregion
+
+        #region Private Methods
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static float Map(float newMin, float newMax, float oldMin, float oldMax, float value)
+            => Mathf.Lerp(newMin, newMax, Mathf.InverseLerp(oldMin, oldMax, value));
+
+        /// <summary>
+        /// good noise generator 
+        /// persistence - if < 1 each function is less powerful than the previous one, for > 1 each is more important
+        /// octaves - number of functions that we sum up
+        /// </summary>
+        /// <param name="seed"></param>
+        /// <param name="x"></param>
+        /// <param name="z"></param>
+        /// <param name="octaves"></param>
+        /// <param name="persistence"></param>
+        /// <returns></returns>
+        static float FractalBrownianMotion(int seed, float x, float z, int octaves, float persistence)
+        {
+            float total = 0, frequency = 1, amplitude = 1, maxValue = 0;
+
+            for (int i = 0; i < octaves; i++)
+            {
+                total += Mathf.PerlinNoise((x + seed) * frequency, (z + seed) * frequency) * amplitude;
+                maxValue += amplitude;
+                amplitude *= persistence;
+                frequency *= 2;
+            }
+
+            return total / maxValue;
+        }
+
+        // FractalBrownianMotion3D
+        static float FractalFunc(int seed, float x, float y, int z, float smooth, int octaves)
+        {
+            // this is obviously more computational heavy
+            float xy = FractalBrownianMotion(seed, x * smooth, y * smooth, octaves, 0.5f);
+            float yz = FractalBrownianMotion(seed, y * smooth, z * smooth, octaves, 0.5f);
+            float xz = FractalBrownianMotion(seed, x * smooth, z * smooth, octaves, 0.5f);
+
+            float yx = FractalBrownianMotion(seed, y * smooth, x * smooth, octaves, 0.5f);
+            float zy = FractalBrownianMotion(seed, z * smooth, y * smooth, octaves, 0.5f);
+            float zx = FractalBrownianMotion(seed, z * smooth, x * smooth, octaves, 0.5f);
+
+            return (xy + yz + xz + yx + zy + zx) / 6.0f;
         }
 
         static void AddTreesInChunkParallel(float woodbaseProbability, int chunkColumnX, int chunkColumnZ)
         {
             for (int x = 1 + chunkColumnX * Constants.CHUNK_SIZE; x < chunkColumnX * Constants.CHUNK_SIZE + Constants.CHUNK_SIZE - 1; x++)
-                // this 20 is hard coded as for now but generally it would be nice if
-                // this loop could know in advance where the lowest grass is
-                for (int y = 20; y < TotalBlockNumberY - TREE_HEIGHT - 1; y++)
-                    for (int z = 1 + chunkColumnZ * Constants.CHUNK_SIZE; z < chunkColumnZ * Constants.CHUNK_SIZE + Constants.CHUNK_SIZE - 1; z++)
-                    {
-                        if (GlobalVariables.Blocks[x, y, z].Type != BlockType.Grass)
-                            continue;
+                for (int z = 1 + chunkColumnZ * Constants.CHUNK_SIZE; z < chunkColumnZ * Constants.CHUNK_SIZE + Constants.CHUNK_SIZE - 1; z++)
+                    AddTreesInColumn(woodbaseProbability, x, z);
+        }
 
-                        if (IsThereEnoughSpaceForTree(in GlobalVariables.Blocks, x, y, z))
-                            if (FractalFunc(GlobalVariables.Settings.SeedValue, x, y, z, WOODBASE_SMOOTH, WOODBASE_OCTAVES) < woodbaseProbability)
-                                BuildTree(x, y, z);
-                    }
+        static void AddTreesInColumn(float woodbaseProbability, int x, int z)
+        {
+            // we just go down on earth, and look for first non-air block
+            for (int y = TotalBlockNumberY - TREE_HEIGHT; y > 0; y--)
+            {
+                BlockType type = GlobalVariables.Blocks[x, y, z].Type;
+
+                if (type != BlockType.Air)
+                {
+                    // if it is a grass we try to build a tree on top of it
+                    if (type == BlockType.Grass
+                        && IsThereEnoughSpaceForTree(x, y, z)
+                        && FractalFunc(GlobalVariables.Settings.SeedValue, x, y, z, WOODBASE_SMOOTH, WOODBASE_OCTAVES) < woodbaseProbability)
+                        BuildTree(x, y, z);
+
+                    break;
+                }
+            }
         }
 
         /// <summary>
@@ -575,8 +590,10 @@ namespace Voxels.TerrainGeneration
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool IsThereEnoughSpaceForTree(in BlockData[,,] blocks, int x, int y, int z)
+        static bool IsThereEnoughSpaceForTree(int x, int y, int z)
         {
+            BlockData[,,] blocks = GlobalVariables.Blocks;
+
             for (int i = 2; i < TREE_HEIGHT; i++)
             {
                 if (blocks[x + 1, y + i, z].Type != BlockType.Air
@@ -610,12 +627,6 @@ namespace Voxels.TerrainGeneration
 
             CreateBlock(ref blocks[x, y + 5, z], BlockType.Leaves);
         }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static void CreateBlock(ref BlockData block, BlockType type)
-        {
-            block.Type = type;
-            block.Hp = LookupTables.BlockHealthMax[(int)type];
-        }
     }
+    #endregion
 }
