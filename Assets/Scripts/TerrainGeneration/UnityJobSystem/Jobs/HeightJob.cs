@@ -4,7 +4,7 @@ using Unity.Jobs;
 using Voxels.Common;
 using Voxels.Common.DataModels;
 
-namespace Voxels.TerrainGeneration.Jobs
+namespace Voxels.TerrainGeneration.UnityJobSystem.Jobs
 {
     [BurstCompile(CompileSynchronously = true)]
     struct HeightJob : IJobParallelFor

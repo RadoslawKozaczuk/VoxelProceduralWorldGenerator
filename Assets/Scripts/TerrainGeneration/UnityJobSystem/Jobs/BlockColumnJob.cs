@@ -4,7 +4,7 @@ using Unity.Jobs;
 using Voxels.Common;
 using Voxels.Common.DataModels;
 
-namespace Voxels.TerrainGeneration.Jobs
+namespace Voxels.TerrainGeneration.UnityJobSystem.Jobs
 {
     // this isn't faster (in fact is 10 times slower) which is very surprising I think the problem may come from the fact that this needs to be copied
     // or maybe I made a mistake somewhere I am not 100% sure

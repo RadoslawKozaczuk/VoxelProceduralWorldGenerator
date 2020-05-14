@@ -10,7 +10,6 @@ using Voxels.GameLogic.DataModels;
 using Voxels.MeshGeneration;
 using Voxels.SaveLoad;
 using Voxels.TerrainGeneration;
-using Voxels.TerrainGeneration.Jobs;
 
 namespace Voxels.GameLogic
 {
@@ -82,7 +81,7 @@ namespace Voxels.GameLogic
             yield return null; // return control
 
             ProgressDescription = "Generating trees...";
-            TerrainGenerationAbstractionLayer.AddTreesParallel();
+            TerrainGenerationAbstractionLayer.AddTrees();
             AlreadyGenerated += _progressStep;
             yield return null; // return control
 
@@ -248,7 +247,7 @@ namespace Voxels.GameLogic
         /// <summary>
         /// Returns true if the block has been destroyed.
         /// </summary>
-        public bool BlockHit(int blockX, int blockY, int blockZ, ref ChunkData chunkData)
+        internal bool BlockHit(int blockX, int blockY, int blockZ, ref ChunkData chunkData)
         {
             ref BlockData b = ref GlobalVariables.Blocks[blockX, blockY, blockZ];
 
@@ -278,7 +277,7 @@ namespace Voxels.GameLogic
         /// <summary>
         /// Returns true if a new block has been built.
         /// </summary>
-        public bool BuildBlock(int blockX, int blockY, int blockZ, BlockType type, ref ChunkData chunkData)
+        internal bool BuildBlock(int blockX, int blockY, int blockZ, BlockType type, ref ChunkData chunkData)
         {
             ref BlockData b = ref GlobalVariables.Blocks[blockX, blockY, blockZ];
 
@@ -295,7 +294,7 @@ namespace Voxels.GameLogic
             return true;
         }
 
-        public void RedrawChunksIfNecessary()
+        internal void RedrawChunksIfNecessary()
         {
             for (int x = 0; x < GlobalVariables.Settings.WorldSizeX; x++)
                 for (int z = 0; z < GlobalVariables.Settings.WorldSizeZ; z++)
@@ -342,30 +341,6 @@ namespace Voxels.GameLogic
             int level = Mathf.RoundToInt(value); // 7
 
             return (byte)(11 - level); // array is in reverse order so we subtract our value from 11
-        }
-
-        void DeflattenizeOutput(ref BlockTypeColumn[] columns)
-        {
-            //for (int x = 0; x < TotalBlockNumberX; x++)
-            //    for (int z = 0; z < TotalBlockNumberZ; z++)
-            //    {
-            //        BlockTypeColumn column = columns[Utils.IndexFlattenizer2D(x, z, TotalBlockNumberX)];
-
-            //        // heights are inclusive
-            //        for (int y = 0; y <= column.TerrainLevel; y++)
-            //        {
-            //            BlockType type;
-
-            //            unsafe
-            //            {
-            //                type = (BlockType)column.Types[y];
-            //            }
-
-            //            ref BlockData b = ref GlobalVariables.Blocks[x, y, z];
-            //            b.Type = type;
-            //            b.Hp = LookupTables.BlockHealthMax[(int)type];
-            //        }
-            //    }
         }
 
         /// <summary>

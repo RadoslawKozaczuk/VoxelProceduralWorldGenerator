@@ -1,12 +1,10 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
-using Unity.Entities;
-using Unity.Mathematics;
 using UnityEngine;
 using Voxels.Common;
 using Voxels.Common.DataModels;
 using Voxels.Common.Interfaces;
-using Voxels.TerrainGeneration.ECS.Components;
+using Voxels.TerrainGeneration.UnityJobSystem.Jobs;
 
 namespace Voxels.TerrainGeneration
 {
@@ -32,23 +30,23 @@ namespace Voxels.TerrainGeneration
 
         public static void CalculateBlockTypes()
         {
-            switch (GlobalVariables.Settings.ComputingAcceleration)
+            switch (GlobalVariables.Settings.AccelerationMethod)
             {
                 case ComputingAccelerationMethod.None:
                 {
-                    CalculateBlockTypes_PureCSParallel();
+                    TerrainGenerator.CalculateBlockTypes_SingleThread();
                     break;
                 }
                 case ComputingAccelerationMethod.PureCSParallelisation:
                 {
-                    CalculateBlockTypes_PureCSParallel();
+                    TerrainGenerator.CalculateBlockTypes_PureCSParallel();
                     break;
                 }
                 case ComputingAccelerationMethod.UnityJobSystem:
                 {
                     ReadonlyVector3Int[] heights = TerrainGenerator.CalculateHeightsJobSystem();
                     BlockType[] types = TerrainGenerator.CalculateBlockTypes(heights);
-                    DeflattenizeOutput(ref types);
+                    TerrainGenerator.DeflattenizeOutput(ref types);
                     break;
                 }
                 case ComputingAccelerationMethod.UnityJobSystemPlusStaticArray:
@@ -58,7 +56,7 @@ namespace Voxels.TerrainGeneration
                     // new way of calculating unfortunately slower
                     // it uses job system but calculates entire columns 
                     // this approach needs static array allocation
-                    //BlockTypeColumn[] types = _terrainGenerator.CalculateBlockColumn();
+                    BlockTypeColumn[] types = TerrainGenerator.CalculateBlockColumn();
                     break;
                 }
                 case ComputingAccelerationMethod.ComputeShader:
@@ -70,7 +68,7 @@ namespace Voxels.TerrainGeneration
                 case ComputingAccelerationMethod.ECS:
                 {
                     // ECS changes the BlockCalculationCompleted flag in a different way by throwing an event
-                    CalculateBlockTypes_ECS();
+                    TerrainGenerator.CalculateBlockTypes_ECS();
                     break;
                 }
             }
@@ -83,57 +81,15 @@ namespace Voxels.TerrainGeneration
         public static void AddWater() => TerrainGenerator.AddWater();
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void AddTreesParallel() => TerrainGenerator.AddTreesParallel();
+        public static void AddTrees()
+        {
+            if (GlobalVariables.Settings.AccelerationMethod == ComputingAccelerationMethod.None)
+                TerrainGenerator.AddTrees();
+            else
+                TerrainGenerator.AddTreesParallel();
+        }
 
         // The managed function is not supported by burst, everything need to be static
         //public static int GenerateBedrockHeight(float x, float z) => _terrainGenerator.GenerateBedrockHeight(x, z);
-
-        static void CalculateBlockTypes_PureCSParallel()
-        {
-            var queue = new MultiThreadTaskQueue();
-
-            int x, z;
-            for (x = 0; x < TerrainGenerator.TotalBlockNumberX; x++)
-                for (z = 0; z < TerrainGenerator.TotalBlockNumberZ; z++)
-                    queue.ScheduleTask(TerrainGenerator.CalculateBlockTypesForColumnParallel, GlobalVariables.Settings.SeedValue, x, z);
-
-            queue.RunAllInParallel();
-        }
-
-        static void DeflattenizeOutput(ref BlockType[] types)
-        {
-            for (int x = 0; x < TerrainGenerator.TotalBlockNumberX; x++)
-                for (int y = 0; y < TerrainGenerator.TotalBlockNumberY; y++)
-                    for (int z = 0; z < TerrainGenerator.TotalBlockNumberZ; z++)
-                    {
-                        BlockType type = types[Utils.IndexFlattenizer3D(x, y, z, TerrainGenerator.TotalBlockNumberX, TerrainGenerator.TotalBlockNumberY)];
-
-                        ref BlockData b = ref GlobalVariables.Blocks[x, y, z];
-                        b.Type = type;
-                        b.Hp = LookupTables.BlockHealthMax[(int)type];
-                    }
-        }
-
-        static void CalculateBlockTypes_ECS()
-        {
-            // we need entity manager in order to create entities
-            EntityManager entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
-
-            // create an entity archetype (a blueprint), that will later be used in instantiation and querying
-            EntityArchetype entityArchetype = entityManager.CreateArchetype(
-                typeof(BlockTypesComponent),
-                typeof(WorldConstants),
-                typeof(CoordinatesComponent));
-
-            // we pass shorts to coordinate component to make it smaller
-            for (int x = 0; x < GlobalVariables.Settings.WorldSizeX * Constants.CHUNK_SIZE; x++)
-                for (int y = 0; y < Constants.WORLD_SIZE_Y * Constants.CHUNK_SIZE; y++)
-                    for (int z = 0; z < GlobalVariables.Settings.WorldSizeZ * Constants.CHUNK_SIZE; z++)
-                    {
-                        Entity entity = entityManager.CreateEntity(entityArchetype);
-                        entityManager.SetComponentData(entity, new CoordinatesComponent(new int3(x, y, z)));
-                        entityManager.SetComponentData(entity, new WorldConstants(GlobalVariables.Settings.SeedValue));
-                    }
-        }
     }
 }

@@ -41,7 +41,7 @@ namespace Voxels.GameLogic
         void Start()
         {
             _settings.TreeProbability = TreeProbability.Some;
-            _settings.ComputingAcceleration = ComputingAccelerationMethod.UnityJobSystem;
+            _settings.AccelerationMethod = ComputingAccelerationMethod.UnityJobSystem;
             SetWorldSizeDescription();
         }
 
@@ -89,8 +89,10 @@ namespace Voxels.GameLogic
             _settings.SeedValue = newSeed;
         }
 
-        // this crap gets called OnEnable for some reason so I had reassign it again in Start method
+        // this gets called OnEnable for some reason so I had reassign it again in Start method
         public void SetTreeProbability(float value) => _settings.TreeProbability = (TreeProbability)(int)value;
+
+        public void SetComputingAcceleratioMethod(float value) => _settings.AccelerationMethod = (ComputingAccelerationMethod)(int)value;
 
         public void WaterLevelChanged(float value)
         {

@@ -17,6 +17,6 @@
         public int SeedValue, WaterLevel;
         public bool IsWater;
 
-        public ComputingAccelerationMethod ComputingAcceleration;
+        public ComputingAccelerationMethod AccelerationMethod;
     }
 }
