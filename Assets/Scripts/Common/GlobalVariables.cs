@@ -3,7 +3,7 @@ using Voxels.Common.DataModels;
 
 namespace Voxels.Common
 {
-    public class GlobalVariables : MonoBehaviour
+    public static class GlobalVariables
     {
         public static BlockData[,,] Blocks;
         public static ChunkData[,,] Chunks;

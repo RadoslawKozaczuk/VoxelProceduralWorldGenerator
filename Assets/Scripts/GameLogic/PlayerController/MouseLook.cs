@@ -9,15 +9,15 @@ namespace Voxels.GameLogic.PlayerController
         public Quaternion CharacterTargetRot;
         public Quaternion CameraTargetRot;
 
-        public float XSensitivity = 2f;
-        public float YSensitivity = 2f;
-        public bool clampVerticalRotation = true;
-        public float MinimumX = -90F;
-        public float MaximumX = 90F;
-        public bool smooth;
-        public float smoothTime = 5f;
-        public bool lockCursor = true;
+        readonly float _xSensitivity = 2f;
+        readonly float _ySensitivity = 2f;
+        readonly bool _clampVerticalRotation = true;
+        readonly float _minimumX = -90F;
+        readonly float _maximumX = 90F;
+        readonly bool _smooth;
+        readonly float _smoothTime = 5f;
 
+        bool _lockCursor = true;
         bool _cursorIsLocked = true;
 
         public void Init(Transform character, Transform camera)
@@ -28,19 +28,19 @@ namespace Voxels.GameLogic.PlayerController
 
         public void LookRotation(Transform character, Transform camera)
         {
-            float yRot = CrossPlatformInputManager.GetAxis("Mouse X") * XSensitivity;
-            float xRot = CrossPlatformInputManager.GetAxis("Mouse Y") * YSensitivity;
+            float yRot = CrossPlatformInputManager.GetAxis("Mouse X") * _xSensitivity;
+            float xRot = CrossPlatformInputManager.GetAxis("Mouse Y") * _ySensitivity;
 
             CharacterTargetRot *= Quaternion.Euler(0f, yRot, 0f);
             CameraTargetRot *= Quaternion.Euler(-xRot, 0f, 0f);
 
-            if (clampVerticalRotation)
+            if (_clampVerticalRotation)
                 CameraTargetRot = ClampRotationAroundXAxis(CameraTargetRot);
 
-            if (smooth)
+            if (_smooth)
             {
-                character.localRotation = Quaternion.Slerp(character.localRotation, CharacterTargetRot, smoothTime * Time.deltaTime);
-                camera.localRotation = Quaternion.Slerp(camera.localRotation, CameraTargetRot, smoothTime * Time.deltaTime);
+                character.localRotation = Quaternion.Slerp(character.localRotation, CharacterTargetRot, _smoothTime * Time.deltaTime);
+                camera.localRotation = Quaternion.Slerp(camera.localRotation, CameraTargetRot, _smoothTime * Time.deltaTime);
             }
             else
             {
@@ -53,8 +53,8 @@ namespace Voxels.GameLogic.PlayerController
 
         public void SetCursorLock(bool value)
         {
-            lockCursor = value;
-            if (!lockCursor)
+            _lockCursor = value;
+            if (!_lockCursor)
             {//we force unlock the cursor if the user disable the cursor locking helper
                 Cursor.lockState = CursorLockMode.None;
                 Cursor.visible = true;
@@ -64,7 +64,7 @@ namespace Voxels.GameLogic.PlayerController
         public void UpdateCursorLock()
         {
             //if the user set "lockCursor" we check & properly lock the cursor
-            if (lockCursor)
+            if (_lockCursor)
                 InternalLockUpdate();
         }
 
@@ -95,7 +95,7 @@ namespace Voxels.GameLogic.PlayerController
             q.w = 1.0f;
 
             float angleX = 2.0f * Mathf.Rad2Deg * Mathf.Atan(q.x);
-            angleX = Mathf.Clamp(angleX, MinimumX, MaximumX);
+            angleX = Mathf.Clamp(angleX, _minimumX, _maximumX);
             q.x = Mathf.Tan(0.5f * Mathf.Deg2Rad * angleX);
 
             return q;

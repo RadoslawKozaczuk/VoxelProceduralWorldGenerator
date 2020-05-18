@@ -67,8 +67,7 @@ namespace Voxels.TerrainGeneration
                 }
                 case ComputingAccelerationMethod.ECS:
                 {
-                    // ECS changes the BlockCalculationCompleted flag in a different way by throwing an event
-                    TerrainGenerator.CalculateBlockTypes_ECS();
+                    TerrainGenerator.CreateEntities();
                     break;
                 }
             }
@@ -84,9 +83,9 @@ namespace Voxels.TerrainGeneration
         public static void AddTrees()
         {
             if (GlobalVariables.Settings.AccelerationMethod == ComputingAccelerationMethod.None)
-                TerrainGenerator.AddTrees();
+                TerrainGenerator.AddTrees_SingleThread();
             else
-                TerrainGenerator.AddTreesParallel();
+                TerrainGenerator.AddTrees_Parallel();
         }
 
         // The managed function is not supported by burst, everything need to be static

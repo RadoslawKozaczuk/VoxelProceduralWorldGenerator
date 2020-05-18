@@ -52,6 +52,8 @@ namespace Voxels.TerrainGeneration
         const float PERSISTENCE_BEDROCK = 0.5f;
         #endregion
 
+        internal static readonly int Seed;
+
         internal static int TotalBlockNumberX, TotalBlockNumberY, TotalBlockNumberZ;
 
         static ComputeShader _heightsShader;
@@ -61,6 +63,12 @@ namespace Voxels.TerrainGeneration
         /// </summary>
         static int _waterLevel;
         static int _worldSizeX, _worldSizeZ;
+
+        static TerrainGenerator()
+        {
+            Seed = GlobalVariables.Settings.SeedValue; // throws ECS-related errors (yet still calculates properly)
+            //Seed = 32000; // that solves the problem but takes away possibility to change seed
+        }
 
         #region Internal Methods
         internal static void Initialize(ComputeShader heightsShader)
@@ -72,7 +80,6 @@ namespace Voxels.TerrainGeneration
             TotalBlockNumberZ = _worldSizeZ * Constants.CHUNK_SIZE;
 
             _waterLevel = GlobalVariables.Settings.WaterLevel;
-
             _heightsShader = heightsShader;
         }
 
@@ -174,21 +181,7 @@ namespace Voxels.TerrainGeneration
             return output;
         }
 
-        internal static void CalculateBlockTypesForColumnParallel(int seed, int colX, int colZ)
-        {
-            ReadonlyVector3Int heights = CalculateHeights(seed, colX, colZ);
-
-            // omit everything above the maximum height as it's air anyway
-            int max = heights.X;
-            if (heights.Y > max)
-                max = heights.Y;
-            if (heights.Z > max)
-                max = heights.Z;
-
-            // height is inclusive
-            for (int y = 0; y <= max; y++)
-                CreateBlock(ref GlobalVariables.Blocks[colX, y, colZ], DetermineType(seed, colX, y, colZ, in heights));
-        }
+        
 
         /// <summary>
         /// Adds water to the <see cref="GlobalVariables.Blocks"/>.
@@ -227,7 +220,7 @@ namespace Voxels.TerrainGeneration
         /// Adds trees to the <see cref="GlobalVariables.Blocks"/>.
         /// If treeProb parameter is set to TreeProbability.None then no trees will be added.
         /// </summary>
-        internal static void AddTrees()
+        internal static void AddTrees_SingleThread()
         {
             TreeProbability treeProb = GlobalVariables.Settings.TreeProbability;
 
@@ -251,7 +244,7 @@ namespace Voxels.TerrainGeneration
         /// and therefore will never grow a tree resulting in slightly different although unnoticeable
         /// for player results.
 		/// </summary>
-		internal static void AddTreesParallel()
+		internal static void AddTrees_Parallel()
         {
             TreeProbability treeProb = GlobalVariables.Settings.TreeProbability;
 
@@ -278,7 +271,43 @@ namespace Voxels.TerrainGeneration
             block.Type = type;
             block.Hp = LookupTables.BlockHealthMax[(int)type];
         }
+
+        internal static void CalculateBlockTypes_SingleThread()
+        {
+            int x, z;
+            for (x = 0; x < TotalBlockNumberX; x++)
+                for (z = 0; z < TotalBlockNumberZ; z++)
+                    CalculateBlockTypesForColumn(GlobalVariables.Settings.SeedValue, x, z);
+        }
+
+        internal static void CalculateBlockTypes_PureCSParallel()
+        {
+            var queue = new MultiThreadTaskQueue();
+
+            int x, z;
+            for (x = 0; x < TotalBlockNumberX; x++)
+                for (z = 0; z < TotalBlockNumberZ; z++)
+                    queue.ScheduleTask(CalculateBlockTypesForColumn, GlobalVariables.Settings.SeedValue, x, z);
+
+            queue.RunAllInParallel();
+        }
         #endregion
+
+        static void CalculateBlockTypesForColumn(int seed, int colX, int colZ)
+        {
+            ReadonlyVector3Int heights = CalculateHeights(seed, colX, colZ);
+
+            // omit everything above the maximum height as it's air anyway
+            int max = heights.X;
+            if (heights.Y > max)
+                max = heights.Y;
+            if (heights.Z > max)
+                max = heights.Z;
+
+            // height is inclusive
+            for (int y = 0; y <= max; y++)
+                CreateBlock(ref GlobalVariables.Blocks[colX, y, colZ], DetermineType(seed, colX, y, colZ, in heights));
+        }
 
         #region Private Methods
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -457,25 +486,8 @@ namespace Voxels.TerrainGeneration
             } while (reiterate);
         }
 
-        internal static void CalculateBlockTypes_SingleThread()
-        {
-
-        }
-
-        internal static void CalculateBlockTypes_PureCSParallel()
-        {
-            var queue = new MultiThreadTaskQueue();
-
-            int x, z;
-            for (x = 0; x < TotalBlockNumberX; x++)
-                for (z = 0; z < TotalBlockNumberZ; z++)
-                    queue.ScheduleTask(CalculateBlockTypesForColumnParallel, GlobalVariables.Settings.SeedValue, x, z);
-
-            queue.RunAllInParallel();
-        }
-
         /// <summary>
-        /// Returns true if at least on block was changed.
+        /// Returns true if at least one block was changed.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static bool AddWaterBelow(int currentY)

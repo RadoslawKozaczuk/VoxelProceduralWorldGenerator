@@ -171,12 +171,13 @@ namespace Voxels.MeshGeneration
         {
             BlockData[,,] blocks = GlobalVariables.Blocks;
 
-            /* // bitwise operators reminder
-			var test = Cubesides.Back; // initialize with one flag
-			test |= Cubesides.Front; // add another flag
-			var test0 = test &= ~Cubesides.Back; // AND= ~Back means subtract "Back"
-			var test1 = test0 &= ~Cubesides.Back; // subsequent subtraction makes no change
-			var test2 = test0 |= ~Cubesides.Back; // OR= ~Back means assign everything but not "Back" */
+            /* === bitwise operators reminder ===
+			    var test = Cubesides.Back; // initialize with one flag
+			    test |= Cubesides.Front; // add another flag
+			    var test0 = test &= ~Cubesides.Back; // AND= ~Back means subtract "Back"
+			    var test1 = test0 &= ~Cubesides.Back; // subsequent subtraction makes no change
+			    var test2 = test0 |= ~Cubesides.Back; // OR= ~Back means assign everything but not "Back" 
+            */
 
             blocks[blockX, blockY, blockZ].Faces = 0;
 

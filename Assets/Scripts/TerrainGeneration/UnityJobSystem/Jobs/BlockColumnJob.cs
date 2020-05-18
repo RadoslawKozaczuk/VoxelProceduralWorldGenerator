@@ -17,7 +17,7 @@ namespace Voxels.TerrainGeneration.UnityJobSystem.Jobs
 
         /// <summary>
         /// Up to where terrain is present. Everything above that is air.
-        /// Since the Types array is not pre-initialized air will be effectively represented by garbage data.
+        /// Since the <see cref="Types"/> array is not pre-initialized air will be effectively represented by garbage data.
         /// </summary>
         public readonly int TerrainLevel;
 
