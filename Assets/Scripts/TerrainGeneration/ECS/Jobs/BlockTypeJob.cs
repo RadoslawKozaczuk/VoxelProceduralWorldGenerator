@@ -11,22 +11,23 @@ namespace Voxels.TerrainGeneration.ECS.Jobs
     struct BlockTypeJob : IJobChunk
     {
         [ReadOnly] public ArchetypeChunkComponentType<CoordinatesComponent> Coordinates;
+        [ReadOnly] public ArchetypeChunkComponentType<SeedComponent> Seed;
         public ArchetypeChunkComponentType<BlockTypesComponent> BlockTypes;
 
         public void Execute(ArchetypeChunk chunk, int chunkIndex, int firstEntityIndex)
         {
             NativeArray<CoordinatesComponent> coordinatesArray = chunk.GetNativeArray(Coordinates);
             NativeArray<BlockTypesComponent> blockTypesArray = chunk.GetNativeArray(BlockTypes);
+            SeedComponent seed = chunk.GetChunkComponentData(Seed);
 
             for (int i = 0; i < chunk.Count; i++)
             {
                 int3 coordinates = coordinatesArray[i].Coordinates;
-
-                ReadonlyVector3Int heights = TerrainGenerator.CalculateHeights(TerrainGenerator.Seed, coordinates.x, coordinates.z);
+                ReadonlyVector3Int heights = TerrainGenerator.CalculateHeights(seed.Seed, coordinates.x, coordinates.z);
 
                 blockTypesArray[i] = new BlockTypesComponent()
                 {
-                    BlockType = TerrainGenerator.DetermineType(TerrainGenerator.Seed, coordinates.x, coordinates.y, coordinates.z, in heights)
+                    BlockType = TerrainGenerator.DetermineType(seed.Seed, coordinates.x, coordinates.y, coordinates.z, in heights)
                 };
             }
         }

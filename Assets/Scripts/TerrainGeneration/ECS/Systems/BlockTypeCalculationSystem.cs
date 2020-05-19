@@ -10,6 +10,13 @@ namespace Voxels.TerrainGeneration.ECS.Systems
     class BlockTypeCalculationSystem : SystemBase
     {
         bool flag = false;
+        EntityQuery _query;
+
+        protected override void OnCreate()
+        {
+            // query is like a SQL query, allows us to retrieve only these entities that we want
+            _query = GetEntityQuery(typeof(BlockTypesComponent), typeof(CoordinatesComponent));
+        }
 
         protected override void OnUpdate()
         {
@@ -18,19 +25,16 @@ namespace Voxels.TerrainGeneration.ECS.Systems
 
             var blockTypesType = GetArchetypeChunkComponentType<BlockTypesComponent>(); // read-write access
             var coordinateType = GetArchetypeChunkComponentType<CoordinatesComponent>(true); // true means it is read only
+            var seedType = GetArchetypeChunkComponentType<SeedComponent>(true); // true means it is read only
 
             var job = new BlockTypeJob()
             {
                 BlockTypes = blockTypesType,
-                Coordinates = coordinateType
+                Coordinates = coordinateType,
+                Seed = seedType
             };
-
-            // query is like a SQL query, allows us to retrieve only these entities that we want
-            EntityQuery query = GetEntityQuery(
-                typeof(BlockTypesComponent),
-                typeof(CoordinatesComponent));
-            
-            JobHandle jobHandle = job.Schedule(query);
+   
+            JobHandle jobHandle = job.Schedule(_query);
             jobHandle.Complete(); // wait until completed
 
             // all calculations are done in one frame

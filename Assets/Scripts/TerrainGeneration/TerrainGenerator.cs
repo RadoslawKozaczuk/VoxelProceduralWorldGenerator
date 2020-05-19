@@ -66,8 +66,7 @@ namespace Voxels.TerrainGeneration
 
         static TerrainGenerator()
         {
-            Seed = GlobalVariables.Settings.SeedValue; // throws ECS-related errors (yet still calculates properly)
-            //Seed = 32000; // that solves the problem but takes away possibility to change seed
+            Seed = GlobalVariables.Settings.SeedValue;
         }
 
         #region Internal Methods
