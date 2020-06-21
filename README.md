@@ -23,3 +23,5 @@ Radek
 Acknowledgements:
 
 Apollo - for Burst compiler introduction plus other minor but important changes
+<br/>
+Ashima Arts and Stefan Gustavson - GPU implementation of the Perlin noise function (precisely noiseSimplex.cginc, https://github.com/ashima/webgl-noise)
