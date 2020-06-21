@@ -4,6 +4,7 @@
 #pragma kernel HeightsKernel
 
 RWTexture2D<float4> Result;
+Buffer<int> Seed;
 
 float map(float newMin, float newMax, float oldMin, float oldMax, float value)
 {
@@ -24,11 +25,9 @@ static float fractalBrownianMotion(float x, float z, int octaves, float persiste
 {
 	float total = 0, frequency = 1, amplitude = 1, maxValue = 0;
 
-	int seed = 32000;
-
 	for (int i = 0; i < octaves; i++)
 	{
-		float2 noiseParams = float2((x + seed) * frequency, (z + seed) * frequency);
+		float2 noiseParams = float2((x + Seed) * frequency, (z + Seed) * frequency);
 		float noise = (snoise(noiseParams) + 1) / 2; // we want it to be from 0 to 1
 		noise *= amplitude;
 
@@ -44,14 +43,10 @@ static float fractalBrownianMotion(float x, float z, int octaves, float persiste
 [numthreads(32,32,1)]
 void HeightsKernel(uint3 id : SV_DispatchThreadID)
 {
-	float noise = snoise(float2(id.x, id.y));
-	noise += 1;
-	noise /= 2; // from 0 to 1
-
 	// constants
-	float smoothBedrock = 0.1, smoothStone = 0.05, smoothDirt = 0.01;
-	float octavesBedrock = 1, octavesStone = 2, octavesDirt = 3;
-	float persistanceBedrock = 0.5, persistanceStone = 0.25, persistanceDirt = 0.5;
+	const float smoothBedrock = 0.1, smoothStone = 0.05, smoothDirt = 0.01;
+	const float octavesBedrock = 1, octavesStone = 2, octavesDirt = 3;
+	const float persistanceBedrock = 0.5, persistanceStone = 0.25, persistanceDirt = 0.5;
 
 	// fractal brownian motions
 	float fbmBedrock = fractalBrownianMotion(id.x * smoothBedrock, id.y * smoothBedrock, octavesBedrock, persistanceBedrock);

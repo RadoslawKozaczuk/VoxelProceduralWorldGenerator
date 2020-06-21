@@ -61,8 +61,7 @@ namespace Voxels.TerrainGeneration
                 }
                 case ComputingAccelerationMethod.ComputeShader:
                 {
-                    throw new NotImplementedException();
-
+                    TerrainGenerator.CalculateBlockTypes_ComputeShader();
                     break;
                 }
                 case ComputingAccelerationMethod.ECS:

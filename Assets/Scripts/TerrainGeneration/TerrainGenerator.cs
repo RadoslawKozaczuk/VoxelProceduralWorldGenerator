@@ -138,51 +138,6 @@ namespace Voxels.TerrainGeneration
         }
 
         /// <summary>
-        /// Calculates global heights. This method uses compute shaders.
-        /// Unfortunately, this method is slower than the classic approach.
-        /// Mostly due to the necessity of data preparation.
-        /// Each column described by its x and z values has three heights.
-        /// One for Bedrock, Stone and Dirt. Heights determines up to where certain types appear.
-        /// x is Bedrock, y is Stone and z is Dirt.
-        /// </summary>
-        internal static int3[] CalculateHeightsGPU()
-        {
-            var inputData = new int3[TotalBlockNumberX * TotalBlockNumberZ];
-
-            // unfortunately shaders can receive only one dim data
-            // there is no 2-dimensional buffers in HLSL
-            // would be nice if we could pass 2d data set
-
-            // preparing - this takes the most time at the moment
-            for (int x = 0; x < TotalBlockNumberX; x++)
-                for (int z = 0; z < TotalBlockNumberZ; z++)
-                    inputData[Utils.IndexFlattenizer2D(x, z, TotalBlockNumberX)] = new int3(x, 0, z);
-
-            // size of a single element in the array
-            //int size = System.Runtime.InteropServices.Marshal.SizeOf(new int3()); // equals 12
-            var buffer = new ComputeBuffer(inputData.Length, 12);
-
-            buffer.SetData(inputData);
-
-            // The FindKernel function takes a string name, which corresponds to one of the kernel names 
-            // we set up in the compute shader. 
-            int kernel = _heightsShader.FindKernel("CSMain");
-
-            _heightsShader.SetBuffer(kernel, "Result", buffer);
-            _heightsShader.SetInt("Seed", GlobalVariables.Settings.SeedValue);
-
-            // the integers passed to the Dispatch call specify the number of thread groups we want to spawn
-            _heightsShader.Dispatch(kernel, 16, 32, 16);
-
-            var output = new int3[TotalBlockNumberX * TotalBlockNumberZ];
-            buffer.GetData(output);
-
-            return output;
-        }
-
-        
-
-        /// <summary>
         /// Adds water to the <see cref="GlobalVariables.Blocks"/>.
         /// </summary>
         internal static void AddWater()
@@ -290,6 +245,62 @@ namespace Voxels.TerrainGeneration
 
             queue.RunAllInParallel();
         }
+
+        internal static void CalculateBlockTypes_ComputeShader()
+        {
+            _heightsShader.SetInt("Seed", GlobalVariables.Settings.SeedValue);
+
+            // The FindKernel function takes a string name, which corresponds to one of the kernel names 
+            // we set up in the compute shader. 
+            int kernel = _heightsShader.FindKernel("HeightsKernel");
+
+            // when depth 0 is used, then no Z buffer is created by a render texture.
+            var tex = new RenderTexture(TotalBlockNumberX, TotalBlockNumberZ, 0, RenderTextureFormat.ARGB32) 
+            { 
+                enableRandomWrite = true, 
+                filterMode = FilterMode.Point 
+            };
+
+            // actually creates the texture in GPU's memory
+            tex.Create();
+
+            // put it into the shader
+
+            // error = Attempting to bind Texture ID 2535 as UAV, the texture wasn't created with the UAV usage flag set!
+            _heightsShader.SetTexture(kernel, "Result", tex);
+
+            // run
+            // the integers passed to the Dispatch call specify the number of thread groups we want to spawn
+            _heightsShader.Dispatch(kernel, TotalBlockNumberX, TotalBlockNumberZ, 1);
+
+            // textures do not need to be transfered from GPU's memory to CPU's memory
+
+            //var output = new int3[32, 32];
+            //myShader.GetData(output);
+
+            Texture2D texture2D = tex.ToTexture2D();
+
+            int x, z;
+            for (x = 0; x < TotalBlockNumberX; x++)
+                for (z = 0; z < TotalBlockNumberZ; z++)
+                {
+                    Color32 sample = texture2D.GetPixel(x, z);
+                    var heights = new ReadonlyVector3Int(sample.r, sample.g, sample.b);
+
+                    // omit everything above the maximum height as it's air anyway
+                    int max = heights.X;
+                    if (heights.Y > max)
+                        max = heights.Y;
+                    if (heights.Z > max)
+                        max = heights.Z;
+
+                    // height is inclusive
+                    for (int y = 0; y <= max; y++)
+                        CreateBlock(
+                            ref GlobalVariables.Blocks[x, y, z], 
+                            DetermineType(GlobalVariables.Settings.SeedValue, x, y, z, in heights));
+                }
+        }
         #endregion
 
         static void CalculateBlockTypesForColumn(int seed, int colX, int colZ)
@@ -316,6 +327,7 @@ namespace Voxels.TerrainGeneration
         /// <summary>
         /// persistence - if < 1 each function is less powerful than the previous one, for > 1 each is more important
         /// octaves - number of functions that we sum up
+        /// values returned by this function can be slightly below 0 or above 1 therefore the result need to be squeezed in order to be valid.
         /// </summary>
         static float FractalBrownianMotion(int seed, float x, float z, int octaves, float persistence)
         {

@@ -48,9 +48,9 @@ namespace Voxels.TerrainGeneration.ECS.Systems
                 .ForEach((Entity entity, in CoordinatesComponent coordinates, in BlockTypesComponent blockTypes) =>
                 {
                     // copy data to the main array
-                    TerrainGenerator.CreateBlock(
-                        ref GlobalVariables.Blocks[coordinates.Coordinates.x, coordinates.Coordinates.y, coordinates.Coordinates.z],
-                        blockTypes.BlockType);
+                    //TerrainGenerator.CreateBlock(
+                    //    ref GlobalVariables.Blocks[coordinates.Coordinates.x, coordinates.Coordinates.y, coordinates.Coordinates.z],
+                    //    blockTypes.BlockType);
 
                     // clean up and prevent further calculations
                     //entityManager.DestroyEntity(entity);
