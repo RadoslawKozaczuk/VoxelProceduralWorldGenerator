@@ -30,7 +30,7 @@ namespace Voxels.GameLogic
             // default settings
             IsWater = true,
             WaterLevel = 30,
-            SeedValue = 32000,
+            SeedValue = 0,
             TreeProbability = TreeProbability.Some,
             WorldSizeX = 3,
             WorldSizeZ = 3

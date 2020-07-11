@@ -7,6 +7,7 @@ using Voxels.GameLogic.PlayerController;
 using Voxels.TerrainGeneration;
 using Voxels.SaveLoad;
 using Voxels.UI;
+using UnityEngine.SceneManagement;
 
 namespace Voxels.GameLogic
 {
@@ -87,7 +88,7 @@ namespace Voxels.GameLogic
                 HandleInput();
             }
 
-            if (Input.GetKeyDown(KeyCode.Escape))
+            if (Input.GetKeyDown(KeyCode.Escape) && SceneManager.GetActiveScene().name == "MainMenu")
                 Application.Quit();
         }
 

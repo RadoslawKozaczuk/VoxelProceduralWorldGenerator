@@ -1,10 +1,8 @@
-﻿using System;
-using System.Runtime.CompilerServices;
+﻿using System.Runtime.CompilerServices;
 using UnityEngine;
 using Voxels.Common;
 using Voxels.Common.DataModels;
 using Voxels.Common.Interfaces;
-using Voxels.TerrainGeneration.UnityJobSystem.Jobs;
 
 namespace Voxels.TerrainGeneration
 {
@@ -20,13 +18,15 @@ namespace Voxels.TerrainGeneration
     {
 #pragma warning disable CS0649 // suppress "Field is never assigned to, and will always have its default value null"
         [SerializeField] ComputeShader _heightsShader;
+        [SerializeField] Texture2D _perlinNoise;
+        [SerializeField] int _textureResolution;
 #pragma warning restore CS0649
 
         // Loading from a non-readonly static field is not supported by burst, everything need to be static
         //readonly static TerrainGenerator _terrainGenerator = new TerrainGenerator();
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void InitializeOnWorldSizeChange() => TerrainGenerator.Initialize(_heightsShader);
+        public void InitializeOnWorldSizeChange() => TerrainGenerator.Initialize(_heightsShader, _perlinNoise, _textureResolution);
 
         public static void CalculateBlockTypes()
         {
@@ -44,19 +44,16 @@ namespace Voxels.TerrainGeneration
                 }
                 case ComputingAccelerationMethod.UnityJobSystem:
                 {
-                    ReadonlyVector3Int[] heights = TerrainGenerator.CalculateHeightsJobSystem();
-                    BlockType[] types = TerrainGenerator.CalculateBlockTypes(heights);
+                    ReadonlyVector3Int[] heights = TerrainGenerator.CalculateHeights_JobSystem_NoiseSampler();
+                    BlockType[] types = TerrainGenerator.CalculateBlockTypes_NoiseSampler(heights);
                     TerrainGenerator.DeflattenizeOutput(ref types);
                     break;
                 }
-                case ComputingAccelerationMethod.UnityJobSystemPlusStaticArray:
+                case ComputingAccelerationMethod.UnityJobSystemBurstCompiler:
                 {
-                    throw new NotImplementedException();
-
-                    // new way of calculating unfortunately slower
-                    // it uses job system but calculates entire columns 
-                    // this approach needs static array allocation
-                    BlockTypeColumn[] types = TerrainGenerator.CalculateBlockColumn();
+                    ReadonlyVector3Int[] heights = TerrainGenerator.CalculateHeights_JobSystem_NoiseFunction();
+                    BlockType[] types = TerrainGenerator.CalculateBlockTypes_NoiseFunction(heights);
+                    TerrainGenerator.DeflattenizeOutput(ref types);
                     break;
                 }
                 case ComputingAccelerationMethod.ComputeShader:
@@ -73,7 +70,7 @@ namespace Voxels.TerrainGeneration
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ReadonlyVector3Int CalculateHeights(int seed, int x, int z) => TerrainGenerator.CalculateHeights(seed, x, z);
+        public static ReadonlyVector3Int CalculateHeights(int seed, int x, int z) => TerrainGenerator.CalculateHeights_NoiseSampler(seed, x, z);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void AddWater() => TerrainGenerator.AddWater();

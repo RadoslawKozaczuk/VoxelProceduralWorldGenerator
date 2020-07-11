@@ -1,0 +1,194 @@
+﻿// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel BlockTypeKernel
+
+// input
+Texture2D PerlinNoise;
+int Seed;
+int TextureWidth;
+int TextureHeight;
+int TextureResolution;
+int OffsetX;
+int OffsetZ;
+
+// output
+RWStructuredBuffer<int> BlockTypes; // structured buffer is just an array, RW means read/write
+
+// world constants
+static const int WORLD_SIZE_Y = 4;
+static const int CHUNK_SIZE = 32;
+static const int COLUMN_HEIGHT = WORLD_SIZE_Y * CHUNK_SIZE;
+
+// terrain generator constants
+static const int MAX_HEIGHT_BEDROCK = 15, MAX_HEIGHT_STONE = 80, MAX_HEIGHT_DIRT = 90;
+static const float SMOOTH_BEDROCK = 0.1, SMOOTH_STONE = 0.05, SMOOTH_DIRT = 0.01;
+static const int OCTAVES_BEDROCK = 1, OCTAVES_STONE = 2, OCTAVES_DIRT = 3;
+static const float PERSITANCE_BEDROCK = 0.5, PERSISTANCE_STONE = 0.25, PERSISTANCE_DIRT = 0.5;
+
+static const float CAVE_PROBABILITY = 0.44f;
+static const float CAVE_SMOOTH = 0.09f;
+static const int CAVE_OCTAVES = 3;
+
+static const float DIAMOND_PROBABILITY = 0.38f;
+static const float DIAMOND_SMOOTH = 0.06f;
+static const int DIAMOND_OCTAVES = 1;
+static const int DIAMOND_MAX_HEIGHT = 80;
+
+static const float REDSTONE_PROBABILITY = 0.36f;
+static const float REDSTONE_SMOOTH = 0.06f;
+static const int REDSTONE_OCTAVES = 1;
+static const int REDSTONE_MAX_HEIGHT = 50;
+
+// return from <0 to 1>
+float samplePerlinNoise(float x, float y)
+{
+	float internalX = x * TextureResolution;
+	float internalY = y * TextureResolution;
+
+	// mapping
+	float mappedX = internalX - floor(internalX / TextureWidth) * TextureWidth;
+	float mappedY = internalY - floor(internalY / TextureHeight) * TextureHeight;
+
+	int lowerX = floor(mappedX);
+	int lowerY = floor(mappedY);
+	int higherX = ceil(mappedX);
+	int higherY = ceil(mappedY);
+
+	float2 lower = float2(floor(lowerX), floor(lowerY));
+	float2 higher = float2(ceil(higherX), ceil(higherY));
+
+	// no approximation needed
+	if (lower.x == higher.x && lower.y == higher.y)
+		return PerlinNoise[lower];
+
+	float lowerPixel = PerlinNoise[lower];
+	float higherPixel = PerlinNoise[higher];
+
+	float t = (higher.x - lower.x + higher.y - lower.y) / 2;
+	return lerp(lowerPixel, higherPixel, t);
+}
+
+// just like in C functions need to be declared before (above) they are used
+float fractalBrownianMotion(float x, float z, int octaves, float persistence)
+{
+	float total = 0, frequency = 1, amplitude = 1, maxValue = 0;
+
+	for (int i = 0; i < octaves; i++)
+	{
+		float noise = samplePerlinNoise((x + Seed) * frequency, (z + Seed) * frequency);
+		noise *= amplitude;
+
+		total += noise;
+		maxValue += amplitude;
+		amplitude *= persistence;
+		frequency *= 2;
+	}
+
+	return total / maxValue;
+}
+
+// FractalBrownianMotion3D
+float fractalFunc(float x, float y, int z, float smooth, int octaves)
+{
+	float xy = fractalBrownianMotion(x * smooth, y * smooth, octaves, 0.5f);
+	float yz = fractalBrownianMotion(y * smooth, z * smooth, octaves, 0.5f);
+	float xz = fractalBrownianMotion(x * smooth, z * smooth, octaves, 0.5f);
+
+	float yx = fractalBrownianMotion(y * smooth, x * smooth, octaves, 0.5f);
+	float zy = fractalBrownianMotion(z * smooth, y * smooth, octaves, 0.5f);
+	float zx = fractalBrownianMotion(z * smooth, x * smooth, octaves, 0.5f);
+
+	return (xy + yz + xz + yx + zy + zx) / 6.0f;
+}
+
+// returns -1 upon reaching the first air block in the column
+int determineType(int worldX, int worldY, int worldZ, int3 heights)
+{
+	if (worldY == 0)
+		return 4; // bedrock
+
+	// something does not work with this approach
+	// above the ground = air, this is a huge optimization
+	//if (worldY > heights.x && worldY > heights.y && worldY > heights.z)
+		//return -1; // -1 means Air but also array termination sign
+
+	// temporary replacement for the above
+	if (worldY > heights.x && worldY > heights.y && worldY > heights.z)
+		return 0; // -1 means Air but also array termination sign
+
+	// check if this suppose to be a cave
+	if (fractalFunc(worldX, worldY, worldZ, CAVE_SMOOTH, CAVE_OCTAVES) < CAVE_PROBABILITY)
+		return 0; // air
+
+	// bedrock
+	if (worldY <= heights.x)
+		return 4; // bedrock
+
+	// stone
+	if (worldY <= heights.y)
+	{
+		if (worldY < DIAMOND_MAX_HEIGHT
+			&& fractalFunc(worldX, worldY, worldZ, DIAMOND_SMOOTH, DIAMOND_OCTAVES) < DIAMOND_PROBABILITY)
+			return 3; // diamond
+
+		if (worldY < REDSTONE_MAX_HEIGHT
+			&& fractalFunc(worldX, worldY, worldZ, REDSTONE_SMOOTH, REDSTONE_OCTAVES) < REDSTONE_PROBABILITY)
+			return 5; // redstone
+			
+		return 2; // stone
+	}
+
+	// grass
+	if (worldY == heights.z)
+		return 11; // grass
+
+	// if nothing else then dirt
+	return 1; // dirt
+}
+
+float map(float newMin, float newMax, float oldMin, float oldMax, float value)
+{
+	// inverse lerp
+	float inverseLerp;
+	if (value < oldMin)
+		inverseLerp = oldMin;
+	else if (value > oldMax)
+		inverseLerp = oldMax;
+	else
+		inverseLerp = value;
+
+	return lerp(newMin, newMax, inverseLerp);
+}
+
+[numthreads(CHUNK_SIZE, CHUNK_SIZE, 1)] // threads number is static 
+void BlockTypeKernel(uint id : SV_DispatchThreadID)
+{
+	// id decomposition
+	// this works 100%
+	int z = id / CHUNK_SIZE;
+	int x = id - (z * CHUNK_SIZE);
+
+	// calculate heights
+	float fbmBedrock = fractalBrownianMotion(x * SMOOTH_BEDROCK, z * SMOOTH_BEDROCK, OCTAVES_BEDROCK, PERSITANCE_BEDROCK);
+	float fbmStone = fractalBrownianMotion(x * SMOOTH_STONE, z * SMOOTH_STONE, OCTAVES_STONE, PERSISTANCE_STONE);
+	float fbmDirt = fractalBrownianMotion(x * SMOOTH_DIRT, z * SMOOTH_DIRT, OCTAVES_DIRT, PERSISTANCE_DIRT);
+
+	int3 heights = int3(
+		map(0, MAX_HEIGHT_BEDROCK, 0, 1, fbmBedrock), 
+		map(0, MAX_HEIGHT_STONE, 0, 1, fbmStone), 
+		map(0, MAX_HEIGHT_DIRT, 0, 1, fbmDirt));
+
+	// elements in the buffer are alligned by columns
+	// first column (0,0) then second column (1, 0) and so on
+	int columnStartIndex = x * COLUMN_HEIGHT + z * CHUNK_SIZE * COLUMN_HEIGHT;
+
+	for(int y = 0; y < CHUNK_SIZE * WORLD_SIZE_Y; y++)
+	{
+		int type = determineType(x + OffsetX, y, z + OffsetZ, heights);
+		
+		BlockTypes[columnStartIndex + y] = type;
+
+		// something does not work
+		//if(type == -1) // first air block in the column, termination value - all values above will be equal to 0
+			//break;
+	}
+}

@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using Voxels.Common.Interfaces;
 using Voxels.MeshGeneration;
 using Voxels.TerrainGeneration;
@@ -23,6 +24,26 @@ namespace Voxels.GameLogic.Controllers
         {
             _list.Add(_terrainGenerationAbstractionLayer);
             _list.Add(_meshGenerationAbstractionLayer);
+        }
+
+        void Update()
+        {
+            if (Application.isEditor)
+            {
+                if (Input.GetKeyDown(KeyCode.Q))
+                {
+                    SceneManager.LoadScene("Main Menu");
+                    SceneManager.UnloadSceneAsync("Game");
+                }
+            }
+            else
+            {
+                if (Input.GetKeyDown(KeyCode.Escape))
+                {
+                    SceneManager.LoadScene("Main Menu");
+                    SceneManager.UnloadSceneAsync("Game");
+                }
+            }
         }
 
         public static void InitializeOnWorldSizeChange() => _list.ForEach(x => x.InitializeOnWorldSizeChange());

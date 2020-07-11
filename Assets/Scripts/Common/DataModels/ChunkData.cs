@@ -1,6 +1,4 @@
-﻿using UnityEngine;
-
-namespace Voxels.Common.DataModels
+﻿namespace Voxels.Common.DataModels
 {
     public struct ChunkData
     {

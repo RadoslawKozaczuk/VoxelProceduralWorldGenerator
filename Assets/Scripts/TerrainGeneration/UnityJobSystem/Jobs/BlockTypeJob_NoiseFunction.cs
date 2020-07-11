@@ -7,7 +7,7 @@ using Voxels.Common.DataModels;
 namespace Voxels.TerrainGeneration.UnityJobSystem.Jobs
 {
     [BurstCompile(CompileSynchronously = true)]
-    struct BlockTypeJob : IJobParallelFor
+    struct BlockTypeJob_NoiseFunction : IJobParallelFor
     {
         // input
         [ReadOnly]
@@ -29,7 +29,7 @@ namespace Voxels.TerrainGeneration.UnityJobSystem.Jobs
         public void Execute(int i)
         {
             Utils.IndexDeflattenizer3D(i, TotalBlockNumberX, TotalBlockNumberY, out int x, out int y, out int z);
-            Result[i] = TerrainGenerator.DetermineType(Seed, x, y, z, Heights[Utils.IndexFlattenizer2D(x, z, TotalBlockNumberX)]);
+            Result[i] = TerrainGenerator.DetermineType_NoiseFunction(Seed, x, y, z, Heights[Utils.IndexFlattenizer2D(x, z, TotalBlockNumberX)]);
         }
     }
 }

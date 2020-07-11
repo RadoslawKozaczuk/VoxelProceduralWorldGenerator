@@ -7,7 +7,7 @@ using Voxels.TerrainGeneration.ECS.Components;
 
 namespace Voxels.TerrainGeneration.ECS.Jobs
 {
-    [BurstCompile(CompileSynchronously = true)]
+    //[BurstCompile(CompileSynchronously = true)]
     struct BlockTypeJob : IJobChunk
     {
         [ReadOnly] public ArchetypeChunkComponentType<CoordinatesComponent> Coordinates;
@@ -23,11 +23,11 @@ namespace Voxels.TerrainGeneration.ECS.Jobs
             for (int i = 0; i < chunk.Count; i++)
             {
                 int3 coordinates = coordinatesArray[i].Coordinates;
-                ReadonlyVector3Int heights = TerrainGenerator.CalculateHeights(seed.Seed, coordinates.x, coordinates.z);
+                ReadonlyVector3Int heights = TerrainGenerator.CalculateHeights_NoiseSampler(seed.Seed, coordinates.x, coordinates.z);
 
                 blockTypesArray[i] = new BlockTypesComponent()
                 {
-                    BlockType = TerrainGenerator.DetermineType(seed.Seed, coordinates.x, coordinates.y, coordinates.z, in heights)
+                    BlockType = TerrainGenerator.DetermineType_NoiseSampler(seed.Seed, coordinates.x, coordinates.y, coordinates.z, in heights)
                 };
             }
         }

@@ -1088,7 +1088,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f2247c20e77289843b7c09b3ec31f263, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _heightsShader: {fileID: 7200000, guid: c18dfd363350e5449989deafdd5f1d5b, type: 3}
+  _heightsShader: {fileID: 7200000, guid: 722086799f98df5459e527aacf6e4a8a, type: 3}
+  _perlinNoise: {fileID: 2800000, guid: a4a42ab135cf24341b90519492d4ded1, type: 3}
+  _textureResolution: 50
 --- !u!1 &1269173745
 GameObject:
   m_ObjectHideFlags: 0

@@ -1,5 +1,4 @@
 ﻿using System.Runtime.CompilerServices;
-using Unity.Mathematics;
 using UnityEngine;
 using Voxels.Common;
 using Voxels.Common.DataModels;
@@ -53,10 +52,11 @@ namespace Voxels.TerrainGeneration
         #endregion
 
         internal static readonly int Seed;
-
         internal static int TotalBlockNumberX, TotalBlockNumberY, TotalBlockNumberZ;
+        static int _totalNumberOfBlocksInChunk;
 
-        static ComputeShader _heightsShader;
+        static ComputeShader _blockTypeShader;
+        static Texture2D _perlinNoise;
 
         /// <summary>
         /// Water level inclusive.
@@ -64,41 +64,66 @@ namespace Voxels.TerrainGeneration
         static int _waterLevel;
         static int _worldSizeX, _worldSizeZ;
 
+        //static NoiseSampler _noiseSampler;
+        static int _textureWidth;
+        static int _textureHeight;
+        static int _textureResolution;
+
         static TerrainGenerator()
         {
             Seed = GlobalVariables.Settings.SeedValue;
         }
 
         #region Internal Methods
-        internal static void Initialize(ComputeShader heightsShader)
+        internal static void Initialize(ComputeShader heightsShader, Texture2D perlinNoise, int noiseTextureResolution)
         {
             _worldSizeX = GlobalVariables.Settings.WorldSizeX;
             _worldSizeZ = GlobalVariables.Settings.WorldSizeZ;
             TotalBlockNumberX = _worldSizeX * Constants.CHUNK_SIZE;
             TotalBlockNumberY = Constants.WORLD_SIZE_Y * Constants.CHUNK_SIZE;
             TotalBlockNumberZ = _worldSizeZ * Constants.CHUNK_SIZE;
+            _totalNumberOfBlocksInChunk = Constants.WORLD_SIZE_Y * Constants.CHUNK_SIZE * Constants.CHUNK_SIZE * Constants.CHUNK_SIZE;
 
             _waterLevel = GlobalVariables.Settings.WaterLevel;
-            _heightsShader = heightsShader;
+            _blockTypeShader = heightsShader;
+            _perlinNoise = perlinNoise;
+
+            //_noiseSampler = new NoiseSampler(perlinNoise, noiseTextureResolution);
+            NoiseSampler.Initialize(perlinNoise, noiseTextureResolution);
+            _textureWidth = perlinNoise.width;
+            _textureHeight = perlinNoise.height;
+            _textureResolution = noiseTextureResolution;
         }
 
         /// <summary>
         /// First value is <see cref="BlockType.Bedrock"/>, second is <see cref="BlockType.Stone"/> and third is <see cref="BlockType.Dirt"/>.
         /// </summary>
-        internal static ReadonlyVector3Int CalculateHeights(int seed, int x, int z)
+        internal static ReadonlyVector3Int CalculateHeights_NoiseSampler(int seed, int x, int z)
             => new ReadonlyVector3Int(
                 (int)Map(0, MAX_HEIGHT_BEDROCK, 0, 1, 
-                    FractalBrownianMotion(seed, x * SMOOTH_BEDROCK, z * SMOOTH_BEDROCK, OCTAVES_BEDROCK, PERSISTENCE_BEDROCK)),
+                    FractalBrownianMotion_NoiseSampler(seed, x * SMOOTH_BEDROCK, z * SMOOTH_BEDROCK, OCTAVES_BEDROCK, PERSISTENCE_BEDROCK)),
                 (int)Map(0, MAX_HEIGHT_STONE, 0, 1,
-                    FractalBrownianMotion(seed, x * SMOOTH_STONE, z * SMOOTH_STONE, OCTAVES_STONE, PERSISTENCE_STONE)),
+                    FractalBrownianMotion_NoiseSampler(seed, x * SMOOTH_STONE, z * SMOOTH_STONE, OCTAVES_STONE, PERSISTENCE_STONE)),
                 (int)Map(0, MAX_HEIGHT_DIRT, 0, 1,
-                    FractalBrownianMotion(seed, x * SMOOTH_DIRT, z * SMOOTH_DIRT, OCTAVES_DIRT, PERSISTENCE_DIRT)));
+                    FractalBrownianMotion_NoiseSampler(seed, x * SMOOTH_DIRT, z * SMOOTH_DIRT, OCTAVES_DIRT, PERSISTENCE_DIRT)));
+
+        /// <summary>
+        /// First value is <see cref="BlockType.Bedrock"/>, second is <see cref="BlockType.Stone"/> and third is <see cref="BlockType.Dirt"/>.
+        /// </summary>
+        internal static ReadonlyVector3Int CalculateHeights_NoiseFunction(int seed, int x, int z)
+            => new ReadonlyVector3Int(
+                (int)Map(0, MAX_HEIGHT_BEDROCK, 0, 1,
+                    FractalBrownianMotion_NoiseFunction(seed, x * SMOOTH_BEDROCK, z * SMOOTH_BEDROCK, OCTAVES_BEDROCK, PERSISTENCE_BEDROCK)),
+                (int)Map(0, MAX_HEIGHT_STONE, 0, 1,
+                    FractalBrownianMotion_NoiseFunction(seed, x * SMOOTH_STONE, z * SMOOTH_STONE, OCTAVES_STONE, PERSISTENCE_STONE)),
+                (int)Map(0, MAX_HEIGHT_DIRT, 0, 1,
+                    FractalBrownianMotion_NoiseFunction(seed, x * SMOOTH_DIRT, z * SMOOTH_DIRT, OCTAVES_DIRT, PERSISTENCE_DIRT)));
 
         /// <summary>
         /// Heights are inclusive.
         /// First height is bedrock, second is stone, and the third is dirt.
         /// </summary>
-		internal static BlockType DetermineType(int seed, int worldX, int worldY, int worldZ, in ReadonlyVector3Int heights)
+		internal static BlockType DetermineType_NoiseSampler(int seed, int worldX, int worldY, int worldZ, in ReadonlyVector3Int heights)
         {
             if (worldY == 0)
                 return BlockType.Bedrock;
@@ -108,7 +133,7 @@ namespace Voxels.TerrainGeneration
                 return BlockType.Air;
 
             // check if this suppose to be a cave
-            if (FractalFunc(seed, worldX, worldY, worldZ, CAVE_SMOOTH, CAVE_OCTAVES) < CAVE_PROBABILITY)
+            if (FractalFunc_NoiseSampler(seed, worldX, worldY, worldZ, CAVE_SMOOTH, CAVE_OCTAVES) < CAVE_PROBABILITY)
                 return BlockType.Air;
 
             // bedrock
@@ -119,11 +144,54 @@ namespace Voxels.TerrainGeneration
             if (worldY <= heights.Y)
             {
                 if (worldY < DIAMOND_MAX_HEIGHT
-                    && FractalFunc(seed, worldX, worldY, worldZ, DIAMOND_SMOOTH, DIAMOND_OCTAVES) < DIAMOND_PROBABILITY)
+                    && FractalFunc_NoiseSampler(seed, worldX, worldY, worldZ, DIAMOND_SMOOTH, DIAMOND_OCTAVES) < DIAMOND_PROBABILITY)
                     return BlockType.Diamond;
 
                 if (worldY < REDSTONE_MAX_HEIGHT
-                    && FractalFunc(seed, worldX, worldY, worldZ, REDSTONE_SMOOTH, REDSTONE_OCTAVES) < REDSTONE_PROBABILITY)
+                    && FractalFunc_NoiseSampler(seed, worldX, worldY, worldZ, REDSTONE_SMOOTH, REDSTONE_OCTAVES) < REDSTONE_PROBABILITY)
+                    return BlockType.Redstone;
+
+                return BlockType.Stone;
+            }
+
+            // grass
+            if (worldY == heights.Z)
+                return BlockType.Grass;
+
+            // if nothing else then dirt
+            return BlockType.Dirt;
+        }
+
+        /// <summary>
+        /// Heights are inclusive.
+        /// First height is bedrock, second is stone, and the third is dirt.
+        /// </summary>
+		internal static BlockType DetermineType_NoiseFunction(int seed, int worldX, int worldY, int worldZ, in ReadonlyVector3Int heights)
+        {
+            if (worldY == 0)
+                return BlockType.Bedrock;
+
+            // above the ground = air, this is a huge optimization
+            if (worldY > heights.X && worldY > heights.Y && worldY > heights.Z)
+                return BlockType.Air;
+
+            // check if this suppose to be a cave
+            if (FractalFunc_NoiseFunction(seed, worldX, worldY, worldZ, CAVE_SMOOTH, CAVE_OCTAVES) < CAVE_PROBABILITY)
+                return BlockType.Air;
+
+            // bedrock
+            if (worldY <= heights.X)
+                return BlockType.Bedrock;
+
+            // stone
+            if (worldY <= heights.Y)
+            {
+                if (worldY < DIAMOND_MAX_HEIGHT
+                    && FractalFunc_NoiseFunction(seed, worldX, worldY, worldZ, DIAMOND_SMOOTH, DIAMOND_OCTAVES) < DIAMOND_PROBABILITY)
+                    return BlockType.Diamond;
+
+                if (worldY < REDSTONE_MAX_HEIGHT
+                    && FractalFunc_NoiseFunction(seed, worldX, worldY, worldZ, REDSTONE_SMOOTH, REDSTONE_OCTAVES) < REDSTONE_PROBABILITY)
                     return BlockType.Redstone;
 
                 return BlockType.Stone;
@@ -161,9 +229,7 @@ namespace Voxels.TerrainGeneration
             bool waterAdded = true;
             while (waterAdded)
             {
-                waterAdded = currentY > 1
-                    ? AddWaterBelow(currentY)
-                    : false;
+                waterAdded = currentY > 1 && AddWaterBelow(currentY);
 
                 if (waterAdded)
                     PropagateWaterHorizontally(--currentY);
@@ -248,64 +314,73 @@ namespace Voxels.TerrainGeneration
 
         internal static void CalculateBlockTypes_ComputeShader()
         {
-            _heightsShader.SetInt("Seed", GlobalVariables.Settings.SeedValue);
+            int numberOfBlocks = Constants.CHUNK_SIZE * Constants.CHUNK_SIZE * Constants.CHUNK_SIZE * Constants.WORLD_SIZE_Y;
+            var buffer = new ComputeBuffer(numberOfBlocks, 16); // 16 is the size of int (16 not 32 because we talk about HLSL/CG)
 
-            // The FindKernel function takes a string name, which corresponds to one of the kernel names 
-            // we set up in the compute shader. 
-            int kernel = _heightsShader.FindKernel("HeightsKernel");
+            // FindKernel function takes a string name, which corresponds to one of the kernel names we set up in the compute shader
+            int kernel = _blockTypeShader.FindKernel("BlockTypeKernel");
 
-            // when depth 0 is used, then no Z buffer is created by a render texture.
-            var tex = new RenderTexture(TotalBlockNumberX, TotalBlockNumberZ, 0, RenderTextureFormat.ARGB32) 
-            { 
-                enableRandomWrite = true, 
-                filterMode = FilterMode.Point 
-            };
+            // set buffer
+            _blockTypeShader.SetBuffer(kernel, "BlockTypes", buffer);
 
-            // actually creates the texture in GPU's memory
-            tex.Create();
+            // set noise texture
+            _blockTypeShader.SetTexture(kernel, "PerlinNoise", _perlinNoise);
 
-            // put it into the shader
+            // set parameters
+            _blockTypeShader.SetInt("Seed", GlobalVariables.Settings.SeedValue);
+            _blockTypeShader.SetInt("TextureWidth", _textureWidth);
+            _blockTypeShader.SetInt("TextureHeight", _textureHeight);
+            _blockTypeShader.SetInt("TextureResolution", _textureResolution);
 
-            // error = Attempting to bind Texture ID 2535 as UAV, the texture wasn't created with the UAV usage flag set!
-            _heightsShader.SetTexture(kernel, "Result", tex);
+            for (int z = 0; z < _worldSizeZ; z++)
+            {
+                _blockTypeShader.SetInt("OffsetZ", z * Constants.CHUNK_SIZE);
 
-            // run
-            // the integers passed to the Dispatch call specify the number of thread groups we want to spawn
-            _heightsShader.Dispatch(kernel, TotalBlockNumberX, TotalBlockNumberZ, 1);
-
-            // textures do not need to be transfered from GPU's memory to CPU's memory
-
-            //var output = new int3[32, 32];
-            //myShader.GetData(output);
-
-            Texture2D texture2D = tex.ToTexture2D();
-
-            int x, z;
-            for (x = 0; x < TotalBlockNumberX; x++)
-                for (z = 0; z < TotalBlockNumberZ; z++)
+                for (int x = 0; x < _worldSizeX; x++)
                 {
-                    Color32 sample = texture2D.GetPixel(x, z);
-                    var heights = new ReadonlyVector3Int(sample.r, sample.g, sample.b);
+                    _blockTypeShader.SetInt("OffsetX", x * Constants.CHUNK_SIZE);
 
-                    // omit everything above the maximum height as it's air anyway
-                    int max = heights.X;
-                    if (heights.Y > max)
-                        max = heights.Y;
-                    if (heights.Z > max)
-                        max = heights.Z;
+                    // the integers passed to the Dispatch call specify the number of thread groups we want to spawn
+                    _blockTypeShader.Dispatch(kernel, Constants.CHUNK_SIZE, Constants.CHUNK_SIZE, 1);
 
-                    // height is inclusive
-                    for (int y = 0; y <= max; y++)
-                        CreateBlock(
-                            ref GlobalVariables.Blocks[x, y, z], 
-                            DetermineType(GlobalVariables.Settings.SeedValue, x, y, z, in heights));
+                    // retrieve output
+                    var output = new int[numberOfBlocks];
+                    buffer.GetData(output);
+
+                    // apply data to the global array
+                    ApplyColumnTypesToGlobalArray(output, x, z);
                 }
+            }
+
+            buffer.Dispose();
         }
         #endregion
 
+        static void ApplyColumnTypesToGlobalArray(int[] blockTypeData, int chunkX, int chunkZ)
+        {
+            int i = 0;
+            for (int z = 0; z < Constants.CHUNK_SIZE; z++)
+                for (int x = 0; x < Constants.CHUNK_SIZE; x++)
+                    for (int y = 0; y < Constants.CHUNK_SIZE * Constants.WORLD_SIZE_Y; y++, i++)
+                    {
+                        int type = blockTypeData[i];
+
+                        // -1 means first air block above the surface, all following blocks in the given column will be air
+                        if (type == -1)
+                            break;
+
+                        CreateBlock(
+                            ref GlobalVariables.Blocks[
+                                x + chunkX * Constants.CHUNK_SIZE, 
+                                y, 
+                                z + chunkZ * Constants.CHUNK_SIZE], 
+                            (BlockType)type);
+                    }
+        }
+
         static void CalculateBlockTypesForColumn(int seed, int colX, int colZ)
         {
-            ReadonlyVector3Int heights = CalculateHeights(seed, colX, colZ);
+            ReadonlyVector3Int heights = CalculateHeights_NoiseSampler(seed, colX, colZ);
 
             // omit everything above the maximum height as it's air anyway
             int max = heights.X;
@@ -316,7 +391,7 @@ namespace Voxels.TerrainGeneration
 
             // height is inclusive
             for (int y = 0; y <= max; y++)
-                CreateBlock(ref GlobalVariables.Blocks[colX, y, colZ], DetermineType(seed, colX, y, colZ, in heights));
+                CreateBlock(ref GlobalVariables.Blocks[colX, y, colZ], DetermineType_NoiseSampler(seed, colX, y, colZ, in heights));
         }
 
         #region Private Methods
@@ -329,7 +404,27 @@ namespace Voxels.TerrainGeneration
         /// octaves - number of functions that we sum up
         /// values returned by this function can be slightly below 0 or above 1 therefore the result need to be squeezed in order to be valid.
         /// </summary>
-        static float FractalBrownianMotion(int seed, float x, float z, int octaves, float persistence)
+        static float FractalBrownianMotion_NoiseSampler(int seed, float x, float z, int octaves, float persistence)
+        {
+            float total = 0, frequency = 1, amplitude = 1, maxValue = 0;
+
+            for (int i = 0; i < octaves; i++)
+            {
+                total += NoiseSampler.SampleWithWrap((x + seed) * frequency, (z + seed) * frequency) * amplitude;
+                maxValue += amplitude;
+                amplitude *= persistence;
+                frequency *= 2;
+            }
+
+            return total / maxValue;
+        }
+
+        /// <summary>
+        /// persistence - if < 1 each function is less powerful than the previous one, for > 1 each is more important
+        /// octaves - number of functions that we sum up
+        /// values returned by this function can be slightly below 0 or above 1 therefore the result need to be squeezed in order to be valid.
+        /// </summary>
+        static float FractalBrownianMotion_NoiseFunction(int seed, float x, float z, int octaves, float persistence)
         {
             float total = 0, frequency = 1, amplitude = 1, maxValue = 0;
 
@@ -345,16 +440,31 @@ namespace Voxels.TerrainGeneration
         }
 
         // FractalBrownianMotion3D
-        static float FractalFunc(int seed, float x, float y, int z, float smooth, int octaves)
+        static float FractalFunc_NoiseSampler(int seed, float x, float y, int z, float smooth, int octaves)
         {
             // this is obviously more computational heavy
-            float xy = FractalBrownianMotion(seed, x * smooth, y * smooth, octaves, 0.5f);
-            float yz = FractalBrownianMotion(seed, y * smooth, z * smooth, octaves, 0.5f);
-            float xz = FractalBrownianMotion(seed, x * smooth, z * smooth, octaves, 0.5f);
+            float xy = FractalBrownianMotion_NoiseSampler(seed, x * smooth, y * smooth, octaves, 0.5f);
+            float yz = FractalBrownianMotion_NoiseSampler(seed, y * smooth, z * smooth, octaves, 0.5f);
+            float xz = FractalBrownianMotion_NoiseSampler(seed, x * smooth, z * smooth, octaves, 0.5f);
 
-            float yx = FractalBrownianMotion(seed, y * smooth, x * smooth, octaves, 0.5f);
-            float zy = FractalBrownianMotion(seed, z * smooth, y * smooth, octaves, 0.5f);
-            float zx = FractalBrownianMotion(seed, z * smooth, x * smooth, octaves, 0.5f);
+            float yx = FractalBrownianMotion_NoiseSampler(seed, y * smooth, x * smooth, octaves, 0.5f);
+            float zy = FractalBrownianMotion_NoiseSampler(seed, z * smooth, y * smooth, octaves, 0.5f);
+            float zx = FractalBrownianMotion_NoiseSampler(seed, z * smooth, x * smooth, octaves, 0.5f);
+
+            return (xy + yz + xz + yx + zy + zx) / 6.0f;
+        }
+
+        // FractalBrownianMotion3D
+        static float FractalFunc_NoiseFunction(int seed, float x, float y, int z, float smooth, int octaves)
+        {
+            // this is obviously more computational heavy
+            float xy = FractalBrownianMotion_NoiseFunction(seed, x * smooth, y * smooth, octaves, 0.5f);
+            float yz = FractalBrownianMotion_NoiseFunction(seed, y * smooth, z * smooth, octaves, 0.5f);
+            float xz = FractalBrownianMotion_NoiseFunction(seed, x * smooth, z * smooth, octaves, 0.5f);
+
+            float yx = FractalBrownianMotion_NoiseFunction(seed, y * smooth, x * smooth, octaves, 0.5f);
+            float zy = FractalBrownianMotion_NoiseFunction(seed, z * smooth, y * smooth, octaves, 0.5f);
+            float zx = FractalBrownianMotion_NoiseFunction(seed, z * smooth, x * smooth, octaves, 0.5f);
 
             return (xy + yz + xz + yx + zy + zx) / 6.0f;
         }
@@ -378,7 +488,7 @@ namespace Voxels.TerrainGeneration
                     // if it is a grass we try to build a tree on top of it
                     if (type == BlockType.Grass
                         && IsThereEnoughSpaceForTree(x, y, z)
-                        && FractalFunc(GlobalVariables.Settings.SeedValue, x, y, z, WOODBASE_SMOOTH, WOODBASE_OCTAVES) < woodbaseProbability)
+                        && FractalFunc_NoiseSampler(GlobalVariables.Settings.SeedValue, x, y, z, WOODBASE_SMOOTH, WOODBASE_OCTAVES) < woodbaseProbability)
                         BuildTree(x, y, z);
 
                     break;

@@ -14,12 +14,12 @@ namespace Voxels.TerrainGeneration
         /// One for Bedrock, Stone and Dirt. Heights determines up to where certain types appear.
         /// x is Bedrock, y is Stone and z is Dirt.
         /// </summary>
-        internal static ReadonlyVector3Int[] CalculateHeightsJobSystem()
+        internal static ReadonlyVector3Int[] CalculateHeights_JobSystem_NoiseSampler()
         {
             // output data
             var heights = new ReadonlyVector3Int[TotalBlockNumberX * TotalBlockNumberZ];
 
-            var heightJob = new HeightJob()
+            var heightJob = new HeightJob_NoiseSampler()
             {
                 // input
                 TotalBlockNumberX = TotalBlockNumberX,
@@ -28,7 +28,7 @@ namespace Voxels.TerrainGeneration
                 Result = new NativeArray<ReadonlyVector3Int>(heights, Allocator.TempJob)
             };
 
-            var heightJobHandle = heightJob.Schedule(TotalBlockNumberX * TotalBlockNumberZ, 8);
+            JobHandle heightJobHandle = heightJob.Schedule(TotalBlockNumberX * TotalBlockNumberZ, 8);
             heightJobHandle.Complete();
             heightJob.Result.CopyTo(heights);
 
@@ -38,14 +38,44 @@ namespace Voxels.TerrainGeneration
             return heights;
         }
 
-        internal static BlockType[] CalculateBlockTypes(ReadonlyVector3Int[] heights)
+        /// <summary>
+        /// Calculates global heights. This method uses Unity Job System.
+        /// Each column described by its x and z values has three heights.
+        /// One for Bedrock, Stone and Dirt. Heights determines up to where certain types appear.
+        /// x is Bedrock, y is Stone and z is Dirt.
+        /// </summary>
+        internal static ReadonlyVector3Int[] CalculateHeights_JobSystem_NoiseFunction()
         {
-            var inputSize = TotalBlockNumberX * TotalBlockNumberY * TotalBlockNumberZ;
+            // output data
+            var heights = new ReadonlyVector3Int[TotalBlockNumberX * TotalBlockNumberZ];
+
+            var heightJob = new HeightJob_NoiseFunction()
+            {
+                // input
+                TotalBlockNumberX = TotalBlockNumberX,
+
+                // output
+                Result = new NativeArray<ReadonlyVector3Int>(heights, Allocator.TempJob)
+            };
+
+            JobHandle heightJobHandle = heightJob.Schedule(TotalBlockNumberX * TotalBlockNumberZ, 8);
+            heightJobHandle.Complete();
+            heightJob.Result.CopyTo(heights);
+
+            // cleanup
+            heightJob.Result.Dispose();
+
+            return heights;
+        }
+
+        internal static BlockType[] CalculateBlockTypes_NoiseSampler(ReadonlyVector3Int[] heights)
+        {
+            int inputSize = TotalBlockNumberX * TotalBlockNumberY * TotalBlockNumberZ;
 
             // output data
             var types = new BlockType[inputSize];
 
-            var typeJob = new BlockTypeJob()
+            var typeJob = new BlockTypeJob_NoiseSampler()
             {
                 // input
                 TotalBlockNumberX = TotalBlockNumberX,
@@ -57,7 +87,7 @@ namespace Voxels.TerrainGeneration
                 Result = new NativeArray<BlockType>(types, Allocator.TempJob)
             };
 
-            var typeJobHandle = typeJob.Schedule(inputSize, 8);
+            JobHandle typeJobHandle = typeJob.Schedule(inputSize, 8);
             typeJobHandle.Complete();
             typeJob.Result.CopyTo(types);
 
@@ -68,35 +98,34 @@ namespace Voxels.TerrainGeneration
             return types;
         }
 
-        internal static BlockTypeColumn[] CalculateBlockColumn()
+        internal static BlockType[] CalculateBlockTypes_NoiseFunction(ReadonlyVector3Int[] heights)
         {
             int inputSize = TotalBlockNumberX * TotalBlockNumberY * TotalBlockNumberZ;
 
-            var outputArray = new BlockTypeColumn[inputSize];
+            // output data
+            var types = new BlockType[inputSize];
 
-            var job = new BlockColumnJob()
+            var typeJob = new BlockTypeJob_NoiseFunction()
             {
                 // input
                 TotalBlockNumberX = TotalBlockNumberX,
                 TotalBlockNumberY = TotalBlockNumberY,
                 TotalBlockNumberZ = TotalBlockNumberZ,
+                Heights = new NativeArray<ReadonlyVector3Int>(heights, Allocator.TempJob),
 
                 // output
-                Result = new NativeArray<BlockTypeColumn>(outputArray, Allocator.TempJob)
+                Result = new NativeArray<BlockType>(types, Allocator.TempJob)
             };
 
-            // second parameter is the Innerloop Batch Count (whatever it may be)
-            // according to Unity's documentation when job is small 32 or 64 makes sense
-            // for huge work loads the preferred value is 1, hence the value below
-            // unfortunately, the documentation does not provide any knowledge on how to precisely determine this value, just hints
-            var jobHandle = job.Schedule(inputSize, 8);
-            jobHandle.Complete();
-            job.Result.CopyTo(outputArray);
+            JobHandle typeJobHandle = typeJob.Schedule(inputSize, 8);
+            typeJobHandle.Complete();
+            typeJob.Result.CopyTo(types);
 
             // cleanup
-            job.Result.Dispose();
+            typeJob.Result.Dispose();
+            typeJob.Heights.Dispose();
 
-            return outputArray;
+            return types;
         }
 
         internal static void DeflattenizeOutput(ref BlockType[] types)
@@ -111,30 +140,6 @@ namespace Voxels.TerrainGeneration
                         b.Type = type;
                         b.Hp = LookupTables.BlockHealthMax[(int)type];
                     }
-        }
-
-        static void DeflattenizeOutputOld(ref BlockTypeColumn[] columns)
-        {
-            //for (int x = 0; x < TotalBlockNumberX; x++)
-            //    for (int z = 0; z < TotalBlockNumberZ; z++)
-            //    {
-            //        BlockTypeColumn column = columns[Utils.IndexFlattenizer2D(x, z, TotalBlockNumberX)];
-
-            //        // heights are inclusive
-            //        for (int y = 0; y <= column.TerrainLevel; y++)
-            //        {
-            //            BlockType type;
-
-            //            unsafe
-            //            {
-            //                type = (BlockType)column.Types[y];
-            //            }
-
-            //            ref BlockData b = ref GlobalVariables.Blocks[x, y, z];
-            //            b.Type = type;
-            //            b.Hp = LookupTables.BlockHealthMax[(int)type];
-            //        }
-            //    }
         }
     }
 }

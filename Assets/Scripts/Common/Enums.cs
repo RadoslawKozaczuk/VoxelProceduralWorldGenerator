@@ -39,7 +39,7 @@ namespace Voxels.Common
         /// Unity Job System and Burst Compiler plus static array allocation trick from the unsafe context.
         /// The trick allow us to stop the calculation as soon as we reach the air.
         /// </summary>
-        UnityJobSystemPlusStaticArray,
+        UnityJobSystemBurstCompiler,
         /// <summary>
         /// TODO: description
         /// </summary>

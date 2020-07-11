@@ -1,6 +1,5 @@
 ﻿using Unity.Entities;
 using Unity.Jobs;
-using Voxels.Common;
 using Voxels.TerrainGeneration.ECS.Components;
 using Voxels.TerrainGeneration.ECS.Jobs;
 
@@ -12,11 +11,8 @@ namespace Voxels.TerrainGeneration.ECS.Systems
         bool flag = false;
         EntityQuery _query;
 
-        protected override void OnCreate()
-        {
-            // query is like a SQL query, allows us to retrieve only these entities that we want
-            _query = GetEntityQuery(typeof(BlockTypesComponent), typeof(CoordinatesComponent));
-        }
+        // query is like a SQL query, allows us to retrieve only these entities that we want
+        protected override void OnCreate() => _query = GetEntityQuery(typeof(BlockTypesComponent), typeof(CoordinatesComponent));
 
         protected override void OnUpdate()
         {
