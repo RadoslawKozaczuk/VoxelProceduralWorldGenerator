@@ -7,8 +7,8 @@ int Seed;
 int TextureWidth;
 int TextureHeight;
 int TextureResolution;
-int OffsetX;
-int OffsetZ;
+int OffsetX; // measured in blocks
+int OffsetZ; // measured in blocks
 
 // output
 RWStructuredBuffer<int> BlockTypes; // structured buffer is just an array, RW means read/write
@@ -38,7 +38,7 @@ static const float REDSTONE_SMOOTH = 0.06f;
 static const int REDSTONE_OCTAVES = 1;
 static const int REDSTONE_MAX_HEIGHT = 50;
 
-// return from <0 to 1>
+// returns from <0 to 1>
 float samplePerlinNoise(float x, float y)
 {
 	float internalX = x * TextureResolution;
@@ -108,12 +108,8 @@ int determineType(int worldX, int worldY, int worldZ, int3 heights)
 
 	// something does not work with this approach
 	// above the ground = air, this is a huge optimization
-	//if (worldY > heights.x && worldY > heights.y && worldY > heights.z)
-		//return -1; // -1 means Air but also array termination sign
-
-	// temporary replacement for the above
 	if (worldY > heights.x && worldY > heights.y && worldY > heights.z)
-		return 0; // -1 means Air but also array termination sign
+		return -1; // -1 means Air and also the array termination sign
 
 	// check if this suppose to be a cave
 	if (fractalFunc(worldX, worldY, worldZ, CAVE_SMOOTH, CAVE_OCTAVES) < CAVE_PROBABILITY)
@@ -159,11 +155,12 @@ float map(float newMin, float newMax, float oldMin, float oldMax, float value)
 	return lerp(newMin, newMax, inverseLerp);
 }
 
-[numthreads(CHUNK_SIZE, CHUNK_SIZE, 1)] // threads number is static 
+// threads number is static
+// this is significant limitation, to some degree it can be circumnavigated with extended number of kernels
+[numthreads(CHUNK_SIZE, CHUNK_SIZE, 1)]
 void BlockTypeKernel(uint id : SV_DispatchThreadID)
 {
 	// id decomposition
-	// this works 100%
 	int z = id / CHUNK_SIZE;
 	int x = id - (z * CHUNK_SIZE);
 
@@ -178,17 +175,17 @@ void BlockTypeKernel(uint id : SV_DispatchThreadID)
 		map(0, MAX_HEIGHT_DIRT, 0, 1, fbmDirt));
 
 	// elements in the buffer are alligned by columns
-	// first column (0,0) then second column (1, 0) and so on
+	// first column (chunkX: 0, chunkZ: 0) then second column (chunkX: 1, chunkZ: 0) and so on
 	int columnStartIndex = x * COLUMN_HEIGHT + z * CHUNK_SIZE * COLUMN_HEIGHT;
 
 	for(int y = 0; y < CHUNK_SIZE * WORLD_SIZE_Y; y++)
 	{
-		int type = determineType(x + OffsetX, y, z + OffsetZ, heights);
+		int type = determineType(x + OffsetX, y, z, heights);
 		
 		BlockTypes[columnStartIndex + y] = type;
 
-		// something does not work
-		//if(type == -1) // first air block in the column, termination value - all values above will be equal to 0
-			//break;
+		// optimization
+		if(type == -1) // first air block in the column, termination value - all values above will be equal to 0
+			return;
 	}
 }

@@ -53,7 +53,6 @@ namespace Voxels.TerrainGeneration
 
         internal static readonly int Seed;
         internal static int TotalBlockNumberX, TotalBlockNumberY, TotalBlockNumberZ;
-        static int _totalNumberOfBlocksInChunk;
 
         static ComputeShader _blockTypeShader;
         static Texture2D _perlinNoise;
@@ -82,13 +81,11 @@ namespace Voxels.TerrainGeneration
             TotalBlockNumberX = _worldSizeX * Constants.CHUNK_SIZE;
             TotalBlockNumberY = Constants.WORLD_SIZE_Y * Constants.CHUNK_SIZE;
             TotalBlockNumberZ = _worldSizeZ * Constants.CHUNK_SIZE;
-            _totalNumberOfBlocksInChunk = Constants.WORLD_SIZE_Y * Constants.CHUNK_SIZE * Constants.CHUNK_SIZE * Constants.CHUNK_SIZE;
 
             _waterLevel = GlobalVariables.Settings.WaterLevel;
             _blockTypeShader = heightsShader;
             _perlinNoise = perlinNoise;
 
-            //_noiseSampler = new NoiseSampler(perlinNoise, noiseTextureResolution);
             NoiseSampler.Initialize(perlinNoise, noiseTextureResolution);
             _textureWidth = perlinNoise.width;
             _textureHeight = perlinNoise.height;
@@ -356,6 +353,7 @@ namespace Voxels.TerrainGeneration
         }
         #endregion
 
+        // each shader call calculated one column of chunks
         static void ApplyColumnTypesToGlobalArray(int[] blockTypeData, int chunkX, int chunkZ)
         {
             int i = 0;
@@ -367,7 +365,10 @@ namespace Voxels.TerrainGeneration
 
                         // -1 means first air block above the surface, all following blocks in the given column will be air
                         if (type == -1)
+                        {
+                            i += Constants.CHUNK_SIZE * Constants.WORLD_SIZE_Y - y; // add the missing range
                             break;
+                        }
 
                         CreateBlock(
                             ref GlobalVariables.Blocks[
